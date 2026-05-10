@@ -1797,7 +1797,8 @@ generate_data_json() {
                 ;;
             esac
         done < <(
-            tail -n 80 "$EVENTS_LOG" 2>/dev/null |
+            grep -Ev "^=== JOURNAL WATCH" "$EVENTS_LOG" 2>/dev/null |
+                tail -n "$COUNT_WINDOW_LINES" |
                 grep -Ev "$NOISY_EVENT_REGEX" |
                 awk '!seen[$0]++ { lines[++n] = $0 } END { for (i = n; i >= 1; i--) print lines[i] }'
         )
