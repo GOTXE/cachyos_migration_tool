@@ -487,6 +487,8 @@ install_apple_laptop_extras() {
     local APPLE_LAPTOP_PACKAGES=(
         thermald
         powertop
+        mbpfan
+        lm_sensors
     )
     local MISSING_APPLE_PACKAGES=()
     local PACKAGE_NAME=""
@@ -544,7 +546,46 @@ install_apple_laptop_extras() {
         fi
         run_cmd sudo systemctl enable thermald
         run_cmd sudo systemctl start thermald
+        run_cmd sudo systemctl enable mbpfan
     fi
+}
+
+configure_mbpfan() {
+    [ "$APPLE_LAPTOP_MODE" = "yes" ] || return 0
+    is_apple_laptop || return 0
+
+    local FAN_MAX=6199
+    local FAN_MAX_PATH=""
+
+    FAN_MAX_PATH="$(find /sys/devices/platform/applesmc.*/fan1_max 2>/dev/null | head -1 || true)"
+    [ -r "$FAN_MAX_PATH" ] && FAN_MAX="$(< "$FAN_MAX_PATH")"
+
+    log "${YELLOW}Configurando mbpfan (curva agresiva para MBP 2015)...${NC}"
+    log " min_fan1_speed = 2000 RPM"
+    log " max_fan1_speed = ${FAN_MAX} RPM"
+    log " low_temp       = 50°C"
+    log " high_temp      = 65°C"
+    log " max_temp       = 80°C"
+    log " polling        = 3s"
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] escribir /etc/mbpfan.conf y reiniciar mbpfan${NC}"
+        return 0
+    fi
+
+    sudo tee /etc/mbpfan.conf > /dev/null <<EOF
+[general]
+min_fan1_speed = 2000
+max_fan1_speed = ${FAN_MAX}
+low_temp = 50
+high_temp = 65
+max_temp = 80
+polling_interval = 3
+EOF
+
+    run_cmd sudo systemctl restart mbpfan
+    log_success "mbpfan configurado y activo."
+    log "Verifica RPM: cat /sys/devices/platform/applesmc.*/fan1_input"
 }
 
 install_mbp_watch_diagnostics() {
@@ -1231,6 +1272,7 @@ bootstrap_cachyos() {
     install_mbp_watch_diagnostics
     install_youtube_force_h264_package
     install_apple_laptop_extras
+    configure_mbpfan
     configure_facetimehd_camera
     configure_networkmanager_iwd_backend
     install_hyprland
@@ -1320,6 +1362,14 @@ post_bootstrap_checks() {
             log_success "Cámara FaceTime HD: /dev/video* presente."
         else
             log_warn "Cámara FaceTime HD: /dev/video* no encontrado. Si facetimehd está instalado, prueba con el kernel Zen: sudo pacman -S linux-cachyos-zen linux-cachyos-zen-headers"
+        fi
+    fi
+
+    if is_apple_laptop; then
+        if systemctl is-active --quiet mbpfan.service; then
+            log_success "mbpfan: activo"
+        else
+            log_warn "mbpfan: no activo. Ejecuta: sudo systemctl start mbpfan"
         fi
     fi
     log ""
