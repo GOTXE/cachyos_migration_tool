@@ -9,6 +9,8 @@ import org.kde.plasma.plasmoid
 import "../code/constants.js" as Constants
 import "../code/dataSource.js" as DataSource
 import "../code/stateAdapter.js" as StateAdapter
+import "common"
+import "theme"
 
 PlasmoidItem {
     id: root
@@ -24,6 +26,10 @@ PlasmoidItem {
 
     implicitWidth: 360
     implicitHeight: 720
+
+    Theme {
+        id: theme
+    }
 
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     Plasmoid.title: "MBP Watch"
@@ -50,85 +56,171 @@ PlasmoidItem {
 
         Rectangle {
             anchors.fill: parent
-            radius: 18
-            color: "#141b16"
-            opacity: 0.88
+            radius: theme.radiusLg
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#08110c" }
+                GradientStop { position: 0.45; color: "#102018" }
+                GradientStop { position: 1.0; color: "#08110c" }
+            }
             border.width: 1
-            border.color: "#3cff7a"
+            border.color: theme.border
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: theme.radiusLg
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(theme.glow.r, theme.glow.g, theme.glow.b, 0.18)
         }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 18
-            spacing: 10
+            anchors.margins: theme.spacingLg
+            spacing: theme.spacingMd
 
-            Text {
-                text: "MBP Watch"
-                color: "#d7ffe6"
-                font.pixelSize: 20
-                font.bold: true
-            }
-
-            Text {
-                text: "Scaffold Plasma 6 listo. Refresco seguro de data.json activado."
-                color: "#8ed8a8"
-                wrapMode: Text.WordWrap
-                font.pixelSize: 13
+            HudPanel {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 110
+                raised: true
+                accentColor: theme.severityColor(root.adaptedState.severity.className)
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: theme.panelPadding
+                    spacing: theme.spacingXs
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        StatusDot {
+                            dotColor: theme.severityColor(root.adaptedState.severity.className)
+                        }
+
+                        MonoLabel {
+                            Layout.fillWidth: true
+                            labelColor: theme.text
+                            labelSize: 18
+                            content: "MBP WATCH"
+                        }
+
+                        IconActionButton {
+                            label: "HUD"
+                            accentColor: theme.borderSoft
+                        }
+                    }
+
+                    MonoLabel {
+                        Layout.fillWidth: true
+                        labelColor: theme.severityColor(root.adaptedState.severity.className)
+                        labelSize: 12
+                        content: root.adaptedState.severity.title + " / " + root.adaptedState.severity.className
+                    }
+
+                    MonoLabel {
+                        Layout.fillWidth: true
+                        labelColor: theme.textMuted
+                        labelSize: 11
+                        content: root.adaptedState.generated ? root.adaptedState.generated : "Awaiting telemetry snapshot"
+                    }
+
+                    ThinBar {
+                        Layout.fillWidth: true
+                        value: root.sourceState.status === "ready" ? 1 : root.sourceState.status === "degraded" ? 0.55 : 0.18
+                        barColor: root.sourceState.status === "ready"
+                            ? theme.ok
+                            : root.sourceState.status === "degraded"
+                                ? theme.warn
+                                : theme.borderSoft
+                    }
+                }
             }
 
-            Text {
-                text: "State: " + root.sourceState.status
-                color: root.sourceState.status === "ready" ? "#52ff93" : "#d3b063"
-                font.pixelSize: 13
-            }
-
-            Text {
-                text: root.sourceState.data && root.sourceState.data.generated
-                    ? "Generated: " + root.adaptedState.generated
-                    : "Generated: unavailable"
-                color: "#8ed8a8"
-                font.pixelSize: 12
+            HudPanel {
                 Layout.fillWidth: true
-                wrapMode: Text.WordWrap
+                Layout.preferredHeight: 92
+                accentColor: theme.borderSoft
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: theme.panelPadding
+                    spacing: theme.spacingXs
+
+                    MonoLabel {
+                        labelColor: theme.textMuted
+                        labelSize: 11
+                        content: "SYSTEM LINK"
+                    }
+
+                    MonoLabel {
+                        Layout.fillWidth: true
+                        labelColor: root.sourceState.status === "ready" ? theme.ok : theme.warn
+                        labelSize: 12
+                        content: "state=" + root.sourceState.status + " / data.json"
+                    }
+
+                    MonoLabel {
+                        Layout.fillWidth: true
+                        labelColor: theme.textDim
+                        labelSize: 11
+                        content: Constants.DATA_JSON_PATH
+                    }
+                }
             }
 
-            Text {
-                text: root.adaptedState.severity.title + " / " + root.adaptedState.severity.className
-                color: root.adaptedState.severity.className === "critical"
-                    ? "#ff6666"
-                    : root.adaptedState.severity.className === "warn"
-                        ? "#f4cb68"
-                        : "#7be69f"
-                font.pixelSize: 12
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-            }
-
-            Rectangle {
+            HudPanel {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: 12
-                color: "#0b120d"
-                border.width: 1
-                border.color: "#1d5d33"
+                accentColor: theme.borderSoft
 
-                Text {
-                    anchors.centerIn: parent
-                    width: parent.width - 32
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    text: root.sourceState.status === "ready"
-                        ? "data.json loaded from\n" + Constants.DATA_JSON_PATH
-                            + "\n\nPrimary temp: " + (root.adaptedState.snapshot.primaryTemperature.currentC !== null
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: theme.panelPadding
+                    spacing: theme.spacingSm
+
+                    MonoLabel {
+                        labelColor: theme.textMuted
+                        labelSize: 11
+                        content: "LAYOUT SHELL"
+                    }
+
+                    MonoLabel {
+                        Layout.fillWidth: true
+                        labelColor: theme.text
+                        labelSize: 12
+                        content: root.sourceState.status === "ready"
+                            ? "Primary temp " + (root.adaptedState.snapshot.primaryTemperature.currentC !== null
                                 ? root.adaptedState.snapshot.primaryTemperature.currentC + " C"
                                 : "n/a")
-                        : root.sourceState.status === "degraded"
-                            ? "Using last valid snapshot.\n" + root.sourceState.error
-                            : "Waiting for data.json\n" + Constants.DATA_JSON_PATH
-                    color: root.sourceState.status === "ready" ? "#7be69f" : "#4f7f5f"
-                    font.pixelSize: 14
+                            : "Waiting for telemetry feed"
+                    }
+
+                    ThinBar {
+                        Layout.fillWidth: true
+                        value: root.adaptedState.snapshot.primaryTemperature.ratio
+                        barColor: root.adaptedState.snapshot.cpu.state === "throttling"
+                            ? theme.critical
+                            : root.adaptedState.snapshot.cpu.state === "warning"
+                                ? theme.warn
+                                : theme.ok
+                    }
+
+                    MonoLabel {
+                        Layout.fillWidth: true
+                        labelColor: theme.textDim
+                        labelSize: 11
+                        content: root.sourceState.status === "degraded"
+                            ? "Using last valid snapshot: " + root.sourceState.error
+                            : "Blocks will mount below this shell in the next commits."
+                    }
                 }
+            }
+
+            MonoLabel {
+                Layout.fillWidth: true
+                labelColor: theme.textDim
+                labelSize: 10
+                content: "HUD scaffold / refresh " + Constants.REFRESH_MS + "ms / popup ttl " + Constants.EVENT_POPUP_TTL_MS + "ms"
             }
         }
     }
