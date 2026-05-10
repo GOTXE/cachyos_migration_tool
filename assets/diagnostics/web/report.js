@@ -547,12 +547,16 @@ function batteryCard(battery = {}) {
 
     let stateColor = '#7d8590';
     let stateBg = 'rgba(255, 255, 255, 0.04)';
-    if (state && state.toLowerCase().includes('discharging')) {
-        stateColor = '#d29922';
-        stateBg = 'rgba(210, 153, 34, 0.18)';
-    } else if (state && state.toLowerCase().includes('charging')) {
+    const stateLower = state.toLowerCase();
+    if (stateLower.includes('fully') || stateLower.includes('full')) {
         stateColor = '#3fb950';
-        stateBg = 'rgba(58, 184, 98, 0.18)';
+        stateBg = 'rgba(63, 185, 80, 0.15)';
+    } else if (stateLower.includes('charging')) {
+        stateColor = '#e8833c';
+        stateBg = 'rgba(232, 131, 60, 0.15)';
+    } else if (stateLower.includes('discharging')) {
+        stateColor = '#d29922';
+        stateBg = 'rgba(210, 153, 34, 0.15)';
     }
 
     return `
