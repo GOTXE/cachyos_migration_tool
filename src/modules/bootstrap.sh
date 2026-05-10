@@ -584,13 +584,13 @@ configure_mbpfan() {
     FAN_MAX_PATH="$(find /sys/devices/platform/applesmc.*/fan1_max 2>/dev/null | head -1 || true)"
     [ -r "$FAN_MAX_PATH" ] && FAN_MAX="$(< "$FAN_MAX_PATH")"
 
-    log "${YELLOW}Configurando mbpfan (curva agresiva para MBP 2015)...${NC}"
+    log "${YELLOW}Configurando mbpfan (curva equilibrada para MBP 2015)...${NC}"
     log " min_fan1_speed = 2000 RPM"
     log " max_fan1_speed = ${FAN_MAX} RPM"
-    log " low_temp       = 50°C"
-    log " high_temp      = 65°C"
-    log " max_temp       = 80°C"
-    log " polling        = 3s"
+    log " low_temp       = 63°C"
+    log " high_temp      = 78°C"
+    log " max_temp       = 86°C"
+    log " polling        = 8s"
 
     if [ "$DRY_MODE" = true ]; then
         log "${YELLOW}[DRY-RUN] escribir /etc/mbpfan.conf y reiniciar mbpfan${NC}"
@@ -601,10 +601,10 @@ configure_mbpfan() {
 [general]
 min_fan1_speed = 2000
 max_fan1_speed = ${FAN_MAX}
-low_temp = 50
-high_temp = 65
-max_temp = 80
-polling_interval = 3
+low_temp  = 63
+high_temp = 78
+max_temp  = 86
+polling_interval = 8
 EOF
 
     run_cmd sudo systemctl restart mbpfan
