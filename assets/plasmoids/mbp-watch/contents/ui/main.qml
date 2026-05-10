@@ -9,6 +9,7 @@ import org.kde.plasma.plasmoid
 import "../code/constants.js" as Constants
 import "../code/dataSource.js" as DataSource
 import "../code/stateAdapter.js" as StateAdapter
+import "blocks"
 import "common"
 import "theme"
 
@@ -81,7 +82,7 @@ PlasmoidItem {
 
             HudPanel {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 110
+                Layout.preferredHeight: 92
                 raised: true
                 accentColor: theme.severityColor(root.adaptedState.severity.className)
 
@@ -100,7 +101,7 @@ PlasmoidItem {
                         MonoLabel {
                             Layout.fillWidth: true
                             labelColor: theme.text
-                            labelSize: 18
+                            labelSize: 17
                             content: "MBP WATCH"
                         }
 
@@ -113,7 +114,7 @@ PlasmoidItem {
                     MonoLabel {
                         Layout.fillWidth: true
                         labelColor: theme.severityColor(root.adaptedState.severity.className)
-                        labelSize: 12
+                        labelSize: 11
                         content: root.adaptedState.severity.title + " / " + root.adaptedState.severity.className
                     }
 
@@ -136,36 +137,14 @@ PlasmoidItem {
                 }
             }
 
-            HudPanel {
+            SeverityBlock {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 92
-                accentColor: theme.borderSoft
+                severity: root.adaptedState.severity
+            }
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: theme.panelPadding
-                    spacing: theme.spacingXs
-
-                    MonoLabel {
-                        labelColor: theme.textMuted
-                        labelSize: 11
-                        content: "SYSTEM LINK"
-                    }
-
-                    MonoLabel {
-                        Layout.fillWidth: true
-                        labelColor: root.sourceState.status === "ready" ? theme.ok : theme.warn
-                        labelSize: 12
-                        content: "state=" + root.sourceState.status + " / data.json"
-                    }
-
-                    MonoLabel {
-                        Layout.fillWidth: true
-                        labelColor: theme.textDim
-                        labelSize: 11
-                        content: Constants.DATA_JSON_PATH
-                    }
-                }
+            CountersBlock {
+                Layout.fillWidth: true
+                counters: root.adaptedState.counters
             }
 
             HudPanel {
@@ -181,7 +160,7 @@ PlasmoidItem {
                     MonoLabel {
                         labelColor: theme.textMuted
                         labelSize: 11
-                        content: "LAYOUT SHELL"
+                        content: "SNAPSHOT STAGING"
                     }
 
                     MonoLabel {
@@ -220,7 +199,7 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 labelColor: theme.textDim
                 labelSize: 10
-                content: "HUD scaffold / refresh " + Constants.REFRESH_MS + "ms / popup ttl " + Constants.EVENT_POPUP_TTL_MS + "ms"
+                content: "HUD shell / refresh " + Constants.REFRESH_MS + "ms / popup ttl " + Constants.EVENT_POPUP_TTL_MS + "ms"
             }
         }
     }
