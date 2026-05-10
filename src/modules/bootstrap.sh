@@ -487,10 +487,13 @@ install_apple_laptop_extras() {
     local APPLE_LAPTOP_PACKAGES=(
         thermald
         powertop
-        mbpfan
         lm_sensors
     )
+    local APPLE_LAPTOP_AUR_PACKAGES=(
+        mbpfan
+    )
     local MISSING_APPLE_PACKAGES=()
+    local MISSING_APPLE_AUR_PACKAGES=()
     local PACKAGE_NAME=""
     local PACKAGE_SUMMARY=""
 
@@ -506,21 +509,36 @@ install_apple_laptop_extras() {
         done
     }
 
+    collect_missing_aur_packages() {
+        local PACKAGE
+
+        for PACKAGE in "$@"; do
+            if pacman -Q "$PACKAGE" >/dev/null 2>&1; then
+                log "${GREEN}Ya presente (AUR):${NC} $PACKAGE"
+            else
+                MISSING_APPLE_AUR_PACKAGES+=("$PACKAGE")
+            fi
+        done
+    }
+
     if [ "$APPLE_LAPTOP_MODE" = "ask" ]; then
         if is_apple_laptop; then
             log "${YELLOW}Equipo Apple Intel detectado.${NC} Revisando extras especificos para MBP 2015 frente a lo que ya trae CachyOS..."
             collect_missing_packages "${APPLE_LAPTOP_PACKAGES[@]}"
+            collect_missing_aur_packages "${APPLE_LAPTOP_AUR_PACKAGES[@]}"
 
-            if [ "${#MISSING_APPLE_PACKAGES[@]}" -eq 0 ]; then
+            local ALL_MISSING=("${MISSING_APPLE_PACKAGES[@]}" "${MISSING_APPLE_AUR_PACKAGES[@]}")
+
+            if [ "${#ALL_MISSING[@]}" -eq 0 ]; then
                 log "${GREEN}No hay extras Apple pendientes.${NC} CachyOS ya tiene los paquetes previstos para este bloque."
                 APPLE_LAPTOP_MODE="no"
             else
                 log "Se van a instalar estos extras Apple que no estan presentes ahora mismo:"
-                for PACKAGE_NAME in "${MISSING_APPLE_PACKAGES[@]}"; do
+                for PACKAGE_NAME in "${ALL_MISSING[@]}"; do
                     log " - $PACKAGE_NAME"
                 done
 
-                PACKAGE_SUMMARY="${MISSING_APPLE_PACKAGES[*]}"
+                PACKAGE_SUMMARY="${ALL_MISSING[*]}"
 
                 if confirm_action "Equipo Apple detectado. Se instalaran estos extras no presentes (${PACKAGE_SUMMARY}). ¿Continuar con la instalacion para Apple laptop Intel (MBP 2015)?"; then
                     APPLE_LAPTOP_MODE="yes"
@@ -538,12 +556,18 @@ install_apple_laptop_extras() {
         if [ "${#MISSING_APPLE_PACKAGES[@]}" -eq 0 ]; then
             collect_missing_packages "${APPLE_LAPTOP_PACKAGES[@]}"
         fi
+        if [ "${#MISSING_APPLE_AUR_PACKAGES[@]}" -eq 0 ]; then
+            collect_missing_aur_packages "${APPLE_LAPTOP_AUR_PACKAGES[@]}"
+        fi
 
-        if [ "${#MISSING_APPLE_PACKAGES[@]}" -eq 0 ]; then
-            log "${GREEN}No hay paquetes Apple extra pendientes de instalar.${NC}"
-        else
+        if [ "${#MISSING_APPLE_PACKAGES[@]}" -gt 0 ]; then
             run_cmd sudo pacman -S --needed --noconfirm "${MISSING_APPLE_PACKAGES[@]}"
         fi
+        if [ "${#MISSING_APPLE_AUR_PACKAGES[@]}" -gt 0 ]; then
+            log_package_batch_state "AUR (Apple)" "aur" "${MISSING_APPLE_AUR_PACKAGES[@]}"
+            run_cmd yay -S --needed --noconfirm "${MISSING_APPLE_AUR_PACKAGES[@]}"
+        fi
+
         run_cmd sudo systemctl enable thermald
         run_cmd sudo systemctl start thermald
         run_cmd sudo systemctl enable mbpfan
