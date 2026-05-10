@@ -857,6 +857,12 @@ watch_children_alive() {
     is_running_pid "$SERVE_PID_FILE"
 }
 
+any_watch_child_running() {
+    is_running_pid "$JOURNAL_PID_FILE" || \
+    is_running_pid "$SNAPSHOT_PID_FILE" || \
+    is_running_pid "$SERVE_PID_FILE"
+}
+
 launch_watch_children() {
     local DETACHED_MODE="${1:-false}"
 
@@ -883,9 +889,9 @@ launch_watch_children() {
 }
 
 capture_initial_report() {
-    capture_hardware_inventory
-    capture_driver_health
-    capture_snapshot
+    capture_hardware_inventory || true
+    capture_driver_health || true
+    capture_snapshot || true
     generate_data_json >/dev/null 2>&1 || true
     log_status "watch started"
 }
@@ -896,7 +902,7 @@ snapshot_loop() {
     local _INV_LAST_CHECK=0
 
     while true; do
-        capture_snapshot
+        capture_snapshot || true
         prune_log_file "$SNAPSHOTS_LOG" "$MAX_SNAPSHOT_LINES"
         prune_log_file "$EVENTS_LOG"   "$MAX_EVENT_LINES"
         prune_log_file "$STATUS_LOG"   "$MAX_STATUS_LINES"
@@ -904,12 +910,12 @@ snapshot_loop() {
         local _NOW
         _NOW="$(date +%s)"
         if [ $((_NOW - _DH_LAST_CHECK)) -ge 60 ]; then
-            capture_driver_health
+            capture_driver_health || true
             _DH_LAST_CHECK="$_NOW"
         fi
 
         if [ $((_NOW - _INV_LAST_CHECK)) -ge 300 ]; then
-            capture_hardware_inventory
+            capture_hardware_inventory || true
             _INV_LAST_CHECK="$_NOW"
         fi
 
@@ -919,13 +925,21 @@ snapshot_loop() {
 }
 
 start_watch() {
-    if is_running_pid "$JOURNAL_PID_FILE" || is_running_pid "$SNAPSHOT_PID_FILE"; then
+    local START_COMPLETED=false
+
+    if any_watch_child_running; then
         echo "mbp-watch already running in $BASE_DIR"
         exit 1
     fi
 
+    trap 'stop_watch >/dev/null 2>&1 || true' INT TERM HUP
+    trap '[ "$START_COMPLETED" = true ] || stop_watch >/dev/null 2>&1 || true' EXIT
+
     launch_watch_children true
     capture_initial_report
+    START_COMPLETED=true
+
+    trap - INT TERM HUP EXIT
 
     echo "mbp-watch started"
     echo "state dir : $BASE_DIR"
@@ -936,15 +950,16 @@ start_watch() {
 run_watch() {
     local STOP_REQUESTED=false
 
-    if is_running_pid "$JOURNAL_PID_FILE" || is_running_pid "$SNAPSHOT_PID_FILE"; then
+    if any_watch_child_running; then
         echo "mbp-watch already running in $BASE_DIR"
         exit 1
     fi
 
+    trap 'STOP_REQUESTED=true; stop_watch >/dev/null 2>&1 || true' INT TERM HUP
+    trap 'stop_watch >/dev/null 2>&1 || true' EXIT
+
     launch_watch_children false
     capture_initial_report
-
-    trap 'STOP_REQUESTED=true; stop_watch >/dev/null 2>&1 || true' INT TERM HUP
 
     while true; do
         if watch_children_alive; then
@@ -1341,9 +1356,12 @@ keyword_count_for_date() {
     local DATE="$1"
     local REGEX="$2"
 
-    [ -f "$EVENTS_LOG" ] || printf '0'; return 0
+    [ -f "$EVENTS_LOG" ] || { printf '0'; return 0; }
 
-    grep -Eic "$REGEX" <(grep "^$DATE" "$EVENTS_LOG" 2>/dev/null) 2>/dev/null || printf '0'
+    awk -v date_prefix="$DATE" -v regex="$REGEX" '
+        index($0, date_prefix) == 1 && $0 ~ regex { count++ }
+        END { print count + 0 }
+    ' "$EVENTS_LOG" 2>/dev/null || printf '0'
 }
 
 # Writes or updates today's line in daily_errors.log.

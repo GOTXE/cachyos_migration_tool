@@ -107,6 +107,7 @@ cp "$SOURCE_SCRIPT" "$TARGET_BIN"
 chmod +x "$TARGET_BIN"
 
 echo "Copiando archivos web estaticos..."
+CACHE_VER="$(date +%s)"
 for F in report.html report.css report.js; do
     if [ -f "$WEB_DIR/$F" ]; then
         cp "$WEB_DIR/$F" "$STATE_DIR/$F"
@@ -114,6 +115,7 @@ for F in report.html report.css report.js; do
         echo "AVISO: no encontrado $WEB_DIR/$F"
     fi
 done
+sed -i "s/__CACHE_VER__/${CACHE_VER}/g" "$STATE_DIR/report.html"
 
 echo "Arrancando $SERVICE..."
 systemctl start "$SERVICE"

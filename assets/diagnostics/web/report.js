@@ -47,6 +47,22 @@ function formatDate(isoString) {
     }
 }
 
+function formatDateTime(isoString) {
+    if (!isoString) return '—';
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+    } catch (e) {
+        return isoString;
+    }
+}
+
 function parseNumber(value) {
     if (value === null || value === undefined || value === '') {
         return null;
@@ -214,7 +230,7 @@ function tone(ctx, freq, startAt, dur) {
 }
 
 function playAlert(critical) {
-    if (!audioCtx) {
+    if (!audioCtx || audioCtx.state !== 'running') {
         return;
     }
     if (critical) {
@@ -234,6 +250,18 @@ function updateAudioButton() {
     const enabled = localStorage.getItem(KEY_AUDIO) === '1';
     button.textContent = enabled ? 'Audio on' : 'Audio off';
     button.dataset.active = enabled ? 'true' : 'false';
+}
+
+async function ensureAudioContextFromGesture() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+    }
+
+    return audioCtx;
 }
 
 function saveDetailsState() {
@@ -317,9 +345,6 @@ function driverHealth(driverHealth = {}) {
 
     return `
         <article class="panel">
-            <div class="panel-header">
-                <div class="panel-title">Driver Health</div>
-            </div>
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px">
                 ${drivers.map((entry) => {
                     const status = entry.status || 'OK';
@@ -398,14 +423,14 @@ function cpuPerfPanel(cpu = {}, throttleCount = 0) {
                 </div>
             </div>
 
-            <div style="display:flex; gap:12px; flex-wrap:wrap">
+            <div class="stat-card-grid">
                 ${coreFreqs.length > 0 ? coreFreqs.map((freq, idx) => {
                     const usage = coreUsages[idx] || 0;
                     const usageColor = usage >= 80 ? '#f85149' : usage >= 50 ? '#d29922' : '#3fb950';
                     const freqColor = freq >= 3100 ? '#f85149' : freq >= 3000 ? '#d29922' : '#7d8590';
 
                     return `
-                        <div style="background:#1c2128; border:1px solid #30363d; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px; min-height:85px; justify-content:space-between; flex:1; min-width:150px">
+                        <div class="stat-card stat-card-temp">
                             <div>
                                 <div style="font-size:11px; color:#bfe7ea; font-weight:700">Core ${idx}</div>
                                 <div style="font-size:22px; font-weight:700; color:${usageColor}">${usage}%</div>
@@ -441,7 +466,7 @@ function temperaturePanel(temperatures = [], fan = '') {
     if (fan) {
         const fanPct = Math.min(100, Math.round((fanRpm / 6000) * 100));
         items.push(`
-            <div style="background:#0d1f14; border:1px solid #1a3327; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px; min-height:85px; justify-content:space-between; flex:1; min-width:150px">
+            <div class="stat-card stat-card-fan">
                 <div>
                     <div style="font-size:11px; color:#7dd3d9; font-weight:700">Fan Speed</div>
                     <div style="font-size:18px; font-weight:700; color:#e6edf3">${fanRpm} RPM</div>
@@ -462,7 +487,7 @@ function temperaturePanel(temperatures = [], fan = '') {
         const color = current >= safeCrit ? '#f85149' : current >= safeHigh ? '#d29922' : '#3fb950';
         const tempPct = Math.min(100, Math.round((current / 120) * 100));
         items.push(`
-            <div style="background:#1c2128; border:1px solid #30363d; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px; min-height:85px; justify-content:space-between; flex:1; min-width:150px">
+            <div class="stat-card stat-card-temp">
                 <div>
                     <div style="font-size:11px; color:#bfe7ea; font-weight:700">${esc(sensor.label)}</div>
                     <div style="font-size:18px; font-weight:700; color:${color}">${current}°C</div>
@@ -485,18 +510,39 @@ function temperaturePanel(temperatures = [], fan = '') {
                     <span style="color:#7d8590">warning: 78°C  |  critical: 86°C</span>
                 </div>
             </div>
-            <div style="display:flex; gap:12px; flex-wrap:wrap">
+            <div class="stat-card-grid">
                 ${items.join('')}
             </div>
         </article>
     `;
 }
 
+function processList(raw) {
+    if (!raw || raw === '—') return '<div style="color:#7d8590;font-size:11px">—</div>';
+    return raw.split(';')
+        .map(s => s.trim()).filter(Boolean).slice(0, 5)
+        .map(p => {
+            const parts = p.match(/^(\S+)\s+([\d.]+%)\s+([\d.]+%)\s+(.*)$/);
+            if (parts) {
+                const [, user, cpu, mem, cmd] = parts;
+                const shortCmd = cmd.length > 40 ? cmd.slice(0, 40) + '…' : cmd;
+                return `<div style="display:grid; grid-template-columns:auto auto auto 1fr; gap:6px; align-items:center; padding:4px 0; border-bottom:1px solid #21262d; font-size:11px">
+                    <span style="color:#7d8590">${esc(user)}</span>
+                    <span style="color:#d29922; font-weight:700">${esc(cpu)}</span>
+                    <span style="color:#7d8590">${esc(mem)}</span>
+                    <span style="color:#b1bac4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="${esc(cmd)}">${esc(shortCmd)}</span>
+                </div>`;
+            }
+            const short = p.length > 60 ? p.slice(0, 60) + '…' : p;
+            return `<div style="font-size:11px; color:#b1bac4; padding:3px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="${esc(p)}">${esc(short)}</div>`;
+        }).join('');
+}
+
 function performanceCard(loadData = {}) {
     const loadAvg = loadData.load_average || '—';
     const ctxSwitches = parseNumber(loadData.context_switches) || 0;
-    const topCpu = loadData.top_cpu_processes || '—';
-    const topMem = loadData.top_memory_processes || '—';
+    const topCpu = loadData.top_cpu_processes || '';
+    const topMem = loadData.top_memory_processes || '';
 
     const parseLoad = (load) => {
         if (!load || load === '—') return null;
@@ -515,22 +561,26 @@ function performanceCard(loadData = {}) {
                 <span style="color:#7d8590; font-size:11px">CPU contention analysis</span>
             </div>
             <div style="display:flex; flex-direction:column; gap:12px">
-                <div style="background:#1c2128; border-radius:6px; padding:10px; border-left:3px solid ${loadColor}">
-                    <div style="font-size:11px; color:#7d8590; font-weight:700; margin-bottom:4px">System Load (1m avg)</div>
-                    <div style="font-size:16px; font-weight:700; color:${loadColor}">${esc(loadAvg)}</div>
-                </div>
-                <div style="display:flex; gap:8px; font-size:11px">
-                    <div style="flex:1; background:#1c2128; border-radius:4px; padding:8px">
-                        <div style="color:#7d8590; margin-bottom:3px">Context Switches</div>
-                        <div style="font-weight:700; color:#e6edf3">${ctxSwitches.toLocaleString()}</div>
+                <div style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; background:#1c2128; border-radius:6px; padding:10px; border-left:3px solid ${loadColor}">
+                    <div>
+                        <div style="font-size:11px; color:#7d8590; font-weight:700; margin-bottom:4px">System Load (1m avg)</div>
+                        <div style="font-size:16px; font-weight:700; color:${loadColor}">${esc(loadAvg)}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-size:11px; color:#7d8590; margin-bottom:4px">Context Switches</div>
+                        <div style="font-size:13px; font-weight:700; color:#e6edf3">${ctxSwitches.toLocaleString()}</div>
                     </div>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:6px">
-                    <div style="font-size:11px; color:#7d8590; font-weight:700">Top CPU Processes</div>
-                    <div style="font-size:11px; color:#b1bac4; font-family:monospace; background:#0d1117; padding:6px; border-radius:4px; overflow-x:auto">${esc(topCpu || 'N/A')}</div>
-                    <div style="font-size:11px; color:#7d8590; font-weight:700">Top Memory Processes</div>
-                    <div style="font-size:11px; color:#b1bac4; font-family:monospace; background:#0d1117; padding:6px; border-radius:4px; overflow-x:auto">${esc(topMem || 'N/A')}</div>
-                </div>
+                ${topCpu ? `
+                <div>
+                    <div style="font-size:11px; color:#7d8590; font-weight:700; margin-bottom:6px">Top CPU Processes</div>
+                    <div style="background:#0d1117; border-radius:6px; padding:8px">${processList(topCpu)}</div>
+                </div>` : ''}
+                ${topMem ? `
+                <div>
+                    <div style="font-size:11px; color:#7d8590; font-weight:700; margin-bottom:6px">Top Memory Processes</div>
+                    <div style="background:#0d1117; border-radius:6px; padding:8px">${processList(topMem)}</div>
+                </div>` : ''}
             </div>
         </article>
     `;
@@ -569,9 +619,9 @@ function batteryCard(battery = {}) {
                 <div style="height:8px; background:#21262d; border-radius:4px; overflow:hidden">
                     <div style="width:${cap}%; height:100%; background:${barColor}"></div>
                 </div>
-                <div style="display:flex; gap:16px; align-items:center; justify-content:space-between">
+                <div style="display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap">
                     <div style="font-size:28px; font-weight:700; color:#e6edf3">${pct === null ? '—' : `${pct}%`}</div>
-                    <div style="display:flex; gap:8px; align-items:center">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
                         <span style="padding:4px 8px; background:#1c2128; border-radius:999px; font-size:11px; color:#7d8590">${esc(battery.time_to_empty || '—')}</span>
                         <span style="padding:4px 8px; background:#1c2128; border-radius:999px; font-size:11px; color:#7d8590">capacity: ${battery.capacity_pct ?? '—'}%</span>
                         <span style="padding:4px 8px; background:#1c2128; border-radius:999px; font-size:11px; color:#7d8590">energy: ${battery.energy_wh ?? '—'} Wh</span>
@@ -640,6 +690,53 @@ function eventCategory(message) {
     return 'other';
 }
 
+function formatEventCopyText(event = {}) {
+    const category = event.category || eventCategory(event.message);
+    const timestamp = event.ts || '';
+    const message = event.message || '';
+    return `[${category}] ${timestamp} ${message}`.trim();
+}
+
+async function copyText(text) {
+    const value = String(text || '').trim();
+    if (!value) return false;
+
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        return true;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok;
+    } catch (err) {
+        document.body.removeChild(textarea);
+        throw err;
+    }
+}
+
+function flashCopyButton(button, label) {
+    if (!button) return;
+
+    const original = button.getAttribute('data-copy-label') || button.textContent || 'Copy';
+    button.textContent = label;
+    button.disabled = true;
+
+    window.setTimeout(() => {
+        button.textContent = original;
+        button.disabled = false;
+    }, 1200);
+}
+
 function eventsPanel(events = []) {
     const list = Array.isArray(events) ? events : [];
     const filter = getFilter();
@@ -654,10 +751,12 @@ function eventsPanel(events = []) {
 
     return `
         <article class="panel">
-            <div class="panel-header">
-                <div class="panel-title">Recent Events</div>
+            <div class="panel-header" style="justify-content:flex-end">
+                <button class="events-copy-button" data-copy-all="true" data-copy-label="Copy filtered" ${filtered.length ? '' : 'disabled'}>
+                    Copy filtered
+                </button>
             </div>
-            <div style="display:flex; gap:4px; margin-bottom:12px; background:#1c2128; padding:3px 4px; border-radius:8px; border:1px solid #30363d">
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; background:#1c2128; padding:3px 4px; border-radius:8px; border:1px solid #30363d">
                 ${cats.map((cat) => {
                     const hasEvents = catCounts[cat] > 0;
                     const isActive = cat === filter;
@@ -668,12 +767,23 @@ function eventsPanel(events = []) {
             </div>
             <div style="display:flex; flex-direction:column; gap:6px">
                 ${filtered.length ? filtered.map((event) => `
-                    <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px 14px; display:flex; gap:12px">
-                        <div style="display:flex; gap:8px; align-items:center">
-                            <span style="font-size:11px; color:#7d8590">${formatDate(event.ts)}</span>
+                    <div class="event-row">
+                        <div class="event-time">
+                            <span style="font-size:11px; color:#b1bac4; font-weight:600">${formatDateTime(event.ts)}</span>
+                            <span style="font-size:10px; color:#7d8590">${formatDate(event.ts)}</span>
+                        </div>
+                        <div class="event-meta">
                             <span style="background:#2d2415; color:#d29922; font-size:10px; font-weight:700; padding:3px 8px; border-radius:999px">${esc(event.category || eventCategory(event.message))}</span>
                         </div>
-                        <div style="font-size:12px; color:#e6edf3">${esc(event.message || '')}</div>
+                        <div class="event-message">${esc(event.message || '')}</div>
+                        <button
+                            class="events-copy-button"
+                            data-copy-one="true"
+                            data-copy-label="Copy"
+                            data-copy-text="${esc(formatEventCopyText(event))}"
+                        >
+                            Copy
+                        </button>
                     </div>
                 `).join('') : `<div style="color:#7d8590; font-size:12px">No events match the current filter.</div>`}
             </div>
@@ -692,10 +802,6 @@ function dailyChart(history = []) {
 
     return `
         <article class="panel">
-            <div class="panel-header">
-                <div class="panel-title">Daily History</div>
-                <span class="subtle">Latest 12 days</span>
-            </div>
             <div class="daily-chart">
                 ${rows.map((item) => {
                     const total = parseNumber(item.total) || 0;
@@ -734,12 +840,6 @@ function inventoryPanel(inventory = {}) {
 
     return `
         <article class="panel">
-            <div class="panel-header">
-                <div style="display:flex; gap:12px; align-items:center">
-                    <div class="panel-title">Hardware Inventory</div>
-                </div>
-                <span class="subtle">captured at boot</span>
-            </div>
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px">
                 ${entries.map(([key, label, descKey]) => {
                     const value = inventory[key];
@@ -809,7 +909,7 @@ function render(data) {
                     ${temperaturePanel(snapshot.temperatures || [], snapshot.fan_rpm || '')}
                     ${cpuPerfPanel(snapshot.cpu_perf || {}, counters.throttle || 0)}
                     ${performanceCard(snapshot.load_and_system || {})}
-                    <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+                    <div class="card-grid">
                         ${batteryCard(snapshot.battery || {})}
                         ${wifiLinkCard(snapshot.wifi_link || {})}
                     </div>
@@ -819,7 +919,6 @@ function render(data) {
             <section class="section" id="events" data-persist>
                 <div class="section-header">
                     <h2 class="section-title">Recent Events</h2>
-                    <span class="subtle">Journal filter: ${esc(getFilter())}</span>
                 </div>
                 ${eventsPanel(data.recent_events || [])}
             </section>
@@ -855,13 +954,13 @@ function render(data) {
 
     const audioBtn = document.getElementById('audio-btn');
     if (audioBtn) {
-        audioBtn.addEventListener('click', () => {
+        audioBtn.addEventListener('click', async () => {
             const enabled = localStorage.getItem(KEY_AUDIO) === '1';
             const next = enabled ? '0' : '1';
             localStorage.setItem(KEY_AUDIO, next);
             if (next === '1') {
                 try {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    await ensureAudioContextFromGesture();
                     playAlert(false);
                 } catch (err) {
                     localStorage.setItem(KEY_AUDIO, '0');
@@ -891,6 +990,36 @@ function render(data) {
     document.querySelectorAll('[data-filter]').forEach((button) => {
         button.addEventListener('click', () => setFilter(button.getAttribute('data-filter') || 'all'));
     });
+
+    document.querySelectorAll('[data-copy-one]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await copyText(button.getAttribute('data-copy-text') || '');
+                flashCopyButton(button, 'Copied');
+            } catch (err) {
+                flashCopyButton(button, 'Failed');
+            }
+        });
+    });
+
+    const copyAllBtn = document.querySelector('[data-copy-all]');
+    if (copyAllBtn) {
+        copyAllBtn.addEventListener('click', async () => {
+            const snapshotEvents = Array.isArray(lastData?.recent_events) ? lastData.recent_events : [];
+            const activeFilter = getFilter();
+            const filteredEvents = activeFilter === 'all'
+                ? snapshotEvents
+                : snapshotEvents.filter((event) => (event.category || eventCategory(event.message)) === activeFilter);
+            const payload = filteredEvents.map((event) => formatEventCopyText(event)).join('\n');
+
+            try {
+                await copyText(payload);
+                flashCopyButton(copyAllBtn, 'Copied');
+            } catch (err) {
+                flashCopyButton(copyAllBtn, 'Failed');
+            }
+        });
+    }
 }
 
 function flashBanner() {
@@ -1134,9 +1263,6 @@ async function refresh() {
         const critical = data?.severity?.class === 'critical';
 
         if (lastTotal !== null && total > lastTotal && localStorage.getItem(KEY_AUDIO) === '1') {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
             playAlert(critical);
             flashBanner();
         }
