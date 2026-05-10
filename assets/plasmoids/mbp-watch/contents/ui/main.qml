@@ -8,9 +8,12 @@ import org.kde.plasma.plasmoid
 
 import "../code/constants.js" as Constants
 import "../code/dataSource.js" as DataSource
+import "../code/eventStore.js" as EventStore
+import "../code/eventsModel.js" as EventsModel
 import "../code/stateAdapter.js" as StateAdapter
 import "blocks"
 import "common"
+import "popups"
 import "theme"
 
 PlasmoidItem {
@@ -24,6 +27,12 @@ PlasmoidItem {
         loadedAt: "",
     })
     property var adaptedState: StateAdapter.adapt(null)
+    property var eventsState: ({
+        events: [],
+        indicators: [],
+        newEvents: [],
+    })
+    property var selectedEvent: null
 
     implicitWidth: 360
     implicitHeight: 720
@@ -41,6 +50,36 @@ PlasmoidItem {
             dataPath: Constants.DATA_JSON_PATH,
         }, sourceState);
         adaptedState = StateAdapter.adapt(sourceState.data);
+        syncEvents();
+    }
+
+    function syncEvents() {
+        var storeState = {
+            seenEventIds: Plasmoid.configuration.seenEventIds || [],
+            readEventIds: Plasmoid.configuration.readEventIds || [],
+        };
+
+        eventsState = EventsModel.buildModel(adaptedState.recentEvents, storeState);
+
+        if (eventsState.newEvents.length > 0) {
+            Plasmoid.configuration.seenEventIds = EventStore.mergeSeenEventIds(
+                storeState.seenEventIds,
+                eventsState.newEvents
+            );
+        }
+    }
+
+    function markEventRead(eventData) {
+        if (!eventData || !eventData.eventId) {
+            return;
+        }
+
+        Plasmoid.configuration.readEventIds = EventStore.markEventRead(
+            Plasmoid.configuration.readEventIds || [],
+            eventData.eventId
+        );
+        selectedEvent = null;
+        syncEvents();
     }
 
     Timer {
@@ -152,12 +191,25 @@ PlasmoidItem {
                 snapshot: root.adaptedState.snapshot
             }
 
+            EventIndicatorsBlock {
+                Layout.fillWidth: true
+                indicators: root.eventsState.indicators
+                onEventActivated: root.selectedEvent = eventData
+            }
+
             MonoLabel {
                 Layout.fillWidth: true
                 labelColor: theme.textDim
                 labelSize: 10
                 content: "HUD shell / refresh " + Constants.REFRESH_MS + "ms / popup ttl " + Constants.EVENT_POPUP_TTL_MS + "ms"
             }
+        }
+
+        EventPopup {
+            eventData: root.selectedEvent
+            ttlMs: Constants.EVENT_POPUP_TTL_MS
+            onCloseRequested: root.selectedEvent = null
+            onMarkReadRequested: root.markEventRead(eventData)
         }
     }
 }
