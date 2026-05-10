@@ -1,0 +1,24 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "gtx@localhost",
+                "Name": "gtx"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "MBP Watch overlay for KDE Plasma",
+        "Description[es]": "Overlay de MBP Watch para KDE Plasma",
+        "EnabledByDefault": true,
+        "Icon": "utilities-system-monitor",
+        "Id": "io.github.gtx.mbpwatch",
+        "License": "MIT",
+        "Name": "MBP Watch",
+        "Name[es]": "MBP Watch",
+        "Version": "1.0.0"
+    },
+    "X-Plasma-API": "declarativeappletscript",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "ui/main.qml"
+}
