@@ -49,7 +49,7 @@ PlasmoidItem {
 
     function refreshData() {
         sourceState = DataSource.readState({
-            dataPath: Constants.DATA_JSON_PATH,
+            dataPath: Plasmoid.configuration.dataPath || Constants.DATA_JSON_PATH,
         }, sourceState);
         adaptedState = StateAdapter.adapt(sourceState.data);
         syncEvents();
@@ -99,7 +99,7 @@ PlasmoidItem {
 
     Timer {
         id: refreshTimer
-        interval: Constants.REFRESH_MS
+        interval: Plasmoid.configuration.refreshMs || Constants.REFRESH_MS
         repeat: true
         running: true
         triggeredOnStart: true
@@ -227,13 +227,17 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 labelColor: theme.textDim
                 labelSize: 10
-                content: "HUD shell / refresh " + Constants.REFRESH_MS + "ms / popup ttl " + Constants.EVENT_POPUP_TTL_MS + "ms"
+                content: "HUD shell / refresh "
+                    + (Plasmoid.configuration.refreshMs || Constants.REFRESH_MS)
+                    + "ms / popup ttl "
+                    + (Plasmoid.configuration.eventPopupTtlMs || Constants.EVENT_POPUP_TTL_MS)
+                    + "ms"
             }
         }
 
         EventPopup {
             eventData: root.selectedEvent
-            ttlMs: Constants.EVENT_POPUP_TTL_MS
+            ttlMs: Plasmoid.configuration.eventPopupTtlMs || Constants.EVENT_POPUP_TTL_MS
             onCloseRequested: root.selectedEvent = null
             onMarkReadRequested: root.markEventRead(eventData)
             onDashboardRequested: root.openDashboard()
