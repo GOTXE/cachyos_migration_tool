@@ -57,7 +57,7 @@ NOISY_EVENT_REGEX='brave\[[0-9]+\]: .*ERROR:gpu/command_buffer/|brave\[[0-9]+\]:
 MAX_EVENT_LINES=10000
 MAX_SNAPSHOT_LINES=500
 MAX_STATUS_LINES=2000
-COUNT_WINDOW_LINES=200
+COUNT_WINDOW_LINES=500
 
 if ! mkdir -p "$BASE_DIR" 2>/dev/null; then
     BASE_DIR="${PWD}/.mbp-watch"
@@ -1024,7 +1024,7 @@ keyword_count() {
     local INPUT=""
 
     if [ -f "$EVENTS_LOG" ]; then
-        INPUT="$(tail -n "$COUNT_WINDOW_LINES" "$EVENTS_LOG" 2>/dev/null || true)"
+        INPUT="$(grep -Ev "^=== JOURNAL WATCH" "$EVENTS_LOG" 2>/dev/null | tail -n "$COUNT_WINDOW_LINES" || true)"
         if [ -n "$INPUT" ]; then
             printf '%s' "$(
                 printf '%s\n' "$INPUT" |
@@ -1267,8 +1267,9 @@ compact_recent_events() {
 
     [ -f "$EVENTS_LOG" ] || return 0
 
-    tail -n "$COUNT_WINDOW_LINES" "$EVENTS_LOG" 2>/dev/null |
-        grep -Ev "$NOISY_EVENT_REGEX|^=== JOURNAL WATCH START" |
+    grep -Ev "^=== JOURNAL WATCH" "$EVENTS_LOG" 2>/dev/null |
+        tail -n "$COUNT_WINDOW_LINES" |
+        grep -Ev "$NOISY_EVENT_REGEX" |
         awk '!seen[$0]++' |
         tail -n "$MAX_LINES"
 }
