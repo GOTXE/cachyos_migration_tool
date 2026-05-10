@@ -8,6 +8,7 @@ import org.kde.plasma.plasmoid
 
 import "../code/constants.js" as Constants
 import "../code/dataSource.js" as DataSource
+import "../code/stateAdapter.js" as StateAdapter
 
 PlasmoidItem {
     id: root
@@ -19,6 +20,7 @@ PlasmoidItem {
         error: "",
         loadedAt: "",
     })
+    property var adaptedState: StateAdapter.adapt(null)
 
     implicitWidth: 360
     implicitHeight: 720
@@ -31,6 +33,7 @@ PlasmoidItem {
         sourceState = DataSource.readState({
             dataPath: Constants.DATA_JSON_PATH,
         }, sourceState);
+        adaptedState = StateAdapter.adapt(sourceState.data);
     }
 
     Timer {
@@ -82,9 +85,21 @@ PlasmoidItem {
 
             Text {
                 text: root.sourceState.data && root.sourceState.data.generated
-                    ? "Generated: " + root.sourceState.data.generated
+                    ? "Generated: " + root.adaptedState.generated
                     : "Generated: unavailable"
                 color: "#8ed8a8"
+                font.pixelSize: 12
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                text: root.adaptedState.severity.title + " / " + root.adaptedState.severity.className
+                color: root.adaptedState.severity.className === "critical"
+                    ? "#ff6666"
+                    : root.adaptedState.severity.className === "warn"
+                        ? "#f4cb68"
+                        : "#7be69f"
                 font.pixelSize: 12
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
@@ -105,6 +120,9 @@ PlasmoidItem {
                     wrapMode: Text.WordWrap
                     text: root.sourceState.status === "ready"
                         ? "data.json loaded from\n" + Constants.DATA_JSON_PATH
+                            + "\n\nPrimary temp: " + (root.adaptedState.snapshot.primaryTemperature.currentC !== null
+                                ? root.adaptedState.snapshot.primaryTemperature.currentC + " C"
+                                : "n/a")
                         : root.sourceState.status === "degraded"
                             ? "Using last valid snapshot.\n" + root.sourceState.error
                             : "Waiting for data.json\n" + Constants.DATA_JSON_PATH
