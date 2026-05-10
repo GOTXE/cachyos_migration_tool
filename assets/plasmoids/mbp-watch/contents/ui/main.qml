@@ -197,6 +197,16 @@ PlasmoidItem {
                 onEventActivated: root.selectedEvent = eventData
             }
 
+            DriverHealthBlock {
+                Layout.fillWidth: true
+                driverHealth: root.adaptedState.driverHealth
+            }
+
+            DailyHistoryBlock {
+                Layout.fillWidth: true
+                dailyHistory: root.adaptedState.dailyHistory
+            }
+
             MonoLabel {
                 Layout.fillWidth: true
                 labelColor: theme.textDim
