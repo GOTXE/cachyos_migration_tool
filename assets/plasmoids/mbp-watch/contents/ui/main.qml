@@ -147,52 +147,9 @@ PlasmoidItem {
                 counters: root.adaptedState.counters
             }
 
-            HudPanel {
+            SnapshotBlock {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                accentColor: theme.borderSoft
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: theme.panelPadding
-                    spacing: theme.spacingSm
-
-                    MonoLabel {
-                        labelColor: theme.textMuted
-                        labelSize: 11
-                        content: "SNAPSHOT STAGING"
-                    }
-
-                    MonoLabel {
-                        Layout.fillWidth: true
-                        labelColor: theme.text
-                        labelSize: 12
-                        content: root.sourceState.status === "ready"
-                            ? "Primary temp " + (root.adaptedState.snapshot.primaryTemperature.currentC !== null
-                                ? root.adaptedState.snapshot.primaryTemperature.currentC + " C"
-                                : "n/a")
-                            : "Waiting for telemetry feed"
-                    }
-
-                    ThinBar {
-                        Layout.fillWidth: true
-                        value: root.adaptedState.snapshot.primaryTemperature.ratio
-                        barColor: root.adaptedState.snapshot.cpu.state === "throttling"
-                            ? theme.critical
-                            : root.adaptedState.snapshot.cpu.state === "warning"
-                                ? theme.warn
-                                : theme.ok
-                    }
-
-                    MonoLabel {
-                        Layout.fillWidth: true
-                        labelColor: theme.textDim
-                        labelSize: 11
-                        content: root.sourceState.status === "degraded"
-                            ? "Using last valid snapshot: " + root.sourceState.error
-                            : "Blocks will mount below this shell in the next commits."
-                    }
-                }
+                snapshot: root.adaptedState.snapshot
             }
 
             MonoLabel {
