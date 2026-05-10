@@ -10,6 +10,8 @@ import "../code/constants.js" as Constants
 import "../code/dataSource.js" as DataSource
 import "../code/eventStore.js" as EventStore
 import "../code/eventsModel.js" as EventsModel
+import "../code/notifications.js" as Notifications
+import "../code/openDashboard.js" as OpenDashboard
 import "../code/stateAdapter.js" as StateAdapter
 import "blocks"
 import "common"
@@ -62,10 +64,23 @@ PlasmoidItem {
         eventsState = EventsModel.buildModel(adaptedState.recentEvents, storeState);
 
         if (eventsState.newEvents.length > 0) {
+            notifyNewEvents(eventsState.newEvents);
             Plasmoid.configuration.seenEventIds = EventStore.mergeSeenEventIds(
                 storeState.seenEventIds,
                 eventsState.newEvents
             );
+        }
+    }
+
+    function openDashboard() {
+        OpenDashboard.openDashboard(Plasmoid.configuration.dashboardUrl || Constants.DASHBOARD_URL);
+    }
+
+    function notifyNewEvents(newEvents) {
+        for (var i = 0; i < newEvents.length; i += 1) {
+            Notifications.notifyNewEvent(root, newEvents[i], function() {
+                root.openDashboard();
+            });
         }
     }
 
@@ -179,6 +194,7 @@ PlasmoidItem {
             SeverityBlock {
                 Layout.fillWidth: true
                 severity: root.adaptedState.severity
+                onDashboardRequested: root.openDashboard()
             }
 
             CountersBlock {
@@ -220,6 +236,7 @@ PlasmoidItem {
             ttlMs: Constants.EVENT_POPUP_TTL_MS
             onCloseRequested: root.selectedEvent = null
             onMarkReadRequested: root.markEventRead(eventData)
+            onDashboardRequested: root.openDashboard()
         }
     }
 }
