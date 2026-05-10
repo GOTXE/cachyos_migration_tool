@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Force H264",
+  "version": "1.0.0",
+  "description": "Makes YouTube avoid VP8, VP9 and AV1 so H.264/AVC can be selected when available.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Force H264",
+    "default_icon": {
+      "128": "youtube-force-h264-logo.png"
+    }
+  },
+  "icons": {
+    "128": "youtube-force-h264-logo.png"
+  },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://youtube.com/*",
+        "*://m.youtube.com/*",
+        "*://www.youtube-nocookie.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["inject.js"],
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://youtube.com/*",
+        "*://m.youtube.com/*",
+        "*://www.youtube-nocookie.com/*"
+      ]
+    }
+  ]
+}

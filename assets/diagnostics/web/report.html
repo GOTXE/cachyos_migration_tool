@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>MBP Watch</title>
+  <link rel="stylesheet" href="report.css">
+</head>
+<body>
+  <main id="app">
+    <section class="shell shell-loading">
+      <div class="loading-card">
+        <div class="eyebrow">MBP Watch</div>
+        <h1>Loading dashboard</h1>
+        <p>Waiting for <code>data.json</code>.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="digest-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>AI Digest</h2>
+        <button class="modal-close" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre id="digest-text"></pre>
+      </div>
+      <div class="modal-footer">
+        <button id="digest-download" class="button" type="button">
+          <span>💾</span> Download
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wifi-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content wifi-modal-content">
+      <div class="modal-header">
+        <h2>📶 Wi-Fi Monitor</h2>
+        <button class="modal-close" data-modal-close="wifi-modal" aria-label="Close modal">&times;</button>
+      </div>
+      <div id="wifi-modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="report.js"></script>
+</body>
+</html>

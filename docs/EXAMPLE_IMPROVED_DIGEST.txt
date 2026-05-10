@@ -1,0 +1,95 @@
+MBP-WATCH AI DIGEST (IMPROVED)
+generated:      2026-05-09T20:15:43+02:00
+state_dir:      /var/lib/mbp-watch
+
+SEVERITY
+status:         warn
+title:          Warnings Found
+reason:         2 hw_events — wifi=1 net=1 gpu=0 bt=0 thermal=0 pm=0 audio=0 throttle=0 | perf_issues=swap_overuse=384MB high_load=2.7
+
+COUNTERS (last 200 journal events)
+wifi:           1
+connectivity:   1
+gpu_drm:        0
+bluetooth:      0
+thermal_acpi:   0
+suspend_pm:     0
+audio_hw:       0
+throttle:       0
+TOTAL:          2
+
+DRIVER HEALTH
+camera:        OK     facetimehd loaded (PCIe); /dev/video0
+wifi:          OK     brcmfmac loaded; interface: wlan0; firmware warning in dmesg; link is up
+bluetooth:     OK     btusb loaded; hci0 present
+gpu:           OK     i915 loaded; /dev/dri/card1
+audio:         OK     snd_hda_intel loaded; card 0: HDMI [HDA Intel HDMI], device 3: HDMI 0 [HDMI 0]
+applesmc:      OK     applesmc loaded; sysfs sensors ok
+thunderbolt:   OK     thunderbolt loaded; 2 device(s) on bus
+
+HARDWARE (inventory captured: 2026-05-09T18:11:19+02:00)
+cpu:            CPU(s): 4
+apple_model:    MacBookPro12,1
+kernel:         7.0.5-1-cachyos
+gpu:            00:02.0 VGA compatible controller: Intel Corporation Broadwell-U GT3 [Iris Graphics 6100] (rev 09)
+wifi_chip:      03:00.0 Network controller [0280]: Broadcom Inc. and subsidiaries BCM43602 802.11ac Wireless LAN SoC [14e4:43ba] (rev 01)
+wifi_firmware:  unknown
+bluetooth:      Bus 001 Device 002: ID 05ac:8290 Apple, Inc. Bluetooth Host Controller
+audio:          card 0: HDMI [HDA Intel HDMI], device 3: HDMI 0 [HDMI 0]
+camera:         /dev/video0
+
+SYSTEM (last snapshot)
+systemd:        running
+memory:         Mem:            15Gi       7,8Gi       4,2Gi       1,5Gi       5,5Gi       8,2Gi
+temperature:    fan speed: fan1: 3850 RPM;Package id 0:  +78.0°C  (high = +105.0°C, crit = +105.0°C);Core 0:        +78.0°C  (high = +105.0°C, crit = +105.0°C);Core 1:        +72.0°C
+battery:            state:               charging;    energy:              20,1234 Wh;    time to full:        0,5 hours;    percentage:          65,5555%
+network:        wlan0    wifi      conectado               TXOKLAN_5G
+rfkill:         0: hci0: Bluetooth;    Soft blocked: no;    Hard blocked: no;3: phy2: Wireless LAN
+failed_units:   none
+
+WIFI LINK (last snapshot)
+Connected to e0:41:36:b5:32:05 (on wlan0);SSID: TXOKLAN_5G;freq: 5240.0;signal: -48 dBm;rx bitrate: 585.0 MBit/s;tx bitrate: 585.0 MBit/s;connected time: 4521 seconds;power_save: on
+
+HISTORY (daily_errors.log — one line per day, never truncated)
+2026-05-08 wifi=0 net=0 gpu=0 bt=1 thermal=0 pm=0 audio=0 throttle=0 total=1
+2026-05-09 wifi=1 net=1 gpu=0 bt=0 thermal=0 pm=0 audio=0 throttle=0 total=2
+
+ERRORS_DEDUPED (max 20 unique lines, last 200 window)
+2026-05-09T17:14:52+02:00 MBP-CachyOS NetworkManager[692]: <info>  [1778339692.1437] device (wlan0): state change: activated -> failed (reason 'supplicant-disconnect', managed-type: 'full')
+2026-05-09T17:49:17+02:00 MBP-CachyOS kernel: brcmfmac 0000:03:00.0: Direct firmware load for brcm/brcmfmac43602-pcie.Apple Inc.-MacBookPro12,1.bin failed with error -2
+
+PERFORMANCE_ANALYSIS (for Python/web dev + music)
+METRICS SNAPSHOT:
+  load_average_1m: average: 2.7, 1.8, 1.2
+  context_switches: 28450
+  memory_used: 52% (swap: 384MB)
+  kernel_swappiness: 60
+  cpu_throttle: ok ratio=98%
+  temperature: Core 0:        +78.0°C  (high = +105.0°C, crit = +105.0°C)
+
+TOP PROCESSES:
+  by_cpu:
+    root     87 19 python3 app.py
+    gtx      62 12 firefox
+    root     45 8 node index.js
+  by_memory:
+    gtx      28 6800 firefox
+    root     15 3200 python3 app.py
+    root     12 2400 node index.js
+
+PERFORMANCE INSIGHTS:
+  ⚠️  MODERATE LOAD: 2.7 — monitor if compiling Python/web
+  ⚠️  MODERATE CTX SWITCHES: 28450 — monitor during music playback
+  ⚠️  SWAP IN USE: 384MB — acceptable but consider lowering swappiness
+  ✓ Load and throttle healthy, but memory at 52%
+
+RECOMMENDATIONS FOR YOUR WORKFLOW (Python/web + music):
+  1. Reduce vm.swappiness from 60 to 10-20 (swap avoidance)
+  2. Avoid parallel compilation while playing music (keep load < 2)
+  3. Monitor Firefox memory — close tabs before Python intensive tasks
+
+RAW_LOGS
+events.log:     /var/lib/mbp-watch/events.log
+snapshots.log:  /var/lib/mbp-watch/snapshots.log
+inventory.log:  /var/lib/mbp-watch/inventory.log
+daily_errors:   /var/lib/mbp-watch/daily_errors.log

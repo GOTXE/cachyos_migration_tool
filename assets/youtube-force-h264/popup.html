@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Force H264</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="card">
+    <div class="header">
+      <img class="icon" src="youtube-force-h264-logo.png" alt="">
+      <div>
+        <h1>YouTube Force H264</h1>
+        <p>Activa o desactiva el parche local para YouTube.</p>
+      </div>
+    </div>
+
+    <label class="switch-row" for="enabled">
+      <span class="label-text">Plugin activo</span>
+      <span class="switch">
+        <input id="enabled" type="checkbox">
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <p id="status" class="status">Cargando estado...</p>
+    <p class="hint">Recarga la pestaña de YouTube para aplicar el cambio.</p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

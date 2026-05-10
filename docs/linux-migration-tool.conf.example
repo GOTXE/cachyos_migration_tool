@@ -1,0 +1,39 @@
+# shellcheck shell=bash disable=SC2034
+# Optional user config for migration.sh
+# Suggested install path:
+#   ~/.config/linux-migration-tool.conf
+#
+# Shell syntax is used intentionally, so arrays are supported.
+
+# Extra home-relative config paths to include in backups.
+# Examples:
+# EXTRA_CONFIG_ITEMS+=("Scripts")
+# EXTRA_CONFIG_ITEMS+=(".config/kitty")
+# EXTRA_CONFIG_ITEMS+=(".local/share/applications")
+
+# Extra directories to scan for Git repositories.
+# Examples:
+# EXTRA_REPO_SEARCH_DIRS+=("$HOME/Apps_Testing")
+# EXTRA_REPO_SEARCH_DIRS+=("$HOME/dev")
+# EXTRA_REPO_SEARCH_DIRS+=("/mnt/data/repos")
+
+# Extra user data directories to archive in backup/data.
+# XDG Documents is included by default. Add others only if you want them copied
+# outside the repo backup flow.
+# Examples:
+# DATA_DIRS+=("$HOME/Notes")
+# DATA_DIRS+=("$HOME/Imágenes")
+# DATA_DIRS+=("$HOME/Música")
+
+EXTRA_CONFIG_ITEMS=(
+    "Scripts"
+)
+
+EXTRA_REPO_SEARCH_DIRS=(
+    "$HOME/Apps_Testing"
+)
+
+DATA_DIRS=()
+
+# MBP Watch diagnostics
+# MBP_WATCH_INTERVAL=5
