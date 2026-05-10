@@ -457,8 +457,8 @@ function temperaturePanel(temperatures = [], fan = '') {
         const current = parseNumber(sensor.current_c) || 0;
         const high = parseNumber(sensor.high_c);
         const crit = parseNumber(sensor.crit_c);
-        const safeHigh = (high && high <= 100) ? high : 80;
-        const safeCrit = (crit && crit <= 100) ? crit : 95;
+        const safeHigh = (high && high <= 100) ? high : 78;
+        const safeCrit = (crit && crit <= 100) ? crit : 86;
         const color = current >= safeCrit ? '#f85149' : current >= safeHigh ? '#d29922' : '#3fb950';
         const tempPct = Math.min(100, Math.round((current / 120) * 100));
         items.push(`
@@ -482,7 +482,7 @@ function temperaturePanel(temperatures = [], fan = '') {
                 </div>
                 <div style="display:flex; gap:4px; align-items:center; font-size:10px">
                     <span style="color:#7d8590">sensors + applesmc</span>
-                    <span style="color:#7d8590">warning: 80°C  |  critical: 95°C</span>
+                    <span style="color:#7d8590">warning: 78°C  |  critical: 86°C</span>
                 </div>
             </div>
             <div style="display:flex; gap:12px; flex-wrap:wrap">
