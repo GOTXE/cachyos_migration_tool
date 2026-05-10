@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+MBP_PLASMOID_ID="io.github.gtx.mbpwatch"
+MBP_PLASMOID_PACKAGE_TYPE="Plasma/Applet"
+MBP_PLASMOID_RELATIVE_DIR="assets/plasmoids/mbp-watch"
+MBP_PLASMOID_WEB_URL="http://127.0.0.1:7070/report.html"
+MBP_PLASMOID_POPUP_TTL_MS="30000"
+
 get_installed_package_version() {
     local PACKAGE_NAME="$1"
 
@@ -625,6 +631,264 @@ EOF
     log "$TARGET_UNINSTALL"
 }
 
+is_kde_plasma_session() {
+    local DESKTOP_HINTS=""
+    local TARGET_USER=""
+
+    DESKTOP_HINTS="$(printf '%s %s %s\n' \
+        "${XDG_CURRENT_DESKTOP:-}" \
+        "${DESKTOP_SESSION:-}" \
+        "${KDE_FULL_SESSION:-}")"
+
+    if printf '%s\n' "$DESKTOP_HINTS" | grep -Eiq 'kde|plasma'; then
+        return 0
+    fi
+
+    TARGET_USER="$(resolve_desktop_target_user 2>/dev/null || true)"
+    if [ -n "$TARGET_USER" ] && pgrep -u "$TARGET_USER" -x plasmashell >/dev/null 2>&1; then
+        return 0
+    fi
+
+    return 1
+}
+
+resolve_desktop_target_user() {
+    if [ -n "${SUDO_USER:-}" ] && [ "${SUDO_USER}" != "root" ]; then
+        printf '%s\n' "$SUDO_USER"
+        return 0
+    fi
+
+    if [ -n "${USER:-}" ] && [ "${USER}" != "root" ]; then
+        printf '%s\n' "$USER"
+        return 0
+    fi
+
+    return 1
+}
+
+resolve_desktop_target_uid() {
+    local TARGET_USER="$1"
+
+    id -u "$TARGET_USER" 2>/dev/null
+}
+
+has_plasma_session_bus() {
+    local TARGET_UID="$1"
+
+    [ -S "/run/user/$TARGET_UID/bus" ]
+}
+
+has_required_plasmoid_tools() {
+    command -v kpackagetool6 >/dev/null 2>&1 || return 1
+    command -v qdbus6 >/dev/null 2>&1 || return 1
+}
+
+get_mbp_plasmoid_source_dir() {
+    printf '%s/%s\n' "$PROJECT_ROOT" "$MBP_PLASMOID_RELATIVE_DIR"
+}
+
+is_mbp_plasmoid_installed() {
+    local TARGET_USER="$1"
+
+    sudo -u "$TARGET_USER" \
+        kpackagetool6 --type "$MBP_PLASMOID_PACKAGE_TYPE" --list 2>/dev/null \
+        | grep -Fq "$MBP_PLASMOID_ID"
+}
+
+install_or_upgrade_mbp_plasmoid() {
+    local TARGET_USER="$1"
+    local SOURCE_DIR="$2"
+    local ACTION="--install"
+
+    if is_mbp_plasmoid_installed "$TARGET_USER"; then
+        ACTION="--upgrade"
+        log_info "Plasmoid MBP Watch ya instalado para $TARGET_USER; aplicando upgrade."
+    else
+        log_info "Instalando plasmoid MBP Watch para $TARGET_USER."
+    fi
+
+    run_cmd sudo -u "$TARGET_USER" \
+        kpackagetool6 --type "$MBP_PLASMOID_PACKAGE_TYPE" "$ACTION" "$SOURCE_DIR"
+}
+
+build_mbp_plasmoid_autoload_script() {
+    cat <<'EOF'
+const pluginId = "io.github.gtx.mbpwatch";
+const widgetWidth = 360;
+const widgetMargin = 24;
+const widgetTop = 24;
+const widgetMinHeight = 480;
+const widgetMaxHeight = 920;
+
+function widgetAlreadyPresent(allDesktops, expectedPluginId) {
+    for (const desktop of allDesktops) {
+        if (!desktop) {
+            continue;
+        }
+
+        const typedWidgets = desktop.widgets(expectedPluginId);
+        if (typedWidgets && typedWidgets.length > 0) {
+            return true;
+        }
+
+        const ids = desktop.widgetIds || [];
+        for (const id of ids) {
+            const widget = desktop.widgetById(id);
+            if (widget && widget.type === expectedPluginId) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+if (!knownWidgetTypes.includes(pluginId)) {
+    "ERROR:plasmoid-not-installed";
+} else {
+    const allDesktops = desktops();
+
+    if (widgetAlreadyPresent(allDesktops, pluginId)) {
+        "OK:already-present";
+    } else {
+        let targetDesktop = null;
+
+        if (typeof desktopForScreen === "function") {
+            targetDesktop = desktopForScreen(0);
+        }
+
+        if (!targetDesktop && allDesktops.length > 0) {
+            targetDesktop = allDesktops[0];
+        }
+
+        if (!targetDesktop) {
+            "ERROR:no-desktop";
+        } else {
+            const targetScreen = targetDesktop.screen >= 0 ? targetDesktop.screen : 0;
+            const geom = screenGeometry(targetScreen);
+            const widgetHeight = Math.min(Math.max(geom.height - 48, widgetMinHeight), widgetMaxHeight);
+            const widgetX = geom.x + geom.width - widgetWidth - widgetMargin;
+            const widgetY = geom.y + widgetTop;
+
+            const widget = targetDesktop.addWidget(
+                pluginId,
+                widgetX,
+                widgetY,
+                widgetWidth,
+                widgetHeight
+            );
+
+            if (!widget) {
+                "ERROR:create-failed";
+            } else {
+                "OK:created";
+            }
+        }
+    }
+}
+EOF
+}
+
+auto_add_mbp_plasmoid_to_desktop() {
+    local TARGET_USER="$1"
+    local TARGET_UID="$2"
+    local SCRIPT=""
+
+    SCRIPT="$(build_mbp_plasmoid_autoload_script)"
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] auto-add KDE plasmoid via qdbus6 para $TARGET_USER${NC}"
+        printf 'OK:created\n'
+        return 0
+    fi
+
+    sudo -u "$TARGET_USER" env \
+        XDG_RUNTIME_DIR="/run/user/$TARGET_UID" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$TARGET_UID/bus" \
+        qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "$SCRIPT"
+}
+
+install_mbp_plasmoid_if_accepted() {
+    local TARGET_USER=""
+    local TARGET_UID=""
+    local SOURCE_DIR=""
+    local AUTO_ADD_RESULT=""
+
+    if ! is_kde_plasma_session; then
+        log_info "Entorno KDE Plasma no detectado. Se omite el plasmoid MBP Watch."
+        return 0
+    fi
+
+    log_info "KDE Plasma detectado. El plasmoid MBP Watch instala un overlay de escritorio, usa popup temporal de ${MBP_PLASMOID_POPUP_TTL_MS} ms, abre la web completa cuando haya avisos o clic del usuario y se añadira automaticamente al escritorio si la sesion Plasma esta activa."
+    if ! confirm_action "¿Instalar el plasmoid KDE de MBP Watch (overlay, avisos y acceso rapido a ${MBP_PLASMOID_WEB_URL})?"; then
+        log_info "Instalacion del plasmoid MBP Watch omitida por decision del usuario."
+        return 0
+    fi
+
+    if ! has_required_plasmoid_tools; then
+        log_warn "Faltan herramientas requeridas para el plasmoid (kpackagetool6 y/o qdbus6). Se omite este bloque."
+        return 0
+    fi
+
+    TARGET_USER="$(resolve_desktop_target_user 2>/dev/null || true)"
+    if [ -z "$TARGET_USER" ]; then
+        log_warn "No se pudo resolver un usuario de escritorio valido para instalar el plasmoid."
+        return 0
+    fi
+
+    TARGET_UID="$(resolve_desktop_target_uid "$TARGET_USER" 2>/dev/null || true)"
+    if [ -z "$TARGET_UID" ]; then
+        log_warn "No se pudo resolver el UID del usuario objetivo ($TARGET_USER)."
+        return 0
+    fi
+
+    SOURCE_DIR="$(get_mbp_plasmoid_source_dir)"
+    if [ ! -d "$SOURCE_DIR" ] || [ ! -f "$SOURCE_DIR/metadata.json" ]; then
+        log_warn "No se encontro el paquete del plasmoid en: $SOURCE_DIR"
+        return 0
+    fi
+
+    log_info "Usuario objetivo del plasmoid: $TARGET_USER (uid $TARGET_UID)"
+    if ! install_or_upgrade_mbp_plasmoid "$TARGET_USER" "$SOURCE_DIR"; then
+        log_warn "No se pudo instalar o actualizar el plasmoid MBP Watch. El bootstrap continuara."
+        return 0
+    fi
+
+    if ! has_plasma_session_bus "$TARGET_UID"; then
+        log_warn "Plasmoid instalado para $TARGET_USER, pero no se detecto bus de sesion Plasma en /run/user/$TARGET_UID/bus."
+        log_warn "Recuperacion manual: plasmawindowed $MBP_PLASMOID_ID o anadir el widget desde Plasma."
+        return 0
+    fi
+
+    AUTO_ADD_RESULT="$(auto_add_mbp_plasmoid_to_desktop "$TARGET_USER" "$TARGET_UID" 2>/dev/null || true)"
+    case "$AUTO_ADD_RESULT" in
+        *"OK:created"*)
+            log_success "Plasmoid MBP Watch instalado y añadido automaticamente al escritorio KDE."
+            ;;
+        *"OK:already-present"*)
+            log_success "Plasmoid MBP Watch instalado/actualizado; la instancia del escritorio ya existia."
+            ;;
+        *"ERROR:plasmoid-not-installed"*)
+            log_warn "El auto-add no encontro el plasmoid instalado en Plasma. Verifica con: kpackagetool6 --type $MBP_PLASMOID_PACKAGE_TYPE --list"
+            ;;
+        *"ERROR:no-desktop"*)
+            log_warn "Plasmoid instalado, pero Plasma no devolvio un desktop valido para auto-add."
+            ;;
+        *"ERROR:create-failed"*)
+            log_warn "Plasmoid instalado, pero la creacion automatica de la instancia en el escritorio fallo."
+            ;;
+        *)
+            log_warn "Plasmoid instalado, pero el auto-add no pudo completarse automaticamente."
+            ;;
+    esac
+
+    if [[ "$AUTO_ADD_RESULT" != *"OK:created"* && "$AUTO_ADD_RESULT" != *"OK:already-present"* ]]; then
+        log_warn "Recuperacion manual recomendada: plasmawindowed $MBP_PLASMOID_ID o añadir el widget manualmente desde Plasma."
+    fi
+
+    return 0
+}
+
 uninstall_mbp_watch_diagnostics() {
     local SERVICE_NAME="mbp-watch.service"
     local BIN_PATH="/usr/local/bin/mbp_watch.sh"
@@ -1230,6 +1494,7 @@ bootstrap_cachyos() {
     install_node_stack
     install_ai_tools
     install_mbp_watch_diagnostics
+    install_mbp_plasmoid_if_accepted
     install_youtube_force_h264_package
     install_apple_laptop_extras
     configure_facetimehd_camera
