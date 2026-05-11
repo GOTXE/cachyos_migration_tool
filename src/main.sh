@@ -18,71 +18,58 @@ source "$APP_DIR/modules/restore.sh"
 # shellcheck disable=SC1091
 # shellcheck source=modules/bootstrap.sh
 source "$APP_DIR/modules/bootstrap.sh"
+# shellcheck disable=SC1091
+# shellcheck source=lib/tui.sh
+source "$APP_DIR/lib/tui.sh"
 
 main_menu() {
-    clear
+    if command -v whiptail >/dev/null 2>&1; then
+        tui_main_menu
+        return
+    fi
 
-    print_main_menu_intro
+    local OPTION
 
-    log "${BLUE}"
-    log "Linux Migration Tool v${VERSION}"
-    log "${NC}"
+    while true; do
+        clear
+        print_main_menu_intro
 
-    log "1) Backup sistema"
-    log "2) Bootstrap CachyOS"
-    log "3) Post-check tras reinicio"
-    log "4) Restaurar backup"
-    log "5) Desinstalar MBP Watch"
-    log "6) Desinstalar plasmoid MBP Watch"
-    log "7) Reinstalar plasmoid MBP Watch"
-    log "8) Mover plasmoid MBP Watch"
-    log "9) Instalar YouTube Force H264"
-    log "10) Configurar VA-API Brave/Chromium (Intel Broadwell)"
-    log "11) Salir"
-    log ""
+        log "${BLUE}Linux Migration Tool v${VERSION}${NC}"
+        log ""
+        log "1) Backup sistema"
+        log "2) Bootstrap CachyOS"
+        log "3) Post-check tras reinicio"
+        log "4) Restaurar backup"
+        log "5) Desinstalar MBP Watch"
+        log "6) Desinstalar plasmoid MBP Watch"
+        log "7) Reinstalar plasmoid MBP Watch"
+        log "8) Mover plasmoid MBP Watch"
+        log "9) Instalar YouTube Force H264"
+        log "10) Configurar VA-API Brave/Chromium (Intel Broadwell)"
+        log "11) Salir"
+        log ""
 
-    prompt_read "Selecciona opcion: " OPTION
+        prompt_read "Selecciona opcion: " OPTION
 
-    case "$OPTION" in
-        1)
-            backup_system
-            ;;
-        2)
-            bootstrap_cachyos
-            ;;
-        3)
-            post_bootstrap_checks
-            ;;
-        4)
-            restore_system
-            ;;
-        5)
-            uninstall_mbp_watch_diagnostics
-            ;;
-        6)
-            uninstall_mbp_watch_plasmoid
-            ;;
-        7)
-            reinstall_mbp_watch_plasmoid
-            ;;
-        8)
-            prompt_read "Destino del plasmoid [primary|screen:N]: " MBP_PLASMOID_TARGET
-            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
-            move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
-            ;;
-        9)
-            install_youtube_force_h264_package
-            ;;
-        10)
-            configure_vaapi_brave_broadwell
-            ;;
-        11)
-            exit 0
-            ;;
-        *)
-            log "${RED}Opcion invalida.${NC}"
-            ;;
-    esac
+        case "$OPTION" in
+            1)  backup_system ;;
+            2)  bootstrap_cachyos ;;
+            3)  post_bootstrap_checks ;;
+            4)  restore_system ;;
+            5)  uninstall_mbp_watch_diagnostics ;;
+            6)  uninstall_mbp_watch_plasmoid ;;
+            7)  reinstall_mbp_watch_plasmoid ;;
+            8)
+                prompt_read "Destino del plasmoid [primary|screen:N]: " MBP_PLASMOID_TARGET
+                MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+                move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+                ;;
+            9)  install_youtube_force_h264_package ;;
+            10) configure_vaapi_brave_broadwell ;;
+            11) exit 0 ;;
+            *)  log "${RED}Opcion invalida.${NC}" ;;
+        esac
+    done
 }
 
 usage() {
