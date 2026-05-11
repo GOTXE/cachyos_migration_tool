@@ -1,2 +1,6 @@
 *.log
 .mbp-watch/
+.claude/
+.agents/
+.codex/
+AGENTS.md
