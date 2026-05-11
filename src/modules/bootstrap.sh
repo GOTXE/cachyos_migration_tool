@@ -1637,14 +1637,15 @@ configure_apple_broadcom_wifi() {
 }
 
 configure_wifi_regulatory_domain() {
-    local WIFI_COUNTRY=""
+    local WIFI_COUNTRY="${TUI_WIFI_COUNTRY:-}"
     local TMP_FILE=""
 
-    if ! confirm_action "¿Configurar pais/región del Wi-Fi para ajustar canales y potencia legales?"; then
-        return
+    if [ -z "$WIFI_COUNTRY" ]; then
+        if ! confirm_action "¿Configurar pais/región del Wi-Fi para ajustar canales y potencia legales?"; then
+            return
+        fi
+        prompt_read "Codigo del pais para Wi-Fi (ej. ES para España): " WIFI_COUNTRY
     fi
-
-    prompt_read "Codigo del pais para Wi-Fi (ej. ES para España): " WIFI_COUNTRY
     WIFI_COUNTRY="$(printf '%s' "$WIFI_COUNTRY" | tr '[:lower:]' '[:upper:]')"
 
     if [[ ! "$WIFI_COUNTRY" =~ ^[A-Z]{2}$ ]]; then
@@ -1727,7 +1728,7 @@ configure_global_menu_support() {
 configure_chromium_hw_acceleration() {
     local GPU_VENDOR=""
     local GPU_PROFILE=""
-    local BROWSER=""
+    local BROWSER="${TUI_BROWSER:-}"
     local TARGET_FILE=""
     local FLAGS_CONTENT=""
 
@@ -1756,8 +1757,10 @@ configure_chromium_hw_acceleration() {
         return
     fi
 
-    log "Navegadores soportados en automatizacion: brave, chrome"
-    prompt_read "Navegador a configurar [brave/chrome]: " BROWSER
+    if [ -z "$BROWSER" ]; then
+        log "Navegadores soportados en automatizacion: brave, chrome"
+        prompt_read "Navegador a configurar [brave/chrome]: " BROWSER
+    fi
     BROWSER="$(printf '%s' "$BROWSER" | tr '[:upper:]' '[:lower:]')"
 
     case "$BROWSER" in

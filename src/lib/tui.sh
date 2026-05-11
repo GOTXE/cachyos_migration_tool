@@ -47,7 +47,7 @@ _tui_log_msgbox() {
 tui_op() {
     local TITLE="$1"
     shift
-    ("$@") || true
+    (AUTO_CONFIRM=true; "$@") || true
     _tui_log_msgbox "$TITLE" "\n" 9
 }
 
@@ -250,7 +250,14 @@ tui_main_menu() {
             4)  tui_restore ;;
             5)  tui_op "MBP Watch desinstalado" uninstall_mbp_watch_diagnostics ;;
             6)  tui_op "Plasmoid desinstalado"  uninstall_mbp_watch_plasmoid ;;
-            7)  tui_op "Plasmoid reinstalado"   reinstall_mbp_watch_plasmoid ;;
+            7)
+                TUI_TARGET=$(wt \
+                    --title " Reinstalar plasmoid MBP Watch " \
+                    --inputbox "\nDestino del plasmoid:" \
+                    9 52 "primary" \
+                    3>&1 1>&2 2>&3) || continue
+                tui_op "Plasmoid reinstalado" reinstall_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
+                ;;
             8)
                 TUI_TARGET=$(wt \
                     --title " Mover plasmoid MBP Watch " \
@@ -340,9 +347,26 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"facetime"'* ]]   && configure_facetimehd_camera
     [[ "$SELECTED" == *'"iwd"'* ]]        && configure_networkmanager_iwd_backend
     [[ "$SELECTED" == *'"hyprland"'* ]]   && install_hyprland
-    [[ "$SELECTED" == *'"wifi"'* ]]       && configure_wifi_regulatory_domain
+    if [[ "$SELECTED" == *'"wifi"'* ]]; then
+        TUI_WIFI_COUNTRY=$(wt \
+            --title " Configurar Wi-Fi " \
+            --inputbox "\nCódigo de país para Wi-Fi (ej. ES para España):" \
+            9 56 "ES" \
+            3>&1 1>&2 2>&3) || true
+        TUI_WIFI_COUNTRY="$(printf '%s' "$TUI_WIFI_COUNTRY" | tr '[:lower:]' '[:upper:]')"
+        configure_wifi_regulatory_domain
+    fi
     [[ "$SELECTED" == *'"globalmenu"'* ]] && configure_global_menu_support
-    [[ "$SELECTED" == *'"hwaccel"'* ]]    && configure_chromium_hw_acceleration
+    if [[ "$SELECTED" == *'"hwaccel"'* ]]; then
+        TUI_BROWSER=$(wt \
+            --title " Aceleración HW navegador " \
+            --radiolist "Selecciona el navegador a configurar:" \
+            10 56 2 \
+            "brave"  "Brave Browser"  ON \
+            "chrome" "Google Chrome"  OFF \
+            3>&1 1>&2 2>&3) || true
+        configure_chromium_hw_acceleration
+    fi
     [[ "$SELECTED" == *'"vaapi"'* ]]      && configure_vaapi_brave_broadwell
     [[ "$SELECTED" == *'"btrfs"'* ]]      && configure_btrfs_snapshots
 
