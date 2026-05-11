@@ -33,10 +33,32 @@ ScriptMigrationCachyOS_v1_1/
 │       ├── brcmfmac43602-pcie.Apple Inc.-MacBookPro12,1.txt
 │       └── README.md
 └── docs/                               toda la documentación del proyecto
+    ├── README.md                       índice navegable de docs/
     ├── migration.md                    guía de uso de la herramienta de migración
-    ├── youtube-force-h264.md           guía de la extensión de navegador
-    ├── mbp-watch-refactor.md           plan de refactorización del monitor web
-    └── mbp-watch-web-mockup.pen        mockup Pencil del rediseño de la web de mbp-watch
+    ├── linux-migration-tool.conf.example  plantilla de configuración de usuario
+    ├── hardware/                       guías de hardware MBP 2015
+    │   ├── vaapi-brave-broadwell.md    corrección VA-API para Brave/Chromium Intel Broadwell
+    │   ├── vaapi-testing-notes.md      log de pruebas de aceleración VA-API
+    │   └── mbp2015-cachyos-setup.md   ajustes generales de instalación
+    ├── mbp-watch/                      monitor de hardware MBP (daemon + web)
+    │   ├── refactor.md
+    │   ├── wifi-monitor.md
+    │   ├── mockup.pen                  mockup Pencil del rediseño web
+    │   ├── plasmoid/                   plasmoid KDE MBP Watch
+    │   │   ├── index.md               índice y trazabilidad v1
+    │   │   ├── spec.md
+    │   │   ├── overlay-spec.md
+    │   │   ├── file-structure.md
+    │   │   ├── mapping.md
+    │   │   ├── installation-flow.md
+    │   │   ├── bootstrap-integration.md
+    │   │   ├── autoload-script.md
+    │   │   ├── task-plan.md
+    │   │   ├── commit-plan.md
+    │   │   └── ai-implementation-guide.md
+    │   └── digest/                     notas de desarrollo del AI digest
+    └── extensions/
+        └── youtube-force-h264.md       guía de la extensión de navegador
 ```
 
 **Reglas de organización:**
@@ -44,9 +66,9 @@ ScriptMigrationCachyOS_v1_1/
 - `assets/diagnostics/` — scripts instalables en el sistema (se copian a `/usr/local/bin/` o similar). Sin documentación.
 - `assets/youtube-force-h264/` — extensión de navegador completa incluyendo assets gráficos.
 - `firmware/brcm/` — única fuente de verdad para el bundle de firmware Broadcom. No duplicar en otro directorio.
-- `docs/` — toda la documentación en Markdown. Sin scripts ni binarios.
+- `docs/` — toda la documentación en Markdown organizada por subsistema. Sin scripts ni binarios.
 
-[`migration.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/migration.sh) is the stable entrypoint and delegates into [`src/main.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/main.sh), which handles CLI parsing and the interactive menu. Shared helpers and globals live in [`src/lib/common.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/lib/common.sh). Feature flows are split across [`src/modules/backup.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/backup.sh), [`src/modules/restore.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/restore.sh), and [`src/modules/bootstrap.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh). Support tooling lives under [`src/tools/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/tools), installable diagnostics under [`assets/diagnostics/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/diagnostics), and bundled Broadcom firmware under [`firmware/brcm/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/firmware/brcm). Documentation lives under [`docs/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs), and the optional config template lives at [`linux-migration-tool.conf.example`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/linux-migration-tool.conf.example). Keep new logic in clearly named Bash functions grouped by responsibility.
+[`migration.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/migration.sh) is the stable entrypoint and delegates into [`src/main.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/main.sh), which handles CLI parsing and the interactive menu. Shared helpers and globals live in [`src/lib/common.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/lib/common.sh). Feature flows are split across [`src/modules/backup.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/backup.sh), [`src/modules/restore.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/restore.sh), and [`src/modules/bootstrap.sh`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh). Support tooling lives under [`src/tools/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/tools), installable diagnostics under [`assets/diagnostics/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/diagnostics), and bundled Broadcom firmware under [`firmware/brcm/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/firmware/brcm). Documentation lives under [`docs/`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs) (see [`docs/README.md`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/README.md) for the full index), and the optional config template lives at [`docs/linux-migration-tool.conf.example`](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/linux-migration-tool.conf.example). Keep new logic in clearly named Bash functions grouped by responsibility.
 
 ## Build, Test, and Development Commands
 - `bash migration.sh`: run the interactive tool locally.
