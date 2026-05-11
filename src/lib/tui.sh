@@ -31,6 +31,138 @@ tui_op() {
         --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
 }
 
+# ---------------------------------------------------------------------------
+# Backup
+# ---------------------------------------------------------------------------
+
+tui_backup_select_dirs() {
+    local CANDIDATES=()
+    local DEFAULTS=()
+    local CHECKLIST_ARGS=()
+    local SELECTED_RAW
+    local DEFAULT_DIR
+    local STATUS
+    local i
+
+    mapfile -t CANDIDATES < <(detect_backup_data_candidates)
+    if [ ${#CANDIDATES[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    mapfile -t DEFAULTS < <(get_data_dirs)
+
+    for i in "${!CANDIDATES[@]}"; do
+        STATUS="OFF"
+        for DEFAULT_DIR in "${DEFAULTS[@]}"; do
+            [ "${CANDIDATES[$i]}" = "$DEFAULT_DIR" ] && STATUS="ON" && break
+        done
+        CHECKLIST_ARGS+=("$i" "${CANDIDATES[$i]}" "$STATUS")
+    done
+
+    SELECTED_RAW=$(whiptail \
+        --title " Directorios de datos para backup " \
+        --checklist "Space=marcar/desmarcar   Enter=confirmar" \
+        22 74 12 \
+        "${CHECKLIST_ARGS[@]}" \
+        3>&1 1>&2 2>&3) || return 1
+
+    SELECTED_DATA_DIRS=()
+    for TOKEN in $SELECTED_RAW; do
+        TOKEN="${TOKEN//\"/}"
+        [[ "$TOKEN" =~ ^[0-9]+$ ]] || continue
+        SELECTED_DATA_DIRS+=("${CANDIDATES[$TOKEN]}")
+    done
+
+    if [ ${#SELECTED_DATA_DIRS[@]} -eq 0 ]; then
+        SELECTED_DATA_DIRS=("${DEFAULTS[@]}")
+    fi
+}
+
+tui_backup_select_disk() {
+    local DISKS=()
+    local LINE
+    local RADIOLIST_ARGS=()
+    local FIRST=true
+    local NAME SIZE FS LABEL MOUNT AVAILABLE
+    local STATUS
+    local DISK_SELECTED
+    local AVAILABLE_BYTES
+
+    BACKUP_ESTIMATED_BYTES="$(estimate_backup_bytes)"
+    local REQUIRED_HUMAN
+    REQUIRED_HUMAN="$(format_bytes_human "$BACKUP_ESTIMATED_BYTES")"
+
+    mapfile -t DISKS < <(
+        lsblk -P -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT,TRAN |
+        while IFS= read -r LINE; do
+            local MP
+            MP="$(extract_lsblk_field "$LINE" "MOUNTPOINT")"
+            if [ -n "$MP" ] && [ "$MP" != "/" ] && [[ ! "$MP" =~ ^/boot ]]; then
+                printf '%s\n' "$LINE"
+            fi
+        done
+    )
+
+    if [ ${#DISKS[@]} -eq 0 ]; then
+        whiptail --title " Error " \
+            --msgbox "\nNo se encontraron discos montados." 8 44
+        return 1
+    fi
+
+    for LINE in "${DISKS[@]}"; do
+        NAME="$(extract_lsblk_field "$LINE" "NAME")"
+        SIZE="$(extract_lsblk_field "$LINE" "SIZE")"
+        FS="$(extract_lsblk_field  "$LINE" "FSTYPE")"
+        LABEL="$(extract_lsblk_field "$LINE" "LABEL")"
+        MOUNT="$(extract_lsblk_field "$LINE" "MOUNTPOINT")"
+        AVAILABLE="$(get_mount_available_human "$MOUNT")"
+
+        STATUS="OFF"
+        $FIRST && STATUS="ON" && FIRST=false
+
+        RADIOLIST_ARGS+=("$MOUNT" "${NAME}  ${SIZE}  libre:${AVAILABLE}  ${FS}  ${LABEL}" "$STATUS")
+    done
+
+    DISK_SELECTED=$(whiptail \
+        --title " Seleccionar disco destino " \
+        --radiolist \
+        "Espacio necesario aprox.: ${REQUIRED_HUMAN}\nSpace=seleccionar   Enter=confirmar" \
+        18 74 8 \
+        "${RADIOLIST_ARGS[@]}" \
+        3>&1 1>&2 2>&3) || return 1
+
+    DISK_MOUNT="$DISK_SELECTED"
+
+    AVAILABLE_BYTES="$(get_mount_available_bytes "$DISK_MOUNT")"
+    AVAILABLE_BYTES="${AVAILABLE_BYTES:-0}"
+    if [ "$AVAILABLE_BYTES" -lt "$BACKUP_ESTIMATED_BYTES" ]; then
+        whiptail --title " Espacio insuficiente " \
+            --msgbox "\nEspacio insuficiente en el disco seleccionado.\n\nNecesario : ${REQUIRED_HUMAN}\nDisponible: $(format_bytes_human "$AVAILABLE_BYTES")" \
+            11 56
+        return 1
+    fi
+}
+
+tui_backup() {
+    tui_backup_select_dirs || return 0
+    tui_backup_select_disk || return 0
+
+    whiptail --title " Backup CachyOS " \
+        --yesno "\nDestino : $DISK_MOUNT\nNecesario: $(format_bytes_human "$BACKUP_ESTIMATED_BYTES")\n\n¿Iniciar backup?" \
+        11 60 || return 0
+
+    BACKUP_TARGET="$DISK_MOUNT"
+    (backup_system) || true
+
+    whiptail --title " Backup completado " \
+        --msgbox "\nBackup completado.\n\nLog guardado en:\n$LOGFILE" \
+        11 60
+}
+
+# ---------------------------------------------------------------------------
+# Menú principal
+# ---------------------------------------------------------------------------
+
 tui_main_menu() {
     local OPTION
     local TUI_TARGET
@@ -54,13 +186,13 @@ tui_main_menu() {
             3>&1 1>&2 2>&3) || break
 
         case "$OPTION" in
-            1)  tui_op "Backup completado"              backup_system ;;
+            1)  tui_backup ;;
             2)  tui_bootstrap ;;
-            3)  tui_op "Post-check completado"          post_bootstrap_checks ;;
-            4)  tui_op "Restore completado"             restore_system ;;
-            5)  tui_op "MBP Watch desinstalado"         uninstall_mbp_watch_diagnostics ;;
-            6)  tui_op "Plasmoid desinstalado"          uninstall_mbp_watch_plasmoid ;;
-            7)  tui_op "Plasmoid reinstalado"           reinstall_mbp_watch_plasmoid ;;
+            3)  tui_op "Post-check completado"  post_bootstrap_checks ;;
+            4)  tui_op "Restore completado"     restore_system ;;
+            5)  tui_op "MBP Watch desinstalado" uninstall_mbp_watch_diagnostics ;;
+            6)  tui_op "Plasmoid desinstalado"  uninstall_mbp_watch_plasmoid ;;
+            7)  tui_op "Plasmoid reinstalado"   reinstall_mbp_watch_plasmoid ;;
             8)
                 TUI_TARGET=$(whiptail \
                     --title " Mover plasmoid MBP Watch " \
@@ -69,12 +201,16 @@ tui_main_menu() {
                     3>&1 1>&2 2>&3) || continue
                 tui_op "Plasmoid movido" move_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
                 ;;
-            9)  tui_op "YouTube H264 instalado"         install_youtube_force_h264_package ;;
-            10) tui_op "VA-API configurado"             configure_vaapi_brave_broadwell ;;
+            9)  tui_op "YouTube H264 instalado" install_youtube_force_h264_package ;;
+            10) tui_op "VA-API configurado"     configure_vaapi_brave_broadwell ;;
             11) break ;;
         esac
     done
 }
+
+# ---------------------------------------------------------------------------
+# Bootstrap
+# ---------------------------------------------------------------------------
 
 tui_bootstrap() {
     local APPLE_DEFAULT="OFF"
