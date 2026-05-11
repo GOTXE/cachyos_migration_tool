@@ -42,12 +42,34 @@ _tui_log_msgbox() {
         --msgbox "${BODY}Log guardado en:\n${SHORT}" "$ROWS" "$COLS"
 }
 
-# Ejecuta una función en subshell para que exit 1 no mate la TUI,
-# y muestra un msgbox al terminar con la ruta del log.
+# Ejecuta "$@" en subshell mostrando su salida en un terminal embebido
+# (dialog --programbox) si dialog está disponible, o redirigiendo al log.
+# Los códigos ANSI de color se eliminan antes de pasarlos a dialog.
+_tui_run_with_output() {
+    local TITLE="$1"
+    shift
+    if command -v dialog >/dev/null 2>&1; then
+        ("$@") 2>&1 \
+            | sed 's/\033\[[0-9;]*[a-zA-Z]//g' \
+            | dialog --title " $TITLE " \
+                     --programbox "  ↑↓ para desplazar — se cierra al terminar  " \
+                     22 78
+    else
+        ("$@") >> "$LOGFILE" 2>&1 || true
+    fi
+}
+
+_tui_op_run() {
+    AUTO_CONFIRM=true
+    "$@"
+}
+
+# Ejecuta una función en subshell (con AUTO_CONFIRM=true) mostrando su salida
+# en terminal embebido, y al terminar muestra un msgbox con la ruta del log.
 tui_op() {
     local TITLE="$1"
     shift
-    (AUTO_CONFIRM=true; "$@") || true
+    _tui_run_with_output "$TITLE" _tui_op_run "$@"
     _tui_log_msgbox "$TITLE" "\n" 9
 }
 
@@ -172,7 +194,7 @@ tui_backup() {
         11 60 || return 0
 
     BACKUP_TARGET="$DISK_MOUNT"
-    (backup_system) || true
+    _tui_run_with_output "Backup CachyOS" backup_system
 
     _tui_log_msgbox "Backup completado" "\nBackup completado.\n\n" 11
 }
@@ -212,7 +234,7 @@ tui_restore() {
         10 60 || return 0
 
     BACKUP_SOURCE="$SRC"
-    (restore_system) || true
+    _tui_run_with_output "Restaurar backup" restore_system
 
     _tui_log_msgbox "Restore completado" "\nRestore completado.\n\n" 11
 }
@@ -281,6 +303,8 @@ tui_bootstrap() {
     local APPLE_DEFAULT="OFF"
     local FACETIME_DEFAULT="OFF"
     local SELECTED
+    local TUI_WIFI_COUNTRY=""
+    local TUI_BROWSER=""
 
     is_apple_laptop 2>/dev/null && APPLE_DEFAULT="ON"
     [ "$(detect_facetimehd_camera 2>/dev/null)" = "yes" ] && FACETIME_DEFAULT="ON"
@@ -315,17 +339,41 @@ tui_bootstrap() {
         return 0
     fi
 
+    # Recoger entradas adicionales antes de empezar, para que el run
+    # no necesite llamar a whiptail mientras está siendo piped a dialog.
+    if [[ "$SELECTED" == *'"wifi"'* ]]; then
+        TUI_WIFI_COUNTRY=$(wt \
+            --title " Configurar Wi-Fi " \
+            --inputbox "\nCódigo de país para Wi-Fi (ej. ES para España):" \
+            9 56 "ES" \
+            3>&1 1>&2 2>&3) || return 0
+        TUI_WIFI_COUNTRY="$(printf '%s' "$TUI_WIFI_COUNTRY" | tr '[:lower:]' '[:upper:]')"
+    fi
+
+    if [[ "$SELECTED" == *'"hwaccel"'* ]]; then
+        TUI_BROWSER=$(wt \
+            --title " Aceleración HW navegador " \
+            --radiolist "Selecciona el navegador a configurar:" \
+            10 56 2 \
+            "brave"  "Brave Browser"  ON \
+            "chrome" "Google Chrome"  OFF \
+            3>&1 1>&2 2>&3) || return 0
+    fi
+
     wt --title " Bootstrap CachyOS " \
         --yesno "\nSe ejecutarán los bloques seleccionados.\n¿Continuar?" \
         9 52 || return 0
 
-    (tui_bootstrap_run "$SELECTED") || true
+    _tui_run_with_output "Bootstrap CachyOS" \
+        tui_bootstrap_run "$SELECTED" "$TUI_WIFI_COUNTRY" "$TUI_BROWSER"
 
     _tui_log_msgbox "Bootstrap completado" "\nBootstrap completado.\n\nRecomendado: reiniciar el sistema.\n\n" 13
 }
 
 tui_bootstrap_run() {
     local SELECTED="$1"
+    TUI_WIFI_COUNTRY="${2:-}"
+    TUI_BROWSER="${3:-}"
 
     log_section "Bootstrap CachyOS (TUI)"
     show_log_location
@@ -347,26 +395,9 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"facetime"'* ]]   && configure_facetimehd_camera
     [[ "$SELECTED" == *'"iwd"'* ]]        && configure_networkmanager_iwd_backend
     [[ "$SELECTED" == *'"hyprland"'* ]]   && install_hyprland
-    if [[ "$SELECTED" == *'"wifi"'* ]]; then
-        TUI_WIFI_COUNTRY=$(wt \
-            --title " Configurar Wi-Fi " \
-            --inputbox "\nCódigo de país para Wi-Fi (ej. ES para España):" \
-            9 56 "ES" \
-            3>&1 1>&2 2>&3) || true
-        TUI_WIFI_COUNTRY="$(printf '%s' "$TUI_WIFI_COUNTRY" | tr '[:lower:]' '[:upper:]')"
-        configure_wifi_regulatory_domain
-    fi
+    [[ "$SELECTED" == *'"wifi"'* ]]       && configure_wifi_regulatory_domain
     [[ "$SELECTED" == *'"globalmenu"'* ]] && configure_global_menu_support
-    if [[ "$SELECTED" == *'"hwaccel"'* ]]; then
-        TUI_BROWSER=$(wt \
-            --title " Aceleración HW navegador " \
-            --radiolist "Selecciona el navegador a configurar:" \
-            10 56 2 \
-            "brave"  "Brave Browser"  ON \
-            "chrome" "Google Chrome"  OFF \
-            3>&1 1>&2 2>&3) || true
-        configure_chromium_hw_acceleration
-    fi
+    [[ "$SELECTED" == *'"hwaccel"'* ]]    && configure_chromium_hw_acceleration
     [[ "$SELECTED" == *'"vaapi"'* ]]      && configure_vaapi_brave_broadwell
     [[ "$SELECTED" == *'"btrfs"'* ]]      && configure_btrfs_snapshots
 
