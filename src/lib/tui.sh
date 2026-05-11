@@ -170,24 +170,30 @@ tui_backup() {
 # ---------------------------------------------------------------------------
 
 tui_restore() {
-    local SRC
-    SRC=$(wt \
-        --title " Restaurar backup " \
-        --inputbox "\nRuta completa del backup a restaurar:" \
-        9 64 "" \
-        3>&1 1>&2 2>&3) || return 0
+    local SRC=""
 
-    if [ -z "$SRC" ]; then
-        wt --title " Restaurar backup " \
-            --msgbox "\nNo se indicó ninguna ruta." 8 44
-        return 0
-    fi
+    while true; do
+        SRC=$(wt \
+            --title " Restaurar backup " \
+            --inputbox "\nRuta completa del backup a restaurar:" \
+            9 64 "$SRC" \
+            3>&1 1>&2 2>&3) || return 0
 
-    if [ ! -d "$SRC" ]; then
-        wt --title " Restaurar backup " \
-            --msgbox "\nRuta no encontrada:\n$SRC" 9 60
-        return 0
-    fi
+        if [ -z "$SRC" ]; then
+            wt --title " Restaurar backup " \
+                --msgbox "\nDebes indicar una ruta." 8 44
+            continue
+        fi
+
+        if [ ! -d "$SRC" ]; then
+            wt --title " Restaurar backup " \
+                --msgbox "\nRuta no encontrada:\n$SRC\n\nRevisa la ruta e inténtalo de nuevo." \
+                11 64
+            continue
+        fi
+
+        break
+    done
 
     wt --title " Restaurar backup " \
         --yesno "\nFuente : $SRC\n\n¿Iniciar restauración?" \
