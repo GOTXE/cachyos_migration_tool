@@ -166,6 +166,41 @@ tui_backup() {
 }
 
 # ---------------------------------------------------------------------------
+# Restore
+# ---------------------------------------------------------------------------
+
+tui_restore() {
+    local SRC
+    SRC=$(wt \
+        --title " Restaurar backup " \
+        --inputbox "\nRuta completa del backup a restaurar:" \
+        9 64 "" \
+        3>&1 1>&2 2>&3) || return 0
+
+    if [ -z "$SRC" ]; then
+        wt --title " Restaurar backup " \
+            --msgbox "\nNo se indicó ninguna ruta." 8 44
+        return 0
+    fi
+
+    if [ ! -d "$SRC" ]; then
+        wt --title " Restaurar backup " \
+            --msgbox "\nRuta no encontrada:\n$SRC" 9 60
+        return 0
+    fi
+
+    wt --title " Restaurar backup " \
+        --yesno "\nFuente : $SRC\n\n¿Iniciar restauración?" \
+        10 60 || return 0
+
+    BACKUP_SOURCE="$SRC"
+    (restore_system) || true
+
+    wt --title " Restore completado " \
+        --msgbox "\nRestore completado.\n\nLog guardado en:\n$LOGFILE" 11 60
+}
+
+# ---------------------------------------------------------------------------
 # Menú principal
 # ---------------------------------------------------------------------------
 
@@ -195,7 +230,7 @@ tui_main_menu() {
             1)  tui_backup ;;
             2)  tui_bootstrap ;;
             3)  tui_op "Post-check completado"  post_bootstrap_checks ;;
-            4)  tui_op "Restore completado"     restore_system ;;
+            4)  tui_restore ;;
             5)  tui_op "MBP Watch desinstalado" uninstall_mbp_watch_diagnostics ;;
             6)  tui_op "Plasmoid desinstalado"  uninstall_mbp_watch_plasmoid ;;
             7)  tui_op "Plasmoid reinstalado"   reinstall_mbp_watch_plasmoid ;;
