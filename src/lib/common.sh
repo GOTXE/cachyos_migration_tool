@@ -13,6 +13,7 @@ APPLE_LAPTOP_MODE="ask"
 BACKUP_TARGET=""
 BACKUP_SOURCE=""
 FORCE_RESTORE=false
+AUTO_CONFIRM=false
 MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
 EXTRA_CONFIG_ITEMS=()
 EXTRA_REPO_SEARCH_DIRS=()
@@ -695,6 +696,11 @@ confirm_action() {
     local DEFAULT_ANSWER="${2:-no}"
     local RESPONSE
     local HINT="s/n"
+
+    if [ "$AUTO_CONFIRM" = true ]; then
+        log "${CYAN}[auto] $PROMPT → sí${NC}"
+        return 0
+    fi
 
     case "$DEFAULT_ANSWER" in
         yes|s|S)
