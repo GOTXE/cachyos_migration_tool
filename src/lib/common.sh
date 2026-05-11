@@ -13,6 +13,7 @@ APPLE_LAPTOP_MODE="ask"
 BACKUP_TARGET=""
 BACKUP_SOURCE=""
 FORCE_RESTORE=false
+MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
 EXTRA_CONFIG_ITEMS=()
 EXTRA_REPO_SEARCH_DIRS=()
 DATA_DIRS=()
@@ -51,13 +52,34 @@ log_success() {
     log "${GREEN}$1${NC}"
 }
 
+tty_available() {
+    [ -r /dev/tty ] && [ -w /dev/tty ]
+}
+
+tty_log() {
+    local MESSAGE="$1"
+
+    if tty_available; then
+        echo -e "$MESSAGE" > /dev/tty
+    else
+        echo -e "$MESSAGE"
+    fi
+
+    echo -e "$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')" >> "$LOGFILE" 2>/dev/null || true
+}
+
 prompt_read() {
     local PROMPT_TEXT="$1"
     local __RESULTVAR="$2"
     local INPUT_VALUE=""
 
-    printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}"
-    read -r INPUT_VALUE
+    if tty_available; then
+        printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}" > /dev/tty
+        read -r INPUT_VALUE < /dev/tty
+    else
+        printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}"
+        read -r INPUT_VALUE
+    fi
     printf -v "$__RESULTVAR" '%s' "$INPUT_VALUE"
 }
 
