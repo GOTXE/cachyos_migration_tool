@@ -683,6 +683,175 @@ has_required_plasmoid_tools() {
     command -v qdbus6 >/dev/null 2>&1 || return 1
 }
 
+list_mbp_plasmoid_outputs() {
+    local RAW_OUTPUT=""
+
+    command -v kscreen-doctor >/dev/null 2>&1 || return 0
+
+    RAW_OUTPUT="$(kscreen-doctor -o 2>/dev/null || true)"
+    if [ -n "$RAW_OUTPUT" ]; then
+        printf '%s\n' "$RAW_OUTPUT" | awk '/^Output:/ { print $2 "|" $3 }'
+        return 0
+    fi
+
+    if command -v script >/dev/null 2>&1; then
+        RAW_OUTPUT="$(
+            env SHELL=/bin/bash script -qfc "kscreen-doctor -o" /dev/null 2>/dev/null \
+                | sed 's/\r$//' \
+            || true
+        )"
+        if [ -n "$RAW_OUTPUT" ]; then
+            printf '%s\n' "$RAW_OUTPUT" | awk '/^Output:/ { print $2 "|" $3 }'
+            return 0
+        fi
+    fi
+}
+
+normalize_mbp_plasmoid_target() {
+    local REQUESTED_TARGET="${1:-primary}"
+    local OUTPUTS=()
+    local ENTRY=""
+    local OUTPUT_ID=""
+    local OUTPUT_NAME=""
+
+    case "$REQUESTED_TARGET" in
+        screen:[0-9]*)
+            printf '%s\n' "$REQUESTED_TARGET"
+            return 0
+            ;;
+        primary|"")
+            mapfile -t OUTPUTS < <(list_mbp_plasmoid_outputs)
+
+            for ENTRY in "${OUTPUTS[@]}"; do
+                OUTPUT_ID="${ENTRY%%|*}"
+                OUTPUT_NAME="${ENTRY#*|}"
+                if printf '%s\n' "$OUTPUT_NAME" | grep -Eiq '^(eDP|LVDS|DSI)'; then
+                    printf 'screen:%s\n' "$OUTPUT_ID"
+                    return 0
+                fi
+            done
+
+            if [ ${#OUTPUTS[@]} -gt 0 ]; then
+                OUTPUT_ID="${OUTPUTS[0]%%|*}"
+                printf 'screen:%s\n' "$OUTPUT_ID"
+                return 0
+            fi
+
+            printf 'screen:0\n'
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+log_mbp_plasmoid_outputs() {
+    local OUTPUTS=()
+    local ENTRY=""
+    local OUTPUT_ID=""
+    local OUTPUT_NAME=""
+
+    mapfile -t OUTPUTS < <(list_mbp_plasmoid_outputs)
+    if [ ${#OUTPUTS[@]} -eq 0 ]; then
+        tty_log "${CYAN}No se pudieron enumerar salidas de Plasma con kscreen-doctor; se usara el fallback interno.${NC}"
+        return 0
+    fi
+
+    tty_log "${CYAN}Salidas KDE detectadas para el plasmoid:${NC}"
+    for ENTRY in "${OUTPUTS[@]}"; do
+        OUTPUT_ID="${ENTRY%%|*}"
+        OUTPUT_NAME="${ENTRY#*|}"
+        tty_log " - screen:${OUTPUT_ID} -> ${OUTPUT_NAME}"
+    done
+}
+
+prompt_mbp_plasmoid_target() {
+    local DEFAULT_TARGET="${1:-$MBP_PLASMOID_TARGET}"
+    local NORMALIZED_DEFAULT_TARGET=""
+    local OUTPUTS=()
+    local ENTRY=""
+    local OUTPUT_ID=""
+    local OUTPUT_NAME=""
+    local OPTION_INDEX=1
+    local DEFAULT_OPTION_INDEX=""
+    local TARGET_VALUE=""
+
+    if ! NORMALIZED_DEFAULT_TARGET="$(normalize_mbp_plasmoid_target "$DEFAULT_TARGET" 2>/dev/null)"; then
+        NORMALIZED_DEFAULT_TARGET="screen:1"
+    fi
+
+    mapfile -t OUTPUTS < <(list_mbp_plasmoid_outputs)
+    if [ ${#OUTPUTS[@]} -eq 0 ]; then
+        tty_log "${CYAN}No se pudieron enumerar salidas de Plasma con kscreen-doctor; se usara el fallback interno.${NC}"
+        prompt_read "Destino del plasmoid [primary|screen:N] (default: ${DEFAULT_TARGET}): " TARGET_VALUE
+        if [ -z "$TARGET_VALUE" ]; then
+            TARGET_VALUE="$DEFAULT_TARGET"
+        fi
+        printf '%s\n' "$TARGET_VALUE"
+        return 0
+    fi
+
+    tty_log "${CYAN}Pantallas KDE detectadas para el plasmoid:${NC}"
+    for ENTRY in "${OUTPUTS[@]}"; do
+        OUTPUT_ID="${ENTRY%%|*}"
+        OUTPUT_NAME="${ENTRY#*|}"
+        if [ "screen:${OUTPUT_ID}" = "$NORMALIZED_DEFAULT_TARGET" ]; then
+            DEFAULT_OPTION_INDEX="$OPTION_INDEX"
+            tty_log " ${GREEN}${OPTION_INDEX})${NC} ${OUTPUT_NAME} (${YELLOW}screen:${OUTPUT_ID}${NC}, por defecto)"
+        else
+            tty_log " ${GREEN}${OPTION_INDEX})${NC} ${OUTPUT_NAME} (${YELLOW}screen:${OUTPUT_ID}${NC})"
+        fi
+        OPTION_INDEX=$((OPTION_INDEX + 1))
+    done
+    tty_log " ${GREEN}p)${NC} principal automatica (${YELLOW}primary${NC})"
+
+    if [ -n "$DEFAULT_OPTION_INDEX" ]; then
+        prompt_read "Selecciona pantalla [1-${#OUTPUTS[@]}|p] (default: ${DEFAULT_OPTION_INDEX}): " TARGET_VALUE
+    else
+        prompt_read "Selecciona pantalla [1-${#OUTPUTS[@]}|p] (default: primary): " TARGET_VALUE
+    fi
+
+    if [ -z "$TARGET_VALUE" ]; then
+        if [ -n "$DEFAULT_OPTION_INDEX" ]; then
+            TARGET_VALUE="$DEFAULT_OPTION_INDEX"
+        else
+            TARGET_VALUE="primary"
+        fi
+    fi
+
+    if [[ "$TARGET_VALUE" =~ ^[Pp]$ ]]; then
+        printf 'primary\n'
+        return 0
+    fi
+
+    if [[ "$TARGET_VALUE" =~ ^[0-9]+$ ]] && [ "$TARGET_VALUE" -ge 1 ] && [ "$TARGET_VALUE" -le ${#OUTPUTS[@]} ]; then
+        ENTRY="${OUTPUTS[$((TARGET_VALUE - 1))]}"
+        OUTPUT_ID="${ENTRY%%|*}"
+        printf 'screen:%s\n' "$OUTPUT_ID"
+        return 0
+    fi
+
+    printf '%s\n' "$TARGET_VALUE"
+}
+
+resolve_mbp_plasmoid_target() {
+    local REQUESTED_TARGET="${1:-}"
+    local DEFAULT_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+
+    if [ -n "$REQUESTED_TARGET" ]; then
+        printf '%s\n' "$REQUESTED_TARGET"
+        return 0
+    fi
+
+    if [ -t 0 ]; then
+        prompt_mbp_plasmoid_target "$DEFAULT_TARGET"
+        return 0
+    fi
+
+    printf '%s\n' "$DEFAULT_TARGET"
+}
+
 get_mbp_plasmoid_source_dir() {
     printf '%s/%s\n' "$PROJECT_ROOT" "$MBP_PLASMOID_RELATIVE_DIR"
 }
@@ -712,28 +881,33 @@ install_or_upgrade_mbp_plasmoid() {
 }
 
 build_mbp_plasmoid_autoload_script() {
-    cat <<'EOF'
-const pluginId = "io.github.gtx.mbpwatch";
-const widgetWidth = 360;
-const widgetMargin = 24;
-const widgetTop = 24;
-const widgetMinHeight = 480;
-const widgetMaxHeight = 920;
+    local TARGET_SCREEN_INDEX="$1"
+
+    cat <<EOF
+var pluginId = "io.github.gtx.mbpwatch";
+var preferredScreen = ${TARGET_SCREEN_INDEX};
+var widgetWidth = 360;
+var widgetMargin = 24;
+var widgetTop = 24;
+var widgetMinHeight = 480;
+var widgetMaxHeight = 920;
+var result = "";
 
 function widgetAlreadyPresent(allDesktops, expectedPluginId) {
-    for (const desktop of allDesktops) {
+    for (var desktopIndex = 0; desktopIndex < allDesktops.length; desktopIndex += 1) {
+        var desktop = allDesktops[desktopIndex];
         if (!desktop) {
             continue;
         }
 
-        const typedWidgets = desktop.widgets(expectedPluginId);
+        var typedWidgets = desktop.widgets(expectedPluginId);
         if (typedWidgets && typedWidgets.length > 0) {
             return true;
         }
 
-        const ids = desktop.widgetIds || [];
-        for (const id of ids) {
-            const widget = desktop.widgetById(id);
+        var ids = desktop.widgetIds || [];
+        for (var idIndex = 0; idIndex < ids.length; idIndex += 1) {
+            var widget = desktop.widgetById(ids[idIndex]);
             if (widget && widget.type === expectedPluginId) {
                 return true;
             }
@@ -743,18 +917,28 @@ function widgetAlreadyPresent(allDesktops, expectedPluginId) {
     return false;
 }
 
-if (!knownWidgetTypes.includes(pluginId)) {
-    "ERROR:plasmoid-not-installed";
+if (!knownWidgetTypes || knownWidgetTypes.indexOf(pluginId) === -1) {
+    result = "ERROR:plasmoid-not-installed";
 } else {
-    const allDesktops = desktops();
+    var allDesktops = desktops();
 
     if (widgetAlreadyPresent(allDesktops, pluginId)) {
-        "OK:already-present";
+        result = "OK:already-present";
     } else {
-        let targetDesktop = null;
+        var targetDesktop = null;
 
         if (typeof desktopForScreen === "function") {
-            targetDesktop = desktopForScreen(0);
+            targetDesktop = desktopForScreen(preferredScreen);
+        }
+
+        if (!targetDesktop) {
+            for (var desktopIndex = 0; desktopIndex < allDesktops.length; desktopIndex += 1) {
+                var desktopCandidate = allDesktops[desktopIndex];
+                if (desktopCandidate && desktopCandidate.screen === preferredScreen) {
+                    targetDesktop = desktopCandidate;
+                    break;
+                }
+            }
         }
 
         if (!targetDesktop && allDesktops.length > 0) {
@@ -762,15 +946,15 @@ if (!knownWidgetTypes.includes(pluginId)) {
         }
 
         if (!targetDesktop) {
-            "ERROR:no-desktop";
+            result = "ERROR:no-desktop";
         } else {
-            const targetScreen = targetDesktop.screen >= 0 ? targetDesktop.screen : 0;
-            const geom = screenGeometry(targetScreen);
-            const widgetHeight = Math.min(Math.max(geom.height - 48, widgetMinHeight), widgetMaxHeight);
-            const widgetX = geom.x + geom.width - widgetWidth - widgetMargin;
-            const widgetY = geom.y + widgetTop;
+            var targetScreen = targetDesktop.screen >= 0 ? targetDesktop.screen : 0;
+            var geom = screenGeometry(targetScreen);
+            var widgetHeight = Math.min(Math.max(geom.height - 48, widgetMinHeight), widgetMaxHeight);
+            var widgetX = geom.x + geom.width - widgetWidth - widgetMargin;
+            var widgetY = geom.y + widgetTop;
 
-            const widget = targetDesktop.addWidget(
+            var widget = targetDesktop.addWidget(
                 pluginId,
                 widgetX,
                 widgetY,
@@ -779,39 +963,195 @@ if (!knownWidgetTypes.includes(pluginId)) {
             );
 
             if (!widget) {
-                "ERROR:create-failed";
+                result = "ERROR:create-failed";
             } else {
-                "OK:created";
+                result = "OK:created";
             }
         }
     }
 }
+
+result;
 EOF
+}
+
+is_mbp_plasmoid_on_desktop() {
+    local TARGET_USER="$1"
+    local PLASMA_CFG=""
+
+    PLASMA_CFG="$(eval echo "~$TARGET_USER")/.config/plasma-org.kde.plasma.desktop-appletsrc"
+    [ -f "$PLASMA_CFG" ] && grep -Fq "plugin=$MBP_PLASMOID_ID" "$PLASMA_CFG"
 }
 
 auto_add_mbp_plasmoid_to_desktop() {
     local TARGET_USER="$1"
     local TARGET_UID="$2"
+    local TARGET_SPEC="${3:-$MBP_PLASMOID_TARGET}"
     local SCRIPT=""
+    local NORMALIZED_TARGET=""
+    local TARGET_SCREEN_INDEX=""
 
-    SCRIPT="$(build_mbp_plasmoid_autoload_script)"
+    if ! NORMALIZED_TARGET="$(normalize_mbp_plasmoid_target "$TARGET_SPEC" 2>/dev/null)"; then
+        printf 'ERROR:bad-target\n'
+        return 1
+    fi
+    TARGET_SCREEN_INDEX="${NORMALIZED_TARGET#screen:}"
 
     if [ "$DRY_MODE" = true ]; then
-        log "${YELLOW}[DRY-RUN] auto-add KDE plasmoid via qdbus6 para $TARGET_USER${NC}"
+        log "${YELLOW}[DRY-RUN] auto-add KDE plasmoid via qdbus6 para $TARGET_USER en ${NORMALIZED_TARGET}${NC}"
         printf 'OK:created\n'
         return 0
     fi
 
-    sudo -u "$TARGET_USER" env \
+    # qdbus6 no imprime el valor de retorno de evaluateScript a stdout;
+    # el check de presencia se hace leyendo el config de Plasma directamente.
+    if is_mbp_plasmoid_on_desktop "$TARGET_USER"; then
+        printf 'OK:already-present\n'
+        return 0
+    fi
+
+    SCRIPT="$(build_mbp_plasmoid_autoload_script "$TARGET_SCREEN_INDEX")"
+
+    if sudo -u "$TARGET_USER" env \
         XDG_RUNTIME_DIR="/run/user/$TARGET_UID" \
         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$TARGET_UID/bus" \
-        qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "$SCRIPT"
+        qdbus6 org.kde.plasmashell /PlasmaShell \
+        org.kde.PlasmaShell.evaluateScript "$SCRIPT" >/dev/null 2>&1; then
+        printf 'OK:created\n'
+    else
+        printf 'ERROR:create-failed\n'
+    fi
+}
+
+log_mbp_plasmoid_auto_add_result() {
+    local AUTO_ADD_RESULT="$1"
+
+    case "$AUTO_ADD_RESULT" in
+        *"OK:created"*)
+            log_success "Plasmoid MBP Watch añadido automaticamente al escritorio KDE."
+            ;;
+        *"OK:already-present"*)
+            log_success "La instancia del plasmoid MBP Watch ya existia en el escritorio."
+            ;;
+        *"ERROR:plasmoid-not-installed"*)
+            log_warn "El auto-add no encontro el plasmoid instalado en Plasma. Verifica con: kpackagetool6 --type $MBP_PLASMOID_PACKAGE_TYPE --list"
+            ;;
+        *"ERROR:no-desktop"*)
+            log_warn "Plasma no devolvio un desktop valido para auto-add."
+            ;;
+        *"ERROR:create-failed"*)
+            log_warn "La creacion automatica de la instancia en el escritorio fallo."
+            ;;
+        *)
+            log_warn "El auto-add no pudo completarse automaticamente."
+            if [ -n "$AUTO_ADD_RESULT" ]; then
+                log_warn "Salida de auto-add: $AUTO_ADD_RESULT"
+            fi
+            ;;
+    esac
+}
+
+add_mbp_plasmoid_to_desktop() {
+    local TARGET_USER=""
+    local TARGET_UID=""
+    local REQUESTED_TARGET="${1:-}"
+    local NORMALIZED_TARGET=""
+    local AUTO_ADD_RESULT=""
+
+    if ! has_required_plasmoid_tools; then
+        log_warn "Faltan herramientas requeridas para el plasmoid (kpackagetool6 y/o qdbus6)."
+        return 0
+    fi
+
+    TARGET_USER="$(resolve_desktop_target_user 2>/dev/null || true)"
+    if [ -z "$TARGET_USER" ]; then
+        log_warn "No se pudo resolver un usuario de escritorio valido para el plasmoid."
+        return 0
+    fi
+
+    TARGET_UID="$(resolve_desktop_target_uid "$TARGET_USER" 2>/dev/null || true)"
+    if [ -z "$TARGET_UID" ]; then
+        log_warn "No se pudo resolver el UID del usuario objetivo ($TARGET_USER)."
+        return 0
+    fi
+
+    REQUESTED_TARGET="$(resolve_mbp_plasmoid_target "$REQUESTED_TARGET")"
+    if ! NORMALIZED_TARGET="$(normalize_mbp_plasmoid_target "$REQUESTED_TARGET" 2>/dev/null)"; then
+        log_warn "Target de plasmoid no valido: $REQUESTED_TARGET"
+        return 0
+    fi
+
+    if ! is_mbp_plasmoid_installed "$TARGET_USER"; then
+        log_warn "El plasmoid MBP Watch no aparece instalado para $TARGET_USER."
+        log_warn "Instalalo primero desde bootstrap o con: kpackagetool6 --type $MBP_PLASMOID_PACKAGE_TYPE --install $(get_mbp_plasmoid_source_dir)"
+        return 0
+    fi
+
+    if ! has_plasma_session_bus "$TARGET_UID"; then
+        log_warn "No se detecto bus de sesion Plasma en /run/user/$TARGET_UID/bus."
+        log_warn "Recuperacion manual: plasmawindowed $MBP_PLASMOID_ID o anadir el widget desde Plasma."
+        return 0
+    fi
+
+    log_info "Reintentando auto-add del plasmoid MBP Watch para $TARGET_USER en ${NORMALIZED_TARGET}."
+    AUTO_ADD_RESULT="$(auto_add_mbp_plasmoid_to_desktop "$TARGET_USER" "$TARGET_UID" "$NORMALIZED_TARGET" 2>&1 || true)"
+    log_mbp_plasmoid_auto_add_result "$AUTO_ADD_RESULT"
+
+    if [[ "$AUTO_ADD_RESULT" != *"OK:created"* && "$AUTO_ADD_RESULT" != *"OK:already-present"* ]]; then
+        log_warn "Recuperacion manual recomendada: plasmawindowed $MBP_PLASMOID_ID o añadir el widget manualmente desde Plasma."
+    fi
+}
+
+move_mbp_watch_plasmoid() {
+    local MOVE_SCRIPT="$PROJECT_ROOT/assets/diagnostics/move_mbp_plasmoid.sh"
+    local TARGET_SPEC="${1:-primary}"
+    local NORMALIZED_TARGET=""
+    local TARGET_USER=""
+    local COMMAND_ARGS=()
+
+    if [ ! -f "$MOVE_SCRIPT" ]; then
+        log_warn "No se encontro el script de move del plasmoid: $MOVE_SCRIPT"
+        return 0
+    fi
+
+    TARGET_USER="$(resolve_desktop_target_user 2>/dev/null || true)"
+    if [ -z "$TARGET_USER" ]; then
+        log_warn "No se pudo resolver un usuario KDE objetivo para el plasmoid."
+        return 0
+    fi
+
+    if ! NORMALIZED_TARGET="$(normalize_mbp_plasmoid_target "$TARGET_SPEC" 2>/dev/null)"; then
+        log_warn "Target de plasmoid no valido: $TARGET_SPEC"
+        return 0
+    fi
+
+    log "${YELLOW}Se va a mover el plasmoid KDE MBP Watch para el usuario: $TARGET_USER${NC}"
+    log " - Destino solicitado: $TARGET_SPEC"
+    log " - Destino resuelto: $NORMALIZED_TARGET"
+    log " - Se quitara la instancia activa y se recreara en la pantalla objetivo."
+    log ""
+
+    if ! confirm_action "¿Continuar con el movimiento del plasmoid KDE MBP Watch?"; then
+        log_info "Movimiento del plasmoid cancelado por el usuario."
+        return 0
+    fi
+
+    COMMAND_ARGS=(--user "$TARGET_USER" --target "$NORMALIZED_TARGET")
+    if [ "$DRY_MODE" = true ]; then
+        COMMAND_ARGS+=(--dry-run)
+        bash "$MOVE_SCRIPT" "${COMMAND_ARGS[@]}" 2>&1 | tee -a "$LOGFILE"
+        return "${PIPESTATUS[0]}"
+    fi
+
+    run_cmd bash "$MOVE_SCRIPT" "${COMMAND_ARGS[@]}"
 }
 
 install_mbp_plasmoid_if_accepted() {
     local TARGET_USER=""
     local TARGET_UID=""
     local SOURCE_DIR=""
+    local REQUESTED_TARGET=""
+    local NORMALIZED_TARGET=""
     local AUTO_ADD_RESULT=""
 
     if ! is_kde_plasma_session; then
@@ -848,7 +1188,14 @@ install_mbp_plasmoid_if_accepted() {
         return 0
     fi
 
+    REQUESTED_TARGET="$(prompt_mbp_plasmoid_target "$MBP_PLASMOID_TARGET")"
+    if ! NORMALIZED_TARGET="$(normalize_mbp_plasmoid_target "$REQUESTED_TARGET" 2>/dev/null)"; then
+        log_warn "Target de plasmoid no valido: $REQUESTED_TARGET"
+        return 0
+    fi
+
     log_info "Usuario objetivo del plasmoid: $TARGET_USER (uid $TARGET_UID)"
+    log_info "Destino elegido para el plasmoid: $REQUESTED_TARGET -> $NORMALIZED_TARGET"
     if ! install_or_upgrade_mbp_plasmoid "$TARGET_USER" "$SOURCE_DIR"; then
         log_warn "No se pudo instalar o actualizar el plasmoid MBP Watch. El bootstrap continuara."
         return 0
@@ -860,27 +1207,8 @@ install_mbp_plasmoid_if_accepted() {
         return 0
     fi
 
-    AUTO_ADD_RESULT="$(auto_add_mbp_plasmoid_to_desktop "$TARGET_USER" "$TARGET_UID" 2>/dev/null || true)"
-    case "$AUTO_ADD_RESULT" in
-        *"OK:created"*)
-            log_success "Plasmoid MBP Watch instalado y añadido automaticamente al escritorio KDE."
-            ;;
-        *"OK:already-present"*)
-            log_success "Plasmoid MBP Watch instalado/actualizado; la instancia del escritorio ya existia."
-            ;;
-        *"ERROR:plasmoid-not-installed"*)
-            log_warn "El auto-add no encontro el plasmoid instalado en Plasma. Verifica con: kpackagetool6 --type $MBP_PLASMOID_PACKAGE_TYPE --list"
-            ;;
-        *"ERROR:no-desktop"*)
-            log_warn "Plasmoid instalado, pero Plasma no devolvio un desktop valido para auto-add."
-            ;;
-        *"ERROR:create-failed"*)
-            log_warn "Plasmoid instalado, pero la creacion automatica de la instancia en el escritorio fallo."
-            ;;
-        *)
-            log_warn "Plasmoid instalado, pero el auto-add no pudo completarse automaticamente."
-            ;;
-    esac
+    AUTO_ADD_RESULT="$(auto_add_mbp_plasmoid_to_desktop "$TARGET_USER" "$TARGET_UID" "$NORMALIZED_TARGET" 2>&1 || true)"
+    log_mbp_plasmoid_auto_add_result "$AUTO_ADD_RESULT"
 
     if [[ "$AUTO_ADD_RESULT" != *"OK:created"* && "$AUTO_ADD_RESULT" != *"OK:already-present"* ]]; then
         log_warn "Recuperacion manual recomendada: plasmawindowed $MBP_PLASMOID_ID o añadir el widget manualmente desde Plasma."
@@ -953,15 +1281,105 @@ uninstall_mbp_watch_diagnostics() {
     log_success "MBP Watch desinstalado."
 }
 
+uninstall_mbp_watch_plasmoid() {
+    local UNINSTALL_SCRIPT="$PROJECT_ROOT/assets/diagnostics/uninstall_mbp_plasmoid.sh"
+    local TARGET_USER=""
+    local COMMAND_ARGS=()
+
+    if [ ! -f "$UNINSTALL_SCRIPT" ]; then
+        log_warn "No se encontro el desinstalador del plasmoid: $UNINSTALL_SCRIPT"
+        return 0
+    fi
+
+    TARGET_USER="$(resolve_desktop_target_user 2>/dev/null || true)"
+    if [ -z "$TARGET_USER" ]; then
+        log_warn "No se pudo resolver un usuario KDE objetivo para el plasmoid."
+        return 0
+    fi
+
+    log "${YELLOW}Se va a desinstalar el plasmoid KDE MBP Watch para el usuario: $TARGET_USER${NC}"
+    log " - Se intentara quitar la instancia activa del escritorio via qdbus6."
+    log " - Se eliminara el paquete Plasma con kpackagetool6 --remove."
+    log " - No se editaran archivos internos de configuracion de Plasma."
+    log ""
+
+    if ! confirm_action "¿Continuar con la desinstalacion del plasmoid KDE MBP Watch?"; then
+        log_info "Desinstalacion del plasmoid cancelada por el usuario."
+        return 0
+    fi
+
+    COMMAND_ARGS=(--user "$TARGET_USER")
+    if [ "$DRY_MODE" = true ]; then
+        COMMAND_ARGS+=(--dry-run)
+        bash "$UNINSTALL_SCRIPT" "${COMMAND_ARGS[@]}" 2>&1 | tee -a "$LOGFILE"
+        return "${PIPESTATUS[0]}"
+    fi
+
+    run_cmd bash "$UNINSTALL_SCRIPT" "${COMMAND_ARGS[@]}"
+}
+
+reinstall_mbp_watch_plasmoid() {
+    local REINSTALL_SCRIPT="$PROJECT_ROOT/assets/diagnostics/reinstall_mbp_plasmoid.sh"
+    local REQUESTED_TARGET="${1:-}"
+    local NORMALIZED_TARGET=""
+    local TARGET_USER=""
+    local COMMAND_ARGS=()
+
+    if [ ! -f "$REINSTALL_SCRIPT" ]; then
+        log_warn "No se encontro el reinstalador del plasmoid: $REINSTALL_SCRIPT"
+        return 0
+    fi
+
+    TARGET_USER="$(resolve_desktop_target_user 2>/dev/null || true)"
+    if [ -z "$TARGET_USER" ]; then
+        log_warn "No se pudo resolver un usuario KDE objetivo para el plasmoid."
+        return 0
+    fi
+
+    REQUESTED_TARGET="$(resolve_mbp_plasmoid_target "$REQUESTED_TARGET")"
+    if ! NORMALIZED_TARGET="$(normalize_mbp_plasmoid_target "$REQUESTED_TARGET" 2>/dev/null)"; then
+        log_warn "Target de plasmoid no valido: $REQUESTED_TARGET"
+        return 0
+    fi
+
+    log "${YELLOW}Se va a reinstalar el plasmoid KDE MBP Watch para el usuario: $TARGET_USER${NC}"
+    log " - Se quitara la instancia actual del escritorio y el paquete Plasma."
+    log " - Se reinstalara el paquete desde el repo actual."
+    log " - No se reiniciara plasmashell; se reutilizara la sesion activa."
+    log " - Destino solicitado: $REQUESTED_TARGET"
+    log " - Destino resuelto: $NORMALIZED_TARGET"
+    log ""
+
+    if ! confirm_action "¿Continuar con la reinstalacion del plasmoid KDE MBP Watch?"; then
+        log_info "Reinstalacion del plasmoid cancelada por el usuario."
+        return 0
+    fi
+
+    COMMAND_ARGS=(--user "$TARGET_USER" --target "$NORMALIZED_TARGET")
+    if [ "$DRY_MODE" = true ]; then
+        COMMAND_ARGS+=(--dry-run)
+        bash "$REINSTALL_SCRIPT" "${COMMAND_ARGS[@]}" 2>&1 | tee -a "$LOGFILE"
+        return "${PIPESTATUS[0]}"
+    fi
+
+    run_cmd bash "$REINSTALL_SCRIPT" "${COMMAND_ARGS[@]}"
+}
+
 install_youtube_force_h264_package() {
     local SOURCE_DIR="$PROJECT_ROOT/assets/youtube-force-h264"
     local TARGET_PARENT="$HOME/extensions"
     local TARGET_DIR="$TARGET_PARENT/youtube-force-h264"
     local TARGET_DOC_DIR="/usr/local/share/doc/linux-migration-tool"
     local TARGET_DOC_GUIDE="$TARGET_DOC_DIR/youtube-force-h264-chromium-brave.md"
+    local SOURCE_DOC_GUIDE="$PROJECT_ROOT/docs/youtube-force-h264.md"
 
     if [ ! -f "$SOURCE_DIR/manifest.json" ] || [ ! -f "$SOURCE_DIR/content.js" ] || [ ! -f "$SOURCE_DIR/inject.js" ]; then
         log_warn "Paquete YouTube H264 incompleto en: $SOURCE_DIR"
+        return
+    fi
+
+    if [ ! -f "$SOURCE_DOC_GUIDE" ]; then
+        log_warn "Guia YouTube H264 no encontrada en: $SOURCE_DOC_GUIDE"
         return
     fi
 
@@ -975,7 +1393,7 @@ install_youtube_force_h264_package() {
         run_cmd rm -rf "$TARGET_DIR"
         run_cmd cp -R "$SOURCE_DIR" "$TARGET_PARENT/"
         run_cmd sudo mkdir -p "$TARGET_DOC_DIR"
-        run_cmd sudo cp "$PROJECT_ROOT/youtube-force-h264-chromium-brave.md" "$TARGET_DOC_GUIDE"
+        run_cmd sudo cp "$SOURCE_DOC_GUIDE" "$TARGET_DOC_GUIDE"
     fi
 
     log "Paquete listo para cargar como extension descomprimida:"
@@ -1388,6 +1806,51 @@ configure_chromium_hw_acceleration() {
     log " - chrome://gpu"
 }
 
+configure_vaapi_brave_broadwell() {
+    local GPU_PROFILE=""
+
+    GPU_PROFILE="$(detect_gpu_profile)"
+
+    if [[ "$GPU_PROFILE" != intel* ]]; then
+        return
+    fi
+
+    log "${YELLOW}GPU Intel detectada.${NC}"
+    log "Corrección VA-API para Brave/Chromium en Intel Broadwell (MBP 2015 / Iris 6100):"
+    log " - Instala libva-intel-driver-irql (AUR): fork parcheado que corrige el fallo de"
+    log "   inicialización del frame pool en Chromium, por el que VaapiVideoDecoder cae a"
+    log "   FFmpegVideoDecoder (decodificación por CPU en lugar de GPU)."
+    log " - Crea ~/.config/environment.d/vaapi.conf  →  LIBVA_DRIVER_NAME=i965"
+    log " - Escribe ~/.config/brave-flags.conf con flags para VA-API GL"
+
+    if ! confirm_action "¿Aplicar corrección VA-API para Brave/Chromium en Intel Broadwell?"; then
+        return
+    fi
+
+    log "${YELLOW}Instalando libva-intel-driver-irql (AUR)...${NC}"
+    log_package_batch_state "AUR" "aur" libva-intel-driver-irql
+    run_cmd yay -S --needed --noconfirm libva-intel-driver-irql
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] crear ~/.config/environment.d/vaapi.conf${NC}"
+        log "${YELLOW}[DRY-RUN] escribir ~/.config/brave-flags.conf${NC}"
+    else
+        run_cmd mkdir -p "$HOME/.config/environment.d"
+        printf 'LIBVA_DRIVER_NAME=i965\n' > "$HOME/.config/environment.d/vaapi.conf"
+        write_browser_flags_file "$HOME/.config/brave-flags.conf" \
+'--ignore-gpu-blocklist
+--enable-gpu-rasterization
+--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL
+--ozone-platform-hint=x11'
+    fi
+
+    log_warn "Reinicia la sesión para que LIBVA_DRIVER_NAME=i965 quede disponible en el entorno."
+    log "Verifica VA-API con: LIBVA_DRIVER_NAME=i965 vainfo"
+    log "Tras reiniciar Brave, valida en:"
+    log " - brave://media-internals  →  kVideoDecoderName = VaapiVideoDecoder"
+    log " - sudo intel_gpu_top       →  motor Video activo durante reproducción"
+}
+
 configure_btrfs_snapshots() {
     log "${YELLOW}Configurando Snapper...${NC}"
 
@@ -1503,6 +1966,7 @@ bootstrap_cachyos() {
     configure_wifi_regulatory_domain
     configure_global_menu_support
     configure_chromium_hw_acceleration
+    configure_vaapi_brave_broadwell
     configure_btrfs_snapshots
 
     log ""
