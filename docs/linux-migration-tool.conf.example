@@ -37,3 +37,4 @@ DATA_DIRS=()
 
 # MBP Watch diagnostics
 # MBP_WATCH_INTERVAL=5
+# MBP_PLASMOID_TARGET="screen:1"

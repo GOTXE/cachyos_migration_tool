@@ -277,21 +277,61 @@ Commit de documentación del plasmoid:
 
 - `0b0f6bc`
 
-Esto permite arrancar la implementación con una base ya trazable.
+Implementación v1 del plasmoid:
+
+- `35a2fed` Scaffold Plasma 6 plasmoid package
+- `4bc126a` Add plasmoid constants and data source
+- `f79e12b` Add state adapter for mbp_watch data
+- `69575b5` Implement plasmoid shell and theme primitives
+- `810a6a3` Implement severity and counters blocks
+- `aa576e6` Implement compact snapshot blocks
+- `39a6a2e` Add recent event indicators and popup
+- `058fd8c` Implement driver health and daily history blocks
+- `d29cae5` Add dashboard action and KDE notifications
+- `1fc4fda` Add plasmoid config schema
+- `02ee707` Integrate plasmoid install flow into bootstrap
+
+Esto deja la documentación inicial y la implementación v1 con trazabilidad en Git.
 
 ---
 
-## 10. Uso correcto de este índice
+## 10. Estado de implementación
 
-Si un agente va a empezar a codificar, debería hacer esto:
+La implementación completa del plasmoid v1 vive en:
+
+- [assets/plasmoids/mbp-watch](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/plasmoids/mbp-watch)
+
+La integración de instalación, upgrade y auto-add vive en:
+
+- [src/modules/bootstrap.sh](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh:1)
+
+Validaciones no destructivas realizadas:
+
+- `bash -n migration.sh src/main.sh src/lib/common.sh src/modules/*.sh src/tools/*.sh`
+- `shellcheck migration.sh src/main.sh src/lib/common.sh src/modules/*.sh src/tools/*.sh`
+- `kpackagetool6 --type Plasma/Applet --appstream-metainfo assets/plasmoids/mbp-watch`
+
+Limitación pendiente:
+
+- No se ha verificado todavía dentro de una sesión KDE Plasma real el runtime del plasmoid.
+- No se ha ejecutado todavía `kpackagetool6 --install/--upgrade assets/plasmoids/mbp-watch` contra el usuario real.
+- No se ha ejecutado todavía `plasmawindowed io.github.gtx.mbpwatch`.
+- No se ha ejecutado todavía el `qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript ...` de auto-add contra una sesión real de `org.kde.plasmashell`.
+
+Por tanto, para siguientes agentes: no rehacer la implementación v1 desde cero. El trabajo pendiente es validación runtime en Plasma real y corrección de cualquier incidencia que aparezca ahí.
+
+---
+
+## 11. Uso correcto de este índice
+
+Si un agente va a retomar el plasmoid, debería hacer esto:
 
 1. leer este índice
-2. leer la guía de IA
-3. leer `spec`
-4. leer `mapping`
-5. ejecutar la primera tarea del `task-plan`
-6. crear el scaffold en `assets/plasmoids/mbp-watch`
-7. validar
-8. hacer el primer commit del plan
+2. revisar el estado de implementación anterior
+3. inspeccionar [assets/plasmoids/mbp-watch](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/plasmoids/mbp-watch)
+4. inspeccionar el bloque de integración en [src/modules/bootstrap.sh](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh:1)
+5. repetir las validaciones no destructivas
+6. validar runtime en una sesión KDE Plasma real
+7. corregir sólo las incidencias observadas en runtime
 
-Ese es el flujo correcto.
+Ese es el flujo correcto después de la implementación v1.

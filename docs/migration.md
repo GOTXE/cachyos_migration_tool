@@ -319,10 +319,28 @@ Desinstalación:
 # Desde migration.sh (recomendado — integra dry-run y el flujo de confirmación)
 ./migration.sh uninstall-mbp-watch
 ./migration.sh uninstall-mbp-watch --dry-run
+./migration.sh add-mbp-plasmoid
+./migration.sh add-mbp-plasmoid --dry-run
+./migration.sh move-mbp-plasmoid --target primary
+./migration.sh move-mbp-plasmoid --target screen:1
+./migration.sh move-mbp-plasmoid --target screen:2 --dry-run
+./migration.sh uninstall-mbp-plasmoid
+./migration.sh uninstall-mbp-plasmoid --dry-run
+./migration.sh reinstall-mbp-plasmoid
+./migration.sh reinstall-mbp-plasmoid --dry-run
 
 # Standalone como root (equivalente al script instalado en /usr/local/sbin)
 sudo /usr/local/sbin/uninstall_mbp_watch.sh           # conserva /var/lib/mbp-watch
 sudo /usr/local/sbin/uninstall_mbp_watch.sh --purge   # elimina también los logs y reportes
+
+# Standalone del plasmoid KDE desde el repo
+bash assets/diagnostics/uninstall_mbp_plasmoid.sh
+bash assets/diagnostics/uninstall_mbp_plasmoid.sh --dry-run
+bash assets/diagnostics/move_mbp_plasmoid.sh --target primary
+bash assets/diagnostics/move_mbp_plasmoid.sh --target screen:1
+bash assets/diagnostics/move_mbp_plasmoid.sh --target screen:2 --dry-run
+bash assets/diagnostics/reinstall_mbp_plasmoid.sh
+bash assets/diagnostics/reinstall_mbp_plasmoid.sh --dry-run
 ```
 
 Qué elimina el desinstalador:
@@ -337,6 +355,26 @@ Qué elimina el desinstalador:
 Con `--purge` (o eligiendo "sí" al confirmar desde el menú):
 
 - `/var/lib/mbp-watch/` (logs, reportes, inventario, historial diario)
+
+El desinstalador del plasmoid KDE:
+
+- intenta quitar instancias activas del escritorio con `qdbus6`
+- elimina el paquete de usuario con `kpackagetool6 --type Plasma/Applet --remove io.github.gtx.mbpwatch`
+- no edita directamente archivos internos de configuración de Plasma
+
+El reinstalador del plasmoid KDE:
+
+- ejecuta primero la desinstalación del plasmoid actual
+- reinstala el paquete de usuario desde `assets/plasmoids/mbp-watch`
+- reintenta el auto-add del widget al escritorio usando `qdbus6`
+- no reinicia `plasmashell`, para no romper la barra o el shell de Plasma
+
+El comando de movimiento del plasmoid KDE:
+
+- elimina la instancia activa del plasmoid del escritorio
+- la recrea en el target pedido con `qdbus6`
+- soporta `--target primary` y `--target screen:N`
+- sirve para recolocar el widget sin desinstalar ni reinstalar el paquete
 
 Úsalo durante los primeros días de uso real y desactívalo cuando confirmes que:
 
@@ -362,7 +400,11 @@ muestra:
 3) Post-check tras reinicio
 4) Restaurar backup
 5) Desinstalar MBP Watch
-6) Salir
+6) Desinstalar plasmoid MBP Watch
+7) Reinstalar plasmoid MBP Watch
+8) Mover plasmoid MBP Watch
+9) Instalar YouTube Force H264
+10) Salir
 ```
 
 ---
@@ -813,6 +855,7 @@ Durante `Bootstrap CachyOS` el script ahora puede ofrecer tambien:
 - Instalar `appmenu-gtk-module` y `libdbusmenu-glib` para mejorar `Global Menu` en Plasma en apps tipo VS Code.
 - Escribir un fichero de flags para `Brave` o `Google Chrome` y dejar activada aceleracion hardware en combinaciones soportadas por la wiki de CachyOS.
 - Preparar la extension local `YouTube Force H264` en `~/extensions/youtube-force-h264/` para cargarla como `Load unpacked` desde `brave://extensions` o `chrome://extensions`.
+- Instalar solo esa extension con `./migration.sh install-youtube-force-h264` sin ejecutar todo `Bootstrap CachyOS`.
 
 Notas:
 
@@ -824,6 +867,7 @@ Notas:
 - Si aun asi el Wi-Fi falla y en `dmesg` aparece `backplane type 15 is not supported`, toca revisar manualmente el PCI runtime power management de ese dispositivo.
 - La extension `YouTube Force H264` queda preparada en `~/extensions/youtube-force-h264/` con `manifest.json`, `content.js`, `inject.js` y `README.md`.
 - Para activarla, abre `brave://extensions` o `chrome://extensions`, activa `Modo desarrollador` y usa `Cargar descomprimida`.
+- Si solo quieres ese paquete, puedes ejecutar `./migration.sh install-youtube-force-h264`.
 - El popup de la extension incluye un slide para activar o desactivar el parche sin desinstalarla; recarga la pestaña de YouTube para aplicar el cambio.
 - La aceleracion Chromium se ofrece solo para combinaciones conservadoras automatizadas:
   - `Brave + AMD`
