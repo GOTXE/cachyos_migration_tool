@@ -21,6 +21,16 @@ export NEWT_COLORS='
   compactbutton=white,black
 '
 
+# Ejecuta una función en subshell para que exit 1 no mate la TUI,
+# y muestra un msgbox al terminar con la ruta del log.
+tui_op() {
+    local TITLE="$1"
+    shift
+    ("$@") || true
+    whiptail --title " $TITLE " \
+        --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
+}
+
 tui_main_menu() {
     local OPTION
     local TUI_TARGET
@@ -44,63 +54,24 @@ tui_main_menu() {
             3>&1 1>&2 2>&3) || break
 
         case "$OPTION" in
-            1)
-                backup_system
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
-            2)
-                tui_bootstrap
-                ;;
-            3)
-                post_bootstrap_checks
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
-            4)
-                restore_system
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
-            5)
-                uninstall_mbp_watch_diagnostics
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
-            6)
-                uninstall_mbp_watch_plasmoid
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
-            7)
-                reinstall_mbp_watch_plasmoid
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
+            1)  tui_op "Backup completado"              backup_system ;;
+            2)  tui_bootstrap ;;
+            3)  tui_op "Post-check completado"          post_bootstrap_checks ;;
+            4)  tui_op "Restore completado"             restore_system ;;
+            5)  tui_op "MBP Watch desinstalado"         uninstall_mbp_watch_diagnostics ;;
+            6)  tui_op "Plasmoid desinstalado"          uninstall_mbp_watch_plasmoid ;;
+            7)  tui_op "Plasmoid reinstalado"           reinstall_mbp_watch_plasmoid ;;
             8)
                 TUI_TARGET=$(whiptail \
                     --title " Mover plasmoid MBP Watch " \
                     --inputbox "\nDestino del plasmoid:" \
                     9 52 "primary" \
                     3>&1 1>&2 2>&3) || continue
-                MBP_PLASMOID_TARGET="${TUI_TARGET:-primary}"
-                move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
+                tui_op "Plasmoid movido" move_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
                 ;;
-            9)
-                install_youtube_force_h264_package
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
-            10)
-                configure_vaapi_brave_broadwell
-                whiptail --title " Operación completada " \
-                    --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
-                ;;
-            11)
-                break
-                ;;
+            9)  tui_op "YouTube H264 instalado"         install_youtube_force_h264_package ;;
+            10) tui_op "VA-API configurado"             configure_vaapi_brave_broadwell ;;
+            11) break ;;
         esac
     done
 }
@@ -147,7 +118,7 @@ tui_bootstrap() {
         --yesno "\nSe ejecutarán los bloques seleccionados.\n¿Continuar?" \
         9 52 || return 0
 
-    tui_bootstrap_run "$SELECTED"
+    (tui_bootstrap_run "$SELECTED") || true
 
     whiptail --title " Bootstrap completado " \
         --msgbox "\nBootstrap completado.\n\nRecomendado: reiniciar el sistema.\n\nLog guardado en:\n$LOGFILE" \
@@ -182,8 +153,6 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"hwaccel"'* ]]    && configure_chromium_hw_acceleration
     [[ "$SELECTED" == *'"vaapi"'* ]]      && configure_vaapi_brave_broadwell
     [[ "$SELECTED" == *'"btrfs"'* ]]      && configure_btrfs_snapshots
-
-    AUTO_CONFIRM=false
 
     log ""
     log "${GREEN}=================================${NC}"
