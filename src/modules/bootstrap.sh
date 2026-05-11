@@ -232,6 +232,8 @@ install_packages() {
         mtr
         bind
         inetutils
+        ffmpeg
+        yt-dlp
         firefox
         syncthing
         kdeconnect
