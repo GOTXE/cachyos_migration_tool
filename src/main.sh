@@ -23,6 +23,10 @@ source "$APP_DIR/modules/bootstrap.sh"
 source "$APP_DIR/lib/tui.sh"
 
 main_menu() {
+    if command -v python3 >/dev/null 2>&1 && python3 -c "import curses" 2>/dev/null; then
+        python3 "$APP_DIR/lib/tui.py" "$PROJECT_ROOT" "$VERSION"
+        return
+    fi
     if command -v whiptail >/dev/null 2>&1; then
         tui_main_menu
         return
@@ -323,6 +327,10 @@ main() {
                 esac
             done
             reinstall_mbp_watch_plasmoid "$REQUESTED_PLASMOID_TARGET"
+            ;;
+        tui-bootstrap-run)
+            shift
+            tui_bootstrap_run "${1:-}" "${2:-}" "${3:-}"
             ;;
         -h|--help)
             usage
