@@ -356,7 +356,7 @@ def main_loop(stdscr):
     while True:
         stdscr.clear()
         stdscr.refresh()
-        idx = menu(stdscr, f"Linux Migration Tool v{VERSION}", items)
+        idx = menu(stdscr, f"Linux Migration Tool v{VERSION}  [python]", items)
         if idx < 0:
             break
         tag, label = items[idx]

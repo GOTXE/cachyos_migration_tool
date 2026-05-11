@@ -258,7 +258,7 @@ tui_main_menu() {
 
     while true; do
         OPTION=$(wt \
-            --title " Linux Migration Tool v${VERSION} " \
+            --title " Linux Migration Tool v${VERSION}  [whiptail] " \
             --menu "\nSelecciona una operación:" \
             23 64 12 \
             "1"  "Backup sistema" \
