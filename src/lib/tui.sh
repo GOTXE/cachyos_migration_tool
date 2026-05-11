@@ -34,7 +34,7 @@ tui_op() {
     shift
     ("$@") || true
     wt --title " $TITLE " \
-        --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
+        --msgbox "\nLog guardado en:\n$LOGFILE" 9 72
 }
 
 # ---------------------------------------------------------------------------
@@ -162,7 +162,7 @@ tui_backup() {
 
     wt --title " Backup completado " \
         --msgbox "\nBackup completado.\n\nLog guardado en:\n$LOGFILE" \
-        11 60
+        11 72
 }
 
 # ---------------------------------------------------------------------------
@@ -203,7 +203,7 @@ tui_restore() {
     (restore_system) || true
 
     wt --title " Restore completado " \
-        --msgbox "\nRestore completado.\n\nLog guardado en:\n$LOGFILE" 11 60
+        --msgbox "\nRestore completado.\n\nLog guardado en:\n$LOGFILE" 11 72
 }
 
 # ---------------------------------------------------------------------------
@@ -305,7 +305,7 @@ tui_bootstrap() {
 
     wt --title " Bootstrap completado " \
         --msgbox "\nBootstrap completado.\n\nRecomendado: reiniciar el sistema.\n\nLog guardado en:\n$LOGFILE" \
-        13 60
+        13 72
 }
 
 tui_bootstrap_run() {
