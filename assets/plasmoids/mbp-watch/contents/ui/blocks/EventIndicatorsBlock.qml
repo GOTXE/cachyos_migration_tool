@@ -16,13 +16,13 @@ HudPanel {
         id: theme
     }
 
-    implicitHeight: 104
+    implicitHeight: 124
     accentColor: indicators.length > 0 ? theme.warn : theme.borderSoft
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: theme.panelPadding
-        spacing: theme.spacingSm
+        spacing: theme.spacingMd
 
         MonoLabel {
             labelColor: theme.textMuted
@@ -31,18 +31,19 @@ HudPanel {
         }
 
         Flow {
+            id: indicatorsFlow
             Layout.fillWidth: true
-            width: parent.width
             spacing: theme.spacingSm
 
             Repeater {
                 model: root.indicators
 
                 delegate: Rectangle {
+                    id: indicatorCard
                     required property var modelData
 
-                    width: 100
-                    height: 48
+                    width: 112
+                    height: 58
                     radius: theme.radiusSm
                     color: Qt.rgba(theme.panelRaised.r, theme.panelRaised.g, theme.panelRaised.b, 0.95)
                     border.width: 1
@@ -50,29 +51,31 @@ HudPanel {
 
                     Column {
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 2
+                        anchors.margins: 10
+                        spacing: 4
 
                         MonoLabel {
-                            labelColor: modelData.unread > 0 ? theme.warn : theme.textMuted
+                            labelColor: indicatorCard.modelData.unread > 0 ? theme.warn : theme.textMuted
                             labelSize: 10
-                            content: String(modelData.category || "other").toUpperCase()
+                            lineHeightPx: 14
+                            content: String(indicatorCard.modelData.category || "other").toUpperCase()
                         }
 
                         MonoLabel {
-                            labelColor: modelData.unread > 0 ? theme.text : theme.textDim
+                            labelColor: indicatorCard.modelData.unread > 0 ? theme.text : theme.textDim
                             labelSize: 12
-                            content: modelData.unread > 0
-                                ? modelData.unread + " unread"
-                                : modelData.total + " seen"
+                            lineHeightPx: 16
+                            content: indicatorCard.modelData.unread > 0
+                                ? indicatorCard.modelData.unread + " unread"
+                                : indicatorCard.modelData.total + " seen"
                         }
                     }
 
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            if (modelData.latestEvent) {
-                                root.eventActivated(modelData.latestEvent)
+                            if (indicatorCard.modelData.latestEvent) {
+                                root.eventActivated(indicatorCard.modelData.latestEvent)
                             }
                         }
                     }

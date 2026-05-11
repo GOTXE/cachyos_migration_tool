@@ -1,4 +1,3 @@
-pragma library
 
 function buildMessage(eventData) {
     var eventItem = eventData || {};

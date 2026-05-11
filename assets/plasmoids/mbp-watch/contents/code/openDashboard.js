@@ -1,4 +1,3 @@
-pragma library
 
 function openDashboard(url) {
     var dashboardUrl = String(url || "");

@@ -42,20 +42,24 @@ Item {
     anchors.right: parent.right
     anchors.bottom: parent.bottom
     anchors.margins: theme.spacingLg
-    height: shown ? 188 : 0
+    height: shown ? Math.max(224, popupPanel.implicitHeight) : 0
 
     HudPanel {
+        id: popupPanel
         anchors.fill: parent
         raised: true
         accentColor: theme.warn
+        implicitHeight: popupContent.implicitHeight + (theme.panelPadding * 2)
 
         ColumnLayout {
+            id: popupContent
             anchors.fill: parent
             anchors.margins: theme.panelPadding
-            spacing: theme.spacingSm
+            spacing: theme.spacingMd
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.bottomMargin: 2
 
                 MonoLabel {
                     Layout.fillWidth: true
@@ -75,6 +79,9 @@ Item {
                 Layout.fillWidth: true
                 labelColor: theme.textDim
                 labelSize: 10
+                lineHeightPx: 14
+                allowWrap: true
+                maxLines: 2
                 content: root.eventData ? String(root.eventData.ts || "") : ""
             }
 
@@ -82,13 +89,21 @@ Item {
                 Layout.fillWidth: true
                 labelColor: theme.text
                 labelSize: 12
+                lineHeightPx: 18
+                allowWrap: true
+                maxLines: 4
                 content: root.eventData ? String(root.eventData.message || "") : ""
             }
 
-            RowLayout {
+            GridLayout {
                 Layout.fillWidth: true
+                Layout.topMargin: 4
+                columns: 3
+                rowSpacing: theme.spacingSm
+                columnSpacing: theme.spacingSm
 
                 IconActionButton {
+                    Layout.fillWidth: true
                     label: "COPY"
                     accentColor: theme.borderSoft
                     onClicked: {
@@ -99,6 +114,7 @@ Item {
                 }
 
                 IconActionButton {
+                    Layout.fillWidth: true
                     label: "MARK READ"
                     accentColor: theme.warn
                     onClicked: {
@@ -109,6 +125,7 @@ Item {
                 }
 
                 IconActionButton {
+                    Layout.fillWidth: true
                     label: "OPEN"
                     accentColor: theme.ok
                     onClicked: root.dashboardRequested()

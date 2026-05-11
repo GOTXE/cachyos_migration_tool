@@ -33,15 +33,19 @@ HudPanel {
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: theme.text
             labelSize: 16
-            content: loadAndSystem.loadAverage ? loadAndSystem.loadAverage : "n/a"
+            maxLines: 1
+            content: root.loadAndSystem.loadAverage ? root.loadAndSystem.loadAverage : "n/a"
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: theme.textDim
             labelSize: 10
-            content: "ctx " + loadAndSystem.contextSwitches
+            maxLines: 1
+            content: "ctx " + root.loadAndSystem.contextSwitches
         }
 
         ThinBar {

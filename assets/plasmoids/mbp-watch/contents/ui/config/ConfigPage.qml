@@ -7,7 +7,7 @@ import QtQuick.Layouts
 Pane {
     id: root
 
-    property alias cfg_dataPath: dataPathField.text
+    property alias cfg_dataUrl: dataUrlField.text
     property alias cfg_dashboardUrl: dashboardUrlField.text
     property alias cfg_refreshMs: refreshMsField.value
     property alias cfg_eventPopupTtlMs: popupTtlField.value
@@ -22,9 +22,9 @@ Pane {
         }
 
         TextField {
-            id: dataPathField
+            id: dataUrlField
             Layout.fillWidth: true
-            placeholderText: "/var/lib/mbp-watch/data.json"
+            placeholderText: "http://127.0.0.1:7070/data.json"
         }
 
         TextField {

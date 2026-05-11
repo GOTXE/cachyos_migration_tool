@@ -43,22 +43,26 @@ HudPanel {
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: root.tone
             labelSize: 18
-            content: thermal.primaryTemperature.currentC !== null
-                ? thermal.primaryTemperature.currentC + " C"
+            maxLines: 1
+            content: root.thermal.primaryTemperature.currentC !== null
+                ? root.thermal.primaryTemperature.currentC + " C"
                 : "n/a"
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: theme.textDim
             labelSize: 10
-            content: thermal.fan.text ? thermal.fan.text : thermal.primaryTemperature.label
+            maxLines: 1
+            content: root.thermal.fan.text ? root.thermal.fan.text : root.thermal.primaryTemperature.label
         }
 
         ThinBar {
             Layout.fillWidth: true
-            value: valueRatio
+            value: root.valueRatio
             barColor: root.tone
         }
     }

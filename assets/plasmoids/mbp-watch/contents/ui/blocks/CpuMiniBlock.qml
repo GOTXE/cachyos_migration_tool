@@ -39,20 +39,24 @@ HudPanel {
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: root.tone
             labelSize: 16
-            content: cpu.freqRatio !== null ? cpu.freqRatio + "%" : cpu.state
+            maxLines: 1
+            content: root.cpu.freqRatio !== null ? root.cpu.freqRatio + "%" : root.cpu.state
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: theme.textDim
             labelSize: 10
-            content: cpu.governor + " / " + cpu.energyMode
+            maxLines: 1
+            content: root.cpu.governor + " / " + root.cpu.energyMode
         }
 
         ThinBar {
             Layout.fillWidth: true
-            value: ratioValue
+            value: root.ratioValue
             barColor: root.tone
         }
     }

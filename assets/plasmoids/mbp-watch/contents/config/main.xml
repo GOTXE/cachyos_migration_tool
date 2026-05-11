@@ -6,8 +6,8 @@
   <kcfgfile name=""/>
 
   <group name="General">
-    <entry name="dataPath" type="String">
-      <default>/var/lib/mbp-watch/data.json</default>
+    <entry name="dataUrl" type="String">
+      <default>http://127.0.0.1:7070/data.json</default>
     </entry>
     <entry name="dashboardUrl" type="String">
       <default>http://127.0.0.1:7070/report.html</default>

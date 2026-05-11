@@ -39,7 +39,7 @@ HudPanel {
             MonoLabel {
                 labelColor: theme.textDim
                 labelSize: 10
-                content: driverHealth.captured ? driverHealth.captured : "pending"
+                content: root.driverHealth.captured ? root.driverHealth.captured : "pending"
             }
         }
 
@@ -51,11 +51,12 @@ HudPanel {
                 model: root.driverHealth.drivers.slice(0, 4)
 
                 delegate: Rectangle {
+                    id: driverEntry
                     required property var modelData
 
-                    readonly property color tone: modelData.status === "ERROR"
+                    readonly property color tone: driverEntry.modelData.status === "ERROR"
                         ? theme.critical
-                        : modelData.status === "WARN"
+                        : driverEntry.modelData.status === "WARN"
                             ? theme.warn
                             : theme.ok
 
@@ -72,21 +73,21 @@ HudPanel {
                         spacing: 8
 
                         StatusDot {
-                            dotColor: tone
+                            dotColor: driverEntry.tone
                         }
 
                         MonoLabel {
                             Layout.preferredWidth: 92
                             labelColor: theme.text
                             labelSize: 10
-                            content: modelData.name
+                            content: driverEntry.modelData.name
                         }
 
                         MonoLabel {
                             Layout.fillWidth: true
                             labelColor: theme.textDim
                             labelSize: 10
-                            content: modelData.detail ? modelData.detail : modelData.status
+                            content: driverEntry.modelData.detail ? driverEntry.modelData.detail : driverEntry.modelData.status
                         }
                     }
                 }

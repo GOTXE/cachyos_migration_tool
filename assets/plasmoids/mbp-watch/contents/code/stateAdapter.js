@@ -1,4 +1,3 @@
-pragma library
 
 function toNumber(value, fallback) {
     if (value === null || value === undefined || value === "") {

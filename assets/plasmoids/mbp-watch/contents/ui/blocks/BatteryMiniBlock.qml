@@ -23,7 +23,7 @@ HudPanel {
     readonly property real ratioValue: battery.percentage !== null ? Math.max(0, Math.min(1, battery.percentage / 100)) : 0.1
 
     implicitHeight: 104
-    accentColor: toneColor
+    accentColor: root.toneColor
 
     ColumnLayout {
         anchors.fill: parent
@@ -37,21 +37,25 @@ HudPanel {
         }
 
         MonoLabel {
-            labelColor: toneColor
+            Layout.fillWidth: true
+            labelColor: root.toneColor
             labelSize: 18
-            content: battery.percentage !== null ? battery.percentage + "%" : "n/a"
+            maxLines: 1
+            content: root.battery.percentage !== null ? root.battery.percentage + "%" : "n/a"
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: theme.textDim
             labelSize: 10
-            content: battery.state
+            maxLines: 1
+            content: root.battery.state
         }
 
         ThinBar {
             Layout.fillWidth: true
-            value: ratioValue
-            barColor: toneColor
+            value: root.ratioValue
+            barColor: root.toneColor
         }
     }
 }

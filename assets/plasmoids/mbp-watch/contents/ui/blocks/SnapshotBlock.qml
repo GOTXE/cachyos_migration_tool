@@ -43,7 +43,7 @@ HudPanel {
             MonoLabel {
                 labelColor: theme.textDim
                 labelSize: 10
-                content: snapshot.captured ? snapshot.captured : "live"
+                content: root.snapshot.captured ? root.snapshot.captured : "live"
             }
         }
 

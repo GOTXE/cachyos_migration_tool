@@ -1,4 +1,3 @@
-pragma library
 
 .import "eventStore.js" as EventStore
 

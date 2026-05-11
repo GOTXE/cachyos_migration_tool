@@ -1,4 +1,3 @@
-pragma library
 
 .import "constants.js" as Constants
 
@@ -12,14 +11,13 @@ function buildResult(status, payload, lastValidPayload, errorMessage) {
     };
 }
 
-function readTextFile(path) {
+function readTextFile(url) {
     var request = new XMLHttpRequest();
-    var fileUrl = Constants.toFileUrl(path);
 
-    request.open("GET", fileUrl, false);
+    request.open("GET", url, false);
     request.send();
 
-    if (request.status !== 0 && (request.status < 200 || request.status >= 300)) {
+    if (request.status < 200 || request.status >= 300) {
         throw new Error("HTTP " + request.status);
     }
 
@@ -38,7 +36,7 @@ function readState(config, previousState) {
     var currentConfig = config || {};
     var priorState = previousState || {};
     var lastValidData = priorState.lastValidData || null;
-    var sourcePath = currentConfig.dataPath || Constants.DATA_JSON_PATH;
+    var sourcePath = currentConfig.dataUrl || Constants.DATA_JSON_URL;
 
     try {
         var text = readTextFile(sourcePath);

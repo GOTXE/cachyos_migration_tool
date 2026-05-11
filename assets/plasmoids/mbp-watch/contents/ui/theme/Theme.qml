@@ -19,11 +19,11 @@ QtObject {
     readonly property int radiusLg: 18
     readonly property int radiusMd: 12
     readonly property int radiusSm: 8
-    readonly property int spacingXs: 6
-    readonly property int spacingSm: 10
-    readonly property int spacingMd: 14
-    readonly property int spacingLg: 18
-    readonly property int panelPadding: 14
+    readonly property int spacingXs: 8
+    readonly property int spacingSm: 12
+    readonly property int spacingMd: 16
+    readonly property int spacingLg: 20
+    readonly property int panelPadding: 16
     readonly property int thinBarHeight: 4
     readonly property string monoFont: "JetBrains Mono Nerd Font"
 

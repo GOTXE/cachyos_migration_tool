@@ -25,7 +25,7 @@ HudPanel {
     readonly property real signalValue: wifi.signalDbm !== null ? Math.max(0.08, Math.min(1, (wifi.signalDbm + 90) / 55)) : 0.08
 
     implicitHeight: 104
-    accentColor: toneColor
+    accentColor: root.toneColor
 
     ColumnLayout {
         anchors.fill: parent
@@ -39,23 +39,27 @@ HudPanel {
         }
 
         MonoLabel {
-            labelColor: toneColor
+            Layout.fillWidth: true
+            labelColor: root.toneColor
             labelSize: 15
-            content: wifi.connected ? (wifi.ssid ? wifi.ssid : "connected") : "disconnected"
+            maxLines: 1
+            content: root.wifi.connected ? (root.wifi.ssid ? root.wifi.ssid : "connected") : "disconnected"
         }
 
         MonoLabel {
+            Layout.fillWidth: true
             labelColor: theme.textDim
             labelSize: 10
-            content: wifi.signalDbm !== null
-                ? wifi.signalDbm + " dBm / " + (wifi.latencyMs !== null ? wifi.latencyMs + " ms" : "n/a")
+            maxLines: 1
+            content: root.wifi.signalDbm !== null
+                ? root.wifi.signalDbm + " dBm / " + (root.wifi.latencyMs !== null ? root.wifi.latencyMs + " ms" : "n/a")
                 : "signal unavailable"
         }
 
         ThinBar {
             Layout.fillWidth: true
-            value: signalValue
-            barColor: toneColor
+            value: root.signalValue
+            barColor: root.toneColor
         }
     }
 }

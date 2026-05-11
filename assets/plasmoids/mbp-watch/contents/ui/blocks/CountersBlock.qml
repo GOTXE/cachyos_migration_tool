@@ -71,15 +71,16 @@ HudPanel {
                 model: root.counterRows
 
                 delegate: HudPanel {
+                    id: counterCard
                     required property var modelData
 
-                    readonly property int value: root.counters[modelData.key] || 0
-                    readonly property bool active: value > 0
+                    readonly property int value: root.counters[counterCard.modelData.key] || 0
+                    readonly property bool active: counterCard.value > 0
 
                     Layout.fillWidth: true
                     Layout.preferredHeight: 68
-                    raised: active
-                    accentColor: active ? theme.warn : theme.borderSoft
+                    raised: counterCard.active
+                    accentColor: counterCard.active ? theme.warn : theme.borderSoft
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -88,21 +89,21 @@ HudPanel {
 
                         MonoLabel {
                             Layout.fillWidth: true
-                            labelColor: active ? theme.warn : theme.textMuted
+                            labelColor: counterCard.active ? theme.warn : theme.textMuted
                             labelSize: 10
-                            content: modelData.label
+                            content: counterCard.modelData.label
                         }
 
                         MonoLabel {
-                            labelColor: active ? theme.warn : theme.ok
+                            labelColor: counterCard.active ? theme.warn : theme.ok
                             labelSize: 20
-                            content: active ? String(value) : "0"
+                            content: counterCard.active ? String(counterCard.value) : "0"
                         }
 
                         ThinBar {
                             Layout.fillWidth: true
-                            value: active ? Math.min(1, value / 5) : 0.08
-                            barColor: active ? theme.warn : theme.borderSoft
+                            value: counterCard.active ? Math.min(1, counterCard.value / 5) : 0.08
+                            barColor: counterCard.active ? theme.warn : theme.borderSoft
                         }
                     }
                 }

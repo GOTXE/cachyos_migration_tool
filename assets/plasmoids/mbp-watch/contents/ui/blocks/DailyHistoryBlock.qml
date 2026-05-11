@@ -49,6 +49,7 @@ HudPanel {
                 model: root.dailyHistory
 
                 delegate: Item {
+                    id: historyEntry
                     required property var modelData
 
                     Layout.fillWidth: true
@@ -66,11 +67,11 @@ HudPanel {
                                 anchors.bottom: parent.bottom
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 width: Math.max(16, parent.width - 6)
-                                height: Math.max(8, ((modelData.total || 0) / root.maxTotal()) * 82)
+                                height: Math.max(8, ((historyEntry.modelData.total || 0) / root.maxTotal()) * 82)
                                 radius: 6
-                                color: (modelData.total || 0) > 0 ? theme.warn : theme.borderSoft
+                                color: (historyEntry.modelData.total || 0) > 0 ? theme.warn : theme.borderSoft
                                 border.width: 1
-                                border.color: (modelData.total || 0) > 0 ? theme.warn : theme.borderSoft
+                                border.color: (historyEntry.modelData.total || 0) > 0 ? theme.warn : theme.borderSoft
                             }
                         }
 
@@ -79,7 +80,7 @@ HudPanel {
                             horizontalAlignment: Text.AlignHCenter
                             labelColor: theme.textDim
                             labelSize: 9
-                            content: modelData.date ? modelData.date.slice(5) : "--"
+                            content: historyEntry.modelData.date ? historyEntry.modelData.date.slice(5) : "--"
                         }
                     }
                 }

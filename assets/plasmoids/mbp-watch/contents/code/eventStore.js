@@ -1,4 +1,3 @@
-pragma library
 
 function normalizeIdList(list) {
     var input = Array.isArray(list) ? list : [];
