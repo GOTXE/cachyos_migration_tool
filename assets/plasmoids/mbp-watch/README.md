@@ -1,3 +1,5 @@
+[Read in English 🇬🇧](README.en.md)
+
 # MBP Watch KDE Plasmoid
 
 Plasmoid KDE Plasma 6 para `mbp-watch`.

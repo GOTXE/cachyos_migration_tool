@@ -1,3 +1,5 @@
+[Read in English 🇬🇧](README.en.md)
+
 # CachyOS Migration Tool
 
 Script de migración y bootstrap para workstations Linux. Orientado al flujo de migración hacia **CachyOS / Arch** con entornos de desarrollo Python/Web, IA tooling y workflows terminal-heavy.

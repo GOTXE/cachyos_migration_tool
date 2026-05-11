@@ -1,3 +1,5 @@
+[Read in English 🇬🇧](README.en.md)
+
 # YouTube Force H264
 
 Extensión local para Chromium, Brave y derivados que evita que YouTube elija VP8, VP9 o AV1 cuando H.264/AVC está disponible.

@@ -1,3 +1,5 @@
+[Read in English 🇬🇧](README.en.md)
+
 ## Broadcom BCM43602 bundle
 
 Este directorio contiene el bundle local que `Bootstrap CachyOS` puede copiar a:
