@@ -21,13 +21,19 @@ export NEWT_COLORS='
   compactbutton=white,black
 '
 
+# Limpia la pantalla antes de cada diálogo para eliminar el glitch entre ventanas.
+wt() {
+    clear
+    whiptail "$@"
+}
+
 # Ejecuta una función en subshell para que exit 1 no mate la TUI,
 # y muestra un msgbox al terminar con la ruta del log.
 tui_op() {
     local TITLE="$1"
     shift
     ("$@") || true
-    whiptail --title " $TITLE " \
+    wt --title " $TITLE " \
         --msgbox "\nLog guardado en:\n$LOGFILE" 9 60
 }
 
@@ -59,7 +65,7 @@ tui_backup_select_dirs() {
         CHECKLIST_ARGS+=("$i" "${CANDIDATES[$i]}" "$STATUS")
     done
 
-    SELECTED_RAW=$(whiptail \
+    SELECTED_RAW=$(wt \
         --title " Directorios de datos para backup " \
         --checklist "Space=marcar/desmarcar   Enter=confirmar" \
         22 74 12 \
@@ -104,7 +110,7 @@ tui_backup_select_disk() {
     )
 
     if [ ${#DISKS[@]} -eq 0 ]; then
-        whiptail --title " Error " \
+        wt --title " Error " \
             --msgbox "\nNo se encontraron discos montados." 8 44
         return 1
     fi
@@ -123,7 +129,7 @@ tui_backup_select_disk() {
         RADIOLIST_ARGS+=("$MOUNT" "${NAME}  ${SIZE}  libre:${AVAILABLE}  ${FS}  ${LABEL}" "$STATUS")
     done
 
-    DISK_SELECTED=$(whiptail \
+    DISK_SELECTED=$(wt \
         --title " Seleccionar disco destino " \
         --radiolist \
         "Espacio necesario aprox.: ${REQUIRED_HUMAN}\nSpace=seleccionar   Enter=confirmar" \
@@ -136,7 +142,7 @@ tui_backup_select_disk() {
     AVAILABLE_BYTES="$(get_mount_available_bytes "$DISK_MOUNT")"
     AVAILABLE_BYTES="${AVAILABLE_BYTES:-0}"
     if [ "$AVAILABLE_BYTES" -lt "$BACKUP_ESTIMATED_BYTES" ]; then
-        whiptail --title " Espacio insuficiente " \
+        wt --title " Espacio insuficiente " \
             --msgbox "\nEspacio insuficiente en el disco seleccionado.\n\nNecesario : ${REQUIRED_HUMAN}\nDisponible: $(format_bytes_human "$AVAILABLE_BYTES")" \
             11 56
         return 1
@@ -147,14 +153,14 @@ tui_backup() {
     tui_backup_select_dirs || return 0
     tui_backup_select_disk || return 0
 
-    whiptail --title " Backup CachyOS " \
+    wt --title " Backup CachyOS " \
         --yesno "\nDestino : $DISK_MOUNT\nNecesario: $(format_bytes_human "$BACKUP_ESTIMATED_BYTES")\n\n¿Iniciar backup?" \
         11 60 || return 0
 
     BACKUP_TARGET="$DISK_MOUNT"
     (backup_system) || true
 
-    whiptail --title " Backup completado " \
+    wt --title " Backup completado " \
         --msgbox "\nBackup completado.\n\nLog guardado en:\n$LOGFILE" \
         11 60
 }
@@ -168,7 +174,7 @@ tui_main_menu() {
     local TUI_TARGET
 
     while true; do
-        OPTION=$(whiptail \
+        OPTION=$(wt \
             --title " Linux Migration Tool v${VERSION} " \
             --menu "\nSelecciona una operación:" \
             23 64 12 \
@@ -194,7 +200,7 @@ tui_main_menu() {
             6)  tui_op "Plasmoid desinstalado"  uninstall_mbp_watch_plasmoid ;;
             7)  tui_op "Plasmoid reinstalado"   reinstall_mbp_watch_plasmoid ;;
             8)
-                TUI_TARGET=$(whiptail \
+                TUI_TARGET=$(wt \
                     --title " Mover plasmoid MBP Watch " \
                     --inputbox "\nDestino del plasmoid:" \
                     9 52 "primary" \
@@ -220,7 +226,7 @@ tui_bootstrap() {
     is_apple_laptop 2>/dev/null && APPLE_DEFAULT="ON"
     [ "$(detect_facetimehd_camera 2>/dev/null)" = "yes" ] && FACETIME_DEFAULT="ON"
 
-    SELECTED=$(whiptail \
+    SELECTED=$(wt \
         --title " Bootstrap CachyOS " \
         --checklist \
         "Space=marcar/desmarcar   Flechas=navegar   Enter=confirmar" \
@@ -244,19 +250,19 @@ tui_bootstrap() {
         3>&1 1>&2 2>&3) || return 0
 
     if [ -z "$SELECTED" ]; then
-        whiptail --title " Bootstrap " \
+        wt --title " Bootstrap " \
             --msgbox "\nNo se seleccionó ningún bloque." \
             8 44
         return 0
     fi
 
-    whiptail --title " Bootstrap CachyOS " \
+    wt --title " Bootstrap CachyOS " \
         --yesno "\nSe ejecutarán los bloques seleccionados.\n¿Continuar?" \
         9 52 || return 0
 
     (tui_bootstrap_run "$SELECTED") || true
 
-    whiptail --title " Bootstrap completado " \
+    wt --title " Bootstrap completado " \
         --msgbox "\nBootstrap completado.\n\nRecomendado: reiniciar el sistema.\n\nLog guardado en:\n$LOGFILE" \
         13 60
 }
