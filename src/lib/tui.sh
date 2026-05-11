@@ -27,14 +27,28 @@ wt() {
     whiptail "$@"
 }
 
+# Muestra un msgbox con el path del log ajustando el ancho al tamaño del path.
+# Uso: _tui_log_msgbox "Título" "Texto extra\n\n" <filas>
+_tui_log_msgbox() {
+    local TITLE="$1"
+    local BODY="$2"
+    local ROWS="${3:-9}"
+    local SHORT="${LOGFILE/#$HOME/\~}"
+    local COLS=$(( ${#SHORT} + 6 ))
+    local MAXCOLS=$(( $(tput cols 2>/dev/null || echo 80) - 2 ))
+    (( COLS > MAXCOLS )) && COLS=$MAXCOLS
+    (( COLS < 50 ))      && COLS=50
+    wt --title " $TITLE " \
+        --msgbox "${BODY}Log guardado en:\n${SHORT}" "$ROWS" "$COLS"
+}
+
 # Ejecuta una función en subshell para que exit 1 no mate la TUI,
 # y muestra un msgbox al terminar con la ruta del log.
 tui_op() {
     local TITLE="$1"
     shift
     ("$@") || true
-    wt --title " $TITLE " \
-        --msgbox "\nLog guardado en:\n$LOGFILE" 9 72
+    _tui_log_msgbox "$TITLE" "\n" 9
 }
 
 # ---------------------------------------------------------------------------
@@ -160,9 +174,7 @@ tui_backup() {
     BACKUP_TARGET="$DISK_MOUNT"
     (backup_system) || true
 
-    wt --title " Backup completado " \
-        --msgbox "\nBackup completado.\n\nLog guardado en:\n$LOGFILE" \
-        11 72
+    _tui_log_msgbox "Backup completado" "\nBackup completado.\n\n" 11
 }
 
 # ---------------------------------------------------------------------------
@@ -202,8 +214,7 @@ tui_restore() {
     BACKUP_SOURCE="$SRC"
     (restore_system) || true
 
-    wt --title " Restore completado " \
-        --msgbox "\nRestore completado.\n\nLog guardado en:\n$LOGFILE" 11 72
+    _tui_log_msgbox "Restore completado" "\nRestore completado.\n\n" 11
 }
 
 # ---------------------------------------------------------------------------
@@ -303,9 +314,7 @@ tui_bootstrap() {
 
     (tui_bootstrap_run "$SELECTED") || true
 
-    wt --title " Bootstrap completado " \
-        --msgbox "\nBootstrap completado.\n\nRecomendado: reiniciar el sistema.\n\nLog guardado en:\n$LOGFILE" \
-        13 72
+    _tui_log_msgbox "Bootstrap completado" "\nBootstrap completado.\n\nRecomendado: reiniciar el sistema.\n\n" 13
 }
 
 tui_bootstrap_run() {
