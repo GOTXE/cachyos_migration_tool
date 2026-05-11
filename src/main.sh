@@ -23,14 +23,25 @@ source "$APP_DIR/modules/bootstrap.sh"
 source "$APP_DIR/lib/tui.sh"
 
 main_menu() {
-    if command -v python3 >/dev/null 2>&1 && python3 -c "import curses" 2>/dev/null; then
-        python3 "$APP_DIR/lib/tui.py" "$PROJECT_ROOT" "$VERSION"
-        return
-    fi
-    if command -v whiptail >/dev/null 2>&1; then
-        tui_main_menu
-        return
-    fi
+    case "${TUI_BACKEND:-auto}" in
+        python)
+            python3 "$APP_DIR/lib/tui.py" "$PROJECT_ROOT" "$VERSION"
+            return ;;
+        whiptail)
+            tui_main_menu
+            return ;;
+        text)
+            : ;;  # cae al menú de texto
+        auto|*)
+            if command -v python3 >/dev/null 2>&1 && python3 -c "import curses" 2>/dev/null; then
+                python3 "$APP_DIR/lib/tui.py" "$PROJECT_ROOT" "$VERSION"
+                return
+            fi
+            if command -v whiptail >/dev/null 2>&1; then
+                tui_main_menu
+                return
+            fi ;;
+    esac
 
     local OPTION
 
