@@ -4,6 +4,11 @@
 
 - [migration.md](migration.md) — Guía completa de uso: backup, bootstrap, restore, postcheck y comandos CLI
 - [linux-migration-tool.conf.example](linux-migration-tool.conf.example) — Plantilla de configuración de usuario
+- [tui.md](tui.md) — Sistema TUI: Python/curses (primario), whiptail (fallback), texto plano y variable `TUI_BACKEND`
+
+## Firmware Wi-Fi
+
+- [firmware-bcm43602.md](firmware-bcm43602.md) — Bundle Broadcom BCM43602 en `firmware/brcm/` y herramienta de extracción
 
 ## Hardware — MBP 2015 (MacBookPro12,1)
 
@@ -17,6 +22,8 @@ Guías específicas para MacBook Pro Retina 13" 2015 en CachyOS:
 
 Monitor de hardware para MBP 2015 (daemon systemd + web local):
 
+- [diagnostics.md](diagnostics.md) — Scripts del daemon, servicio systemd, web local y gestión del plasmoid desde CLI
+- [plasmoid-mbp-watch.md](plasmoid-mbp-watch.md) — Paquete KDE Plasma 6 (`assets/plasmoids/mbp-watch/`): estructura, instalación y uso
 - [mbp-watch/refactor.md](mbp-watch/refactor.md) — Plan de refactorización del monitor
 - [mbp-watch/wifi-monitor.md](mbp-watch/wifi-monitor.md) — Análisis Wi-Fi integrado en el dashboard
 - [mbp-watch/mockup.pen](mbp-watch/mockup.pen) — Mockup Pencil del rediseño de la web
