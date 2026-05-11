@@ -33,7 +33,12 @@ main_menu() {
     log "3) Post-check tras reinicio"
     log "4) Restaurar backup"
     log "5) Desinstalar MBP Watch"
-    log "6) Salir"
+    log "6) Desinstalar plasmoid MBP Watch"
+    log "7) Reinstalar plasmoid MBP Watch"
+    log "8) Mover plasmoid MBP Watch"
+    log "9) Instalar YouTube Force H264"
+    log "10) Configurar VA-API Brave/Chromium (Intel Broadwell)"
+    log "11) Salir"
     log ""
 
     prompt_read "Selecciona opcion: " OPTION
@@ -55,6 +60,23 @@ main_menu() {
             uninstall_mbp_watch_diagnostics
             ;;
         6)
+            uninstall_mbp_watch_plasmoid
+            ;;
+        7)
+            reinstall_mbp_watch_plasmoid
+            ;;
+        8)
+            prompt_read "Destino del plasmoid [primary|screen:N]: " MBP_PLASMOID_TARGET
+            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+            move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+            ;;
+        9)
+            install_youtube_force_h264_package
+            ;;
+        10)
+            configure_vaapi_brave_broadwell
+            ;;
+        11)
             exit 0
             ;;
         *)
@@ -77,7 +99,13 @@ Comandos:
   ./migration.sh bootstrap [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
   ./migration.sh postcheck
   ./migration.sh restore [--source RUTA] [--force] [--dry-run]
+  ./migration.sh add-mbp-plasmoid [--target primary|screen:N] [--dry-run]
+  ./migration.sh move-mbp-plasmoid [--target primary|screen:N] [--dry-run]
   ./migration.sh uninstall-mbp-watch [--dry-run]
+  ./migration.sh uninstall-mbp-plasmoid [--dry-run]
+  ./migration.sh reinstall-mbp-plasmoid [--target primary|screen:N] [--dry-run]
+  ./migration.sh install-youtube-force-h264 [--dry-run]
+  ./migration.sh configure-vaapi-brave [--dry-run]
 EOF
 }
 
@@ -182,6 +210,8 @@ parse_bootstrap_args() {
 }
 
 main() {
+    local REQUESTED_PLASMOID_TARGET=""
+
     if [ $# -eq 0 ]; then
         main_menu
         return
@@ -203,9 +233,69 @@ main() {
             parse_bootstrap_args "$@"
             bootstrap_cachyos
             ;;
+        install-youtube-force-h264)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            install_youtube_force_h264_package
+            ;;
+        configure-vaapi-brave)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            configure_vaapi_brave_broadwell
+            ;;
         postcheck)
             shift
             post_bootstrap_checks
+            ;;
+        add-mbp-plasmoid)
+            shift
+            REQUESTED_PLASMOID_TARGET=""
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    --target)
+                        [ $# -ge 2 ] || {
+                            log "${RED}Falta valor para --target${NC}"
+                            usage
+                            exit 1
+                        }
+                        REQUESTED_PLASMOID_TARGET="$2"
+                        shift 2
+                        ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            add_mbp_plasmoid_to_desktop "$REQUESTED_PLASMOID_TARGET"
+            ;;
+        move-mbp-plasmoid)
+            shift
+            MBP_PLASMOID_TARGET="primary"
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    --target)
+                        [ $# -ge 2 ] || {
+                            log "${RED}Falta valor para --target${NC}"
+                            usage
+                            exit 1
+                        }
+                        MBP_PLASMOID_TARGET="$2"
+                        shift 2
+                        ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
             ;;
         uninstall-mbp-watch)
             shift
@@ -216,6 +306,36 @@ main() {
                 esac
             done
             uninstall_mbp_watch_diagnostics
+            ;;
+        uninstall-mbp-plasmoid)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            uninstall_mbp_watch_plasmoid
+            ;;
+        reinstall-mbp-plasmoid)
+            shift
+            REQUESTED_PLASMOID_TARGET=""
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    --target)
+                        [ $# -ge 2 ] || {
+                            log "${RED}Falta valor para --target${NC}"
+                            usage
+                            exit 1
+                        }
+                        REQUESTED_PLASMOID_TARGET="$2"
+                        shift 2
+                        ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            reinstall_mbp_watch_plasmoid "$REQUESTED_PLASMOID_TARGET"
             ;;
         -h|--help)
             usage
