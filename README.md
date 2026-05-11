@@ -133,6 +133,12 @@ El script funciona sin TUI gráfica: el modo texto no requiere dependencias adic
 
 ---
 
+## Licencia
+
+Distribuido bajo la [GNU General Public License v3.0](LICENSE). Sin garantía de ningún tipo — úsalo bajo tu propia responsabilidad.
+
+---
+
 ## Documentación
 
 → [`docs/`](docs/README.md)
