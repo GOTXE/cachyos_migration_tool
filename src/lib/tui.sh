@@ -42,21 +42,30 @@ _tui_log_msgbox() {
         --msgbox "${BODY}Log guardado en:\n${SHORT}" "$ROWS" "$COLS"
 }
 
-# Ejecuta "$@" en subshell mostrando su salida en un terminal embebido
-# (dialog --programbox) si dialog está disponible, o redirigiendo al log.
-# Los códigos ANSI de color se eliminan antes de pasarlos a dialog.
+# Ejecuta "$@" en modo "pantalla de ejecución":
+# limpia la pantalla, muestra cabecera, deja correr el output en el terminal
+# y espera ENTER antes de volver al menú whiptail.
+# Sin dependencias externas: solo bash + ANSI.
 _tui_run_with_output() {
     local TITLE="$1"
     shift
-    if command -v dialog >/dev/null 2>&1; then
-        ("$@") 2>&1 \
-            | sed 's/\033\[[0-9;]*[a-zA-Z]//g' \
-            | dialog --title " $TITLE " \
-                     --programbox "  ↑↓ para desplazar — se cierra al terminar  " \
-                     22 78
-    else
-        ("$@") >> "$LOGFILE" 2>&1 || true
-    fi
+    local COLS
+    COLS="$(tput cols 2>/dev/null || echo 78)"
+    local LINE
+    printf -v LINE '%*s' "$COLS" ''
+    LINE="${LINE// /━}"
+
+    clear
+    printf '\033[1;36m%s\033[0m\n' "$LINE"
+    printf '\033[1;36m  %s\033[0m\n' "$TITLE"
+    printf '\033[1;36m%s\033[0m\n\n' "$LINE"
+
+    ("$@") 2>&1 || true
+
+    printf '\n\033[1;36m%s\033[0m\n' "$LINE"
+    printf '\033[1;32m  Operación completada. Pulsa ENTER para volver al menú.\033[0m\n'
+    printf '\033[1;36m%s\033[0m\n' "$LINE"
+    read -r _ < /dev/tty
 }
 
 _tui_op_run() {
