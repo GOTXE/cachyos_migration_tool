@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """TUI Python + curses para Linux Migration Tool. Solo stdlib — sin paquetes extra."""
 
-import curses, os, subprocess, sys
+import curses, os, subprocess, sys, shutil
 
 PROJECT_ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -223,7 +223,7 @@ def msgbox(stdscr, title, message):
 # ── Ejecutar operación en terminal ────────────────────────────────────────────
 def run_op(stdscr, title, mig_args, env_extra=None):
     curses.endwin()
-    cols = os.get_terminal_size(fallback=(78, 24)).columns
+    cols = shutil.get_terminal_size((78, 24)).columns
     sep = "━" * cols
     print(f"\033[1;36m{sep}\033[0m")
     print(f"\033[1;36m  {title}\033[0m")
@@ -278,25 +278,35 @@ def flow_restore(stdscr):
 
 def flow_bootstrap(stdscr):
     items = [
-        ("base",       "Paquetes base + KDE"),
-        ("zsh",        "Oh My Zsh + Powerlevel10k"),
-        ("node",       "Node / pnpm / bun"),
-        ("ai",         "Herramientas IA — Codex + Claude Code"),
-        ("mbpwatch",   "MBP Watch diagnóstico (systemd)"),
-        ("plasmoid",   "Plasmoid KDE MBP Watch"),
-        ("youtube",    "YouTube Force H264"),
-        ("apple",      "Apple laptop extras (thermald, lm_sensors)"),
-        ("facetime",   "FaceTime HD camera (driver AUR)"),
-        ("iwd",        "iwd backend para NetworkManager"),
-        ("hyprland",   "Hyprland"),
-        ("wifi",       "Configurar país/región Wi-Fi"),
-        ("globalmenu", "Global Menu KDE (GTK + VS Code)"),
-        ("hwaccel",    "Aceleración HW Chromium/Brave"),
-        ("vaapi",      "VA-API Brave/Chromium Intel Broadwell"),
-        ("btrfs",      "Snapshots BTRFS (Snapper)"),
+        ("sync",       "1. Sincronización y actualización sistema"),
+        ("base_dev",   "2. Herramientas base desarrollo (git, go)"),
+        ("yay",        "3. AUR helper (yay)"),
+        ("flatpak",    "4. Soporte Flatpak + Flathub"),
+        ("official",   "5. Paquetes oficiales de repositorio"),
+        ("kde",        "6. Aplicaciones base KDE Plasma"),
+        ("aur",        "7. Paquetes adicionales desde AUR"),
+        ("docker_svc", "8. Configuración servicio Docker"),
+        ("zsh",        "9. Oh My Zsh + Powerlevel10k"),
+        ("node",       "10. Stack Node / pnpm / bun"),
+        ("ai_codex",   "11. Codex CLI (@openai/codex)"),
+        ("ai_claude",  "12. Claude Code CLI (nativo)"),
+        ("ai_gemini",  "13. Gemini CLI (@google/gemini-cli)"),
+        ("ai_opencode", "14. OpenCode CLI"),
+        ("mbpwatch",   "15. MBP Watch diagnóstico (systemd)"),
+        ("plasmoid",   "16. Plasmoid KDE MBP Watch"),
+        ("youtube",    "17. YouTube Force H264"),
+        ("apple",      "18. Apple laptop extras (MBP 2015)"),
+        ("facetime",   "19. FaceTime HD camera (AUR)"),
+        ("iwd",        "20. iwd backend para NetworkManager"),
+        ("hyprland",   "21. Hyprland"),
+        ("wifi",       "22. Configurar país/región Wi-Fi"),
+        ("globalmenu", "23. Global Menu KDE (GTK + VS Code)"),
+        ("hwaccel",    "24. Aceleración HW Chromium/Brave"),
+        ("vaapi",      "25. VA-API Brave/Chromium Intel Broadwell"),
+        ("btrfs",      "26. Snapshots BTRFS (Snapper)"),
     ]
     selected = checklist(stdscr, "Bootstrap CachyOS", items,
-                         {"base", "zsh", "node", "mbpwatch", "plasmoid"})
+                         {"sync", "base_dev", "yay", "flatpak", "official", "kde", "aur", "docker_svc", "zsh", "node", "mbpwatch", "plasmoid"})
     if selected is None:
         return
     if not selected:
@@ -304,7 +314,11 @@ def flow_bootstrap(stdscr):
         return
 
     env_extra = {}
+    ai_selected = {"ai_codex", "ai_claude", "ai_gemini", "ai_opencode"} & set(selected)
+    
     if "wifi" in selected:
+        stdscr.clear()
+        stdscr.refresh()
         country = inputbox(stdscr, "Configurar Wi-Fi",
                            "Código de país para Wi-Fi (ej. ES):", "ES")
         if country is None:
@@ -312,12 +326,16 @@ def flow_bootstrap(stdscr):
         env_extra["TUI_WIFI_COUNTRY"] = country.strip().upper()
 
     if "hwaccel" in selected:
+        stdscr.clear()
+        stdscr.refresh()
         browser = radiolist(stdscr, "Aceleración HW navegador",
                             [("brave", "Brave Browser"), ("chrome", "Google Chrome")])
         if browser is None:
             return
         env_extra["TUI_BROWSER"] = browser
 
+    stdscr.clear()
+    stdscr.refresh()
     if not yesno(stdscr, "Bootstrap CachyOS",
                  "Se ejecutarán los bloques seleccionados.\n¿Continuar?"):
         return

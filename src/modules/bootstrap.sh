@@ -183,9 +183,10 @@ install_yay() {
         return
     fi
 
-    log "${YELLOW}Instalando yay desde AUR...${NC}"
+    log "${YELLOW}3. Instalando yay (requiere compilador Go)...${NC}"
 
-    run_cmd sudo pacman -S --needed --noconfirm git base-devel go
+    # Instalamos go aquí porque es necesario para compilar yay
+    run_cmd sudo pacman -S --needed --noconfirm go
 
     local YAY_TMP
     YAY_TMP="$(mktemp -d /tmp/yay-build.XXXXXX)"
@@ -200,13 +201,21 @@ install_flatpak() {
     run_cmd flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 }
 
-install_packages() {
+update_system_repos() {
+    log "${YELLOW}1. Sincronizando repositorios y actualizando sistema...${NC}"
+    run_cmd sudo pacman -Syyu --noconfirm
+}
+
+install_base_devel() {
     local BASE_DEV_PACKAGES=(
         base-devel
         git
-        go
     )
+    log "${YELLOW}2. Instalando herramientas base de desarrollo (git, base-devel)...${NC}"
+    run_cmd sudo pacman -S --needed --noconfirm "${BASE_DEV_PACKAGES[@]}"
+}
 
+install_official_packages() {
     local COMMON_PACKAGES=(
         curl
         wget
@@ -255,7 +264,12 @@ install_packages() {
         noto-fonts-emoji
         libreoffice-fresh-es
     )
+    log "${YELLOW}5. Instalando paquetes oficiales de repositorio...${NC}"
+    log_package_batch_state "repo" "repo" "${COMMON_PACKAGES[@]}"
+    run_cmd sudo pacman -S --needed --noconfirm "${COMMON_PACKAGES[@]}"
+}
 
+install_kde_packages() {
     local KDE_PACKAGES=(
         spectacle
         dolphin
@@ -266,27 +280,12 @@ install_packages() {
         filelight
         plasma-systemmonitor
     )
-
-    log "${YELLOW}1. Sincronizando repositorios y actualizando sistema...${NC}"
-    run_cmd sudo pacman -Syyu --noconfirm
-
-    log "${YELLOW}2. Instalando herramientas base de desarrollo...${NC}"
-    run_cmd sudo pacman -S --needed --noconfirm "${BASE_DEV_PACKAGES[@]}"
-
-    log "${YELLOW}3. Configurando AUR helper (yay)...${NC}"
-    install_yay
-
-    log "${YELLOW}4. Configurando soporte Flatpak...${NC}"
-    install_flatpak
-
-    log "${YELLOW}5. Instalando paquetes oficiales de repositorio...${NC}"
-    log_package_batch_state "repo" "repo" "${COMMON_PACKAGES[@]}"
-    run_cmd sudo pacman -S --needed --noconfirm "${COMMON_PACKAGES[@]}"
-
     log "${YELLOW}6. Instalando base KDE Plasma...${NC}"
     log_package_batch_state "repo" "repo" "${KDE_PACKAGES[@]}"
     run_cmd sudo pacman -S --needed --noconfirm "${KDE_PACKAGES[@]}"
+}
 
+install_aur_packages() {
     log "${YELLOW}7. Instalando paquetes desde AUR...${NC}"
     log_package_batch_state "AUR" "aur" \
         visual-studio-code-bin \
@@ -304,11 +303,24 @@ install_packages() {
         angryipscanner \
         pamac-aur \
         webapp-manager
+}
 
-    log "${YELLOW}8. Configurando servicios finales...${NC}"
+setup_docker() {
+    log "${YELLOW}8. Configurando servicios finales (Docker)...${NC}"
     run_cmd sudo systemctl enable docker
     run_cmd sudo systemctl start docker
     run_cmd sudo usermod -aG docker "$USER"
+}
+
+install_packages() {
+    update_system_repos
+    install_base_devel
+    install_yay
+    install_flatpak
+    install_official_packages
+    install_kde_packages
+    install_aur_packages
+    setup_docker
 }
 
 install_ohmyzsh() {
@@ -367,45 +379,81 @@ install_node_stack() {
     run_shell "curl -fsSL https://bun.sh/install | bash"
 }
 
-install_ai_tools() {
-    export NVM_DIR="$HOME/.nvm"
+log_gemini_tool_status() {
+    log_npm_tool_status "Gemini CLI" "@google/gemini-cli" "gemini"
+}
 
+log_opencode_tool_status() {
+    if command -v opencode >/dev/null 2>&1; then
+        log_success "OpenCode CLI: instalado"
+    else
+        log_info "OpenCode CLI: pendiente de instalar"
+    fi
+}
+
+install_codex_cli() {
+    export NVM_DIR="$HOME/.nvm"
     # shellcheck disable=SC1090,SC1091
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-    log "${YELLOW}Comprobando estado previo de CLIs de IA...${NC}"
+    log "${YELLOW}Instalando/Actualizando Codex CLI...${NC}"
     log_npm_tool_status "Codex CLI" "@openai/codex" "codex"
-    log_claude_tool_status
-
-    if command -v codex >/dev/null 2>&1; then
-        log "Codex CLI ya detectado en: $(command -v codex)"
-        codex --version 2>&1 | tee -a "$LOGFILE" || true
-        log "${YELLOW}Actualizando Codex CLI mediante npm oficial (@openai/codex)...${NC}"
-    else
-        log "${YELLOW}Instalando Codex CLI mediante npm oficial (@openai/codex)...${NC}"
-    fi
 
     if [ "$DRY_MODE" = true ]; then
         log "${YELLOW}[DRY-RUN] npm install -g @openai/codex@latest${NC}"
     else
         npm install -g @openai/codex@latest 2>&1 | tee -a "$LOGFILE"
     fi
-
     link_npm_global_binaries
+}
+
+install_claude_cli() {
+    log "${YELLOW}Instalando/Actualizando Claude Code CLI...${NC}"
+    log_claude_tool_status
 
     if command -v claude >/dev/null 2>&1; then
-        log "Claude Code CLI ya detectado en: $(command -v claude)"
         if [ "$DRY_MODE" = true ]; then
             log "${YELLOW}[DRY-RUN] claude update${NC}"
         else
-            log "${YELLOW}Comprobando/actualizando Claude Code CLI a la ultima version disponible...${NC}"
             claude update 2>&1 | tee -a "$LOGFILE" || true
         fi
     else
-        log "${YELLOW}Instalando Claude Code CLI nativo...${NC}"
         run_shell "curl -fsSL https://claude.ai/install.sh | bash"
     fi
+}
 
+install_gemini_cli() {
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck disable=SC1090,SC1091
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+    log "${YELLOW}Instalando/Actualizando Gemini CLI...${NC}"
+    log_gemini_tool_status
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] npm install -g @google/gemini-cli@latest${NC}"
+    else
+        npm install -g @google/gemini-cli@latest 2>&1 | tee -a "$LOGFILE"
+    fi
+    link_npm_global_binaries
+}
+
+install_opencode_cli() {
+    log "${YELLOW}Instalando OpenCode CLI...${NC}"
+    log_opencode_tool_status
+    # OpenCode suele venir con el paquete de repositorio o AUR ya configurado en install_packages/install_aur_packages
+    # Aquí aseguramos que esté presente o damos instrucciones
+    if ! command -v opencode >/dev/null 2>&1; then
+        run_cmd sudo pacman -S --needed --noconfirm opencode || yay -S --needed --noconfirm opencode-desktop-bin
+    fi
+}
+
+install_ai_tools() {
+    install_codex_cli
+    install_claude_cli
+    install_gemini_cli
+    install_opencode_cli
+    
     configure_shell_paths
     verify_ai_tools
 }
@@ -422,7 +470,7 @@ link_npm_global_binaries() {
 
     run_cmd mkdir -p "$HOME/.local/bin"
 
-    for BIN_NAME in codex pnpm bun; do
+    for BIN_NAME in codex gemini pnpm bun; do
         if [ -x "$NPM_BIN_DIR/$BIN_NAME" ]; then
             run_cmd ln -sf "$NPM_BIN_DIR/$BIN_NAME" "$HOME/.local/bin/$BIN_NAME"
         fi
@@ -473,20 +521,14 @@ EOF_SH
 verify_ai_tools() {
     log "${YELLOW}Verificando herramientas IA...${NC}"
 
-    if command -v codex >/dev/null 2>&1; then
-        log "codex detectado en: $(command -v codex)"
-        codex --version 2>&1 | tee -a "$LOGFILE" || true
-    else
-        log "${YELLOW}codex no esta en PATH de esta sesion.${NC} Reabre terminal y ejecuta: command -v codex && codex --version"
-    fi
-
-    if command -v claude >/dev/null 2>&1; then
-        log "claude detectado en: $(command -v claude)"
-        claude --version 2>&1 | tee -a "$LOGFILE" || true
-    else
-        log "${YELLOW}claude no esta en PATH de esta sesion.${NC} Reabre terminal y ejecuta: command -v claude && claude --version"
-        log "Claude Code nativo suele instalar el binario en ~/.local/bin/claude."
-    fi
+    for TOOL in codex claude gemini opencode; do
+        if command -v "$TOOL" >/dev/null 2>&1; then
+            log "$TOOL detectado en: $(command -v "$TOOL")"
+            "$TOOL" --version 2>&1 | head -n 1 | tee -a "$LOGFILE" || true
+        else
+            log "${YELLOW}$TOOL no esta en PATH de esta sesion.${NC}"
+        fi
+    done
 }
 
 install_hyprland() {

@@ -322,23 +322,33 @@ tui_bootstrap() {
         --title " Bootstrap CachyOS " \
         --checklist \
         "Space=marcar/desmarcar   Flechas=navegar   Enter=confirmar" \
-        28 72 16 \
-        "base"       "Paquetes base + KDE"                        ON  \
-        "zsh"        "Oh My Zsh + Powerlevel10k"                  ON  \
-        "node"       "Node / pnpm / bun"                          ON  \
-        "ai"         "Herramientas IA — Codex + Claude Code"      OFF \
-        "mbpwatch"   "MBP Watch diagnóstico (systemd)"            ON  \
-        "plasmoid"   "Plasmoid KDE MBP Watch"                     ON  \
-        "youtube"    "YouTube Force H264"                          OFF \
-        "apple"      "Apple laptop extras (thermald, lm_sensors)" "$APPLE_DEFAULT" \
-        "facetime"   "FaceTime HD camera (driver AUR)"            "$FACETIME_DEFAULT" \
-        "iwd"        "iwd backend para NetworkManager"            OFF \
-        "hyprland"   "Hyprland"                                    OFF \
-        "wifi"       "Configurar país/región Wi-Fi"               OFF \
-        "globalmenu" "Global Menu KDE (GTK + VS Code)"            OFF \
-        "hwaccel"    "Aceleración HW Chromium/Brave"              OFF \
-        "vaapi"      "VA-API Brave/Chromium Intel Broadwell"      OFF \
-        "btrfs"      "Snapshots BTRFS (Snapper)"                  OFF \
+        28 72 18 \
+        "sync"       "1. Sincronización y actualización sistema"  ON  \
+        "base_dev"   "2. Herramientas base desarrollo (git, go)"  ON  \
+        "yay"        "3. AUR helper (yay)"                        ON  \
+        "flatpak"    "4. Soporte Flatpak + Flathub"               ON  \
+        "official"   "5. Paquetes oficiales de repositorio"       ON  \
+        "kde"        "6. Aplicaciones base KDE Plasma"            ON  \
+        "aur"        "7. Paquetes adicionales desde AUR"          ON  \
+        "docker_svc" "8. Configuración servicio Docker"           ON  \
+        "zsh"        "9. Oh My Zsh + Powerlevel10k"               ON  \
+        "node"       "10. Stack Node / pnpm / bun"                ON  \
+        "ai_codex"   "11. Codex CLI (@openai/codex)"              OFF \
+        "ai_claude"  "12. Claude Code CLI (nativo)"               OFF \
+        "ai_gemini"  "13. Gemini CLI (@google/gemini-cli)"        OFF \
+        "ai_opencode" "14. OpenCode CLI"                          OFF \
+        "mbpwatch"   "15. MBP Watch diagnóstico (systemd)"        ON  \
+        "plasmoid"   "16. Plasmoid KDE MBP Watch"                 ON  \
+        "youtube"    "17. YouTube Force H264"                     OFF \
+        "apple"      "18. Apple laptop extras (MBP 2015)"         "$APPLE_DEFAULT" \
+        "facetime"   "19. FaceTime HD camera (AUR)"               "$FACETIME_DEFAULT" \
+        "iwd"        "20. iwd backend para NetworkManager"        OFF \
+        "hyprland"   "21. Hyprland"                               OFF \
+        "wifi"       "22. Configurar país/región Wi-Fi"           OFF \
+        "globalmenu" "23. Global Menu KDE (GTK + VS Code)"       OFF \
+        "hwaccel"    "24. Aceleración HW Chromium/Brave"          OFF \
+        "vaapi"      "25. VA-API Brave/Chromium Intel Broadwell" OFF \
+        "btrfs"      "26. Snapshots BTRFS (Snapper)"              OFF \
         3>&1 1>&2 2>&3) || return 0
 
     if [ -z "$SELECTED" ]; then
@@ -393,22 +403,38 @@ tui_bootstrap_run() {
 
     AUTO_CONFIRM=true
 
-    [[ "$SELECTED" == *'"base"'* ]]       && install_packages
-    [[ "$SELECTED" == *'"zsh"'* ]]        && { install_ohmyzsh; install_powerlevel10k; }
-    [[ "$SELECTED" == *'"node"'* ]]       && install_node_stack
-    [[ "$SELECTED" == *'"ai"'* ]]         && install_ai_tools
-    [[ "$SELECTED" == *'"mbpwatch"'* ]]   && install_mbp_watch_diagnostics
-    [[ "$SELECTED" == *'"plasmoid"'* ]]   && install_mbp_plasmoid_if_accepted
-    [[ "$SELECTED" == *'"youtube"'* ]]    && install_youtube_force_h264_package
-    [[ "$SELECTED" == *'"apple"'* ]]      && install_apple_laptop_extras
-    [[ "$SELECTED" == *'"facetime"'* ]]   && configure_facetimehd_camera
-    [[ "$SELECTED" == *'"iwd"'* ]]        && configure_networkmanager_iwd_backend
-    [[ "$SELECTED" == *'"hyprland"'* ]]   && install_hyprland
-    [[ "$SELECTED" == *'"wifi"'* ]]       && configure_wifi_regulatory_domain
-    [[ "$SELECTED" == *'"globalmenu"'* ]] && configure_global_menu_support
-    [[ "$SELECTED" == *'"hwaccel"'* ]]    && configure_chromium_hw_acceleration
-    [[ "$SELECTED" == *'"vaapi"'* ]]      && configure_vaapi_brave_broadwell
-    [[ "$SELECTED" == *'"btrfs"'* ]]      && configure_btrfs_snapshots
+    [[ "$SELECTED" == *'"sync"'* ]]        && update_system_repos
+    [[ "$SELECTED" == *'"base_dev"'* ]]    && install_base_devel
+    [[ "$SELECTED" == *'"yay"'* ]]         && install_yay
+    [[ "$SELECTED" == *'"flatpak"'* ]]     && install_flatpak
+    [[ "$SELECTED" == *'"official"'* ]]    && install_official_packages
+    [[ "$SELECTED" == *'"kde"'* ]]         && install_kde_packages
+    [[ "$SELECTED" == *'"aur"'* ]]         && install_aur_packages
+    [[ "$SELECTED" == *'"docker_svc"'* ]]  && setup_docker
+    [[ "$SELECTED" == *'"zsh"'* ]]         && { install_ohmyzsh; install_powerlevel10k; }
+    [[ "$SELECTED" == *'"node"'* ]]        && install_node_stack
+    [[ "$SELECTED" == *'"ai_codex"'* ]]    && install_codex_cli
+    [[ "$SELECTED" == *'"ai_claude"'* ]]   && install_claude_cli
+    [[ "$SELECTED" == *'"ai_gemini"'* ]]   && install_gemini_cli
+    [[ "$SELECTED" == *'"ai_opencode"'* ]] && install_opencode_cli
+
+    if [[ "$SELECTED" == *'"ai_codex"'* || "$SELECTED" == *'"ai_claude"'* || "$SELECTED" == *'"ai_gemini"'* || "$SELECTED" == *'"ai_opencode"'* ]]; then
+        configure_shell_paths
+        verify_ai_tools
+    fi
+
+    [[ "$SELECTED" == *'"mbpwatch"'* ]]    && install_mbp_watch_diagnostics
+    [[ "$SELECTED" == *'"plasmoid"'* ]]    && install_mbp_plasmoid_if_accepted
+    [[ "$SELECTED" == *'"youtube"'* ]]     && install_youtube_force_h264_package
+    [[ "$SELECTED" == *'"apple"'* ]]       && install_apple_laptop_extras
+    [[ "$SELECTED" == *'"facetime"'* ]]    && configure_facetimehd_camera
+    [[ "$SELECTED" == *'"iwd"'* ]]         && configure_networkmanager_iwd_backend
+    [[ "$SELECTED" == *'"hyprland"'* ]]    && install_hyprland
+    [[ "$SELECTED" == *'"wifi"'* ]]        && configure_wifi_regulatory_domain
+    [[ "$SELECTED" == *'"globalmenu"'* ]]  && configure_global_menu_support
+    [[ "$SELECTED" == *'"hwaccel"'* ]]     && configure_chromium_hw_acceleration
+    [[ "$SELECTED" == *'"vaapi"'* ]]       && configure_vaapi_brave_broadwell
+    [[ "$SELECTED" == *'"btrfs"'* ]]       && configure_btrfs_snapshots
 
     log ""
     log "${GREEN}=================================${NC}"

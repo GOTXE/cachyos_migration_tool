@@ -5,6 +5,7 @@
 ## Herramienta de migración
 
 - [migration.md](migration.md) — Guía completa de uso: backup, bootstrap, restore, postcheck y comandos CLI
+- [migration-bootstrap.md](migration-bootstrap.md) — Detalle de los bloques y paquetes instalados en el bootstrap
 - [linux-migration-tool.conf.example](linux-migration-tool.conf.example) — Plantilla de configuración de usuario
 - [tui.md](tui.md) — Sistema TUI: Python/curses (primario), whiptail (fallback), texto plano y variable `TUI_BACKEND`
 
