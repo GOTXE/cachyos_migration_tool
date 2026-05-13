@@ -183,9 +183,9 @@ install_yay() {
         return
     fi
 
-    log "${YELLOW}Instalando yay...${NC}"
+    log "${YELLOW}Instalando yay desde AUR...${NC}"
 
-    run_cmd sudo pacman -S --needed --noconfirm git base-devel
+    run_cmd sudo pacman -S --needed --noconfirm git base-devel go
 
     local YAY_TMP
     YAY_TMP="$(mktemp -d /tmp/yay-build.XXXXXX)"
@@ -194,10 +194,20 @@ install_yay() {
     run_shell "cd \"$YAY_TMP\" && makepkg -si --noconfirm"
 }
 
+install_flatpak() {
+    log "${YELLOW}Instalando Flatpak y configurando Flathub...${NC}"
+    run_cmd sudo pacman -S --needed --noconfirm flatpak flatpak-kcm
+    run_cmd flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+}
+
 install_packages() {
-    local COMMON_PACKAGES=(
-        git
+    local BASE_DEV_PACKAGES=(
         base-devel
+        git
+        go
+    )
+
+    local COMMON_PACKAGES=(
         curl
         wget
         unzip
@@ -243,6 +253,7 @@ install_packages() {
         wl-clipboard
         noto-fonts
         noto-fonts-emoji
+        libreoffice-fresh-es
     )
 
     local KDE_PACKAGES=(
@@ -256,34 +267,45 @@ install_packages() {
         plasma-systemmonitor
     )
 
-    log "${YELLOW}Actualizando sistema...${NC}"
-    run_cmd sudo pacman -Syu --noconfirm
+    log "${YELLOW}1. Sincronizando repositorios y actualizando sistema...${NC}"
+    run_cmd sudo pacman -Syyu --noconfirm
 
-    log "${YELLOW}Instalando paquetes comunes de desarrollo...${NC}"
+    log "${YELLOW}2. Instalando herramientas base de desarrollo...${NC}"
+    run_cmd sudo pacman -S --needed --noconfirm "${BASE_DEV_PACKAGES[@]}"
+
+    log "${YELLOW}3. Configurando AUR helper (yay)...${NC}"
+    install_yay
+
+    log "${YELLOW}4. Configurando soporte Flatpak...${NC}"
+    install_flatpak
+
+    log "${YELLOW}5. Instalando paquetes oficiales de repositorio...${NC}"
     log_package_batch_state "repo" "repo" "${COMMON_PACKAGES[@]}"
     run_cmd sudo pacman -S --needed --noconfirm "${COMMON_PACKAGES[@]}"
 
-    log "${YELLOW}Instalando base KDE Plasma...${NC}"
+    log "${YELLOW}6. Instalando base KDE Plasma...${NC}"
     log_package_batch_state "repo" "repo" "${KDE_PACKAGES[@]}"
     run_cmd sudo pacman -S --needed --noconfirm "${KDE_PACKAGES[@]}"
 
-    install_yay
-
-    log "${YELLOW}Instalando paquetes AUR...${NC}"
+    log "${YELLOW}7. Instalando paquetes desde AUR...${NC}"
     log_package_batch_state "AUR" "aur" \
         visual-studio-code-bin \
         brave-bin \
         opencode-desktop-bin \
         ttf-jetbrains-mono-nerd \
-        angryipscanner
+        angryipscanner \
+        pamac-aur \
+        webapp-manager
     run_cmd yay -S --needed --noconfirm \
         visual-studio-code-bin \
         brave-bin \
         opencode-desktop-bin \
         ttf-jetbrains-mono-nerd \
-        angryipscanner
+        angryipscanner \
+        pamac-aur \
+        webapp-manager
 
-    log "${YELLOW}Habilitando Docker...${NC}"
+    log "${YELLOW}8. Configurando servicios finales...${NC}"
     run_cmd sudo systemctl enable docker
     run_cmd sudo systemctl start docker
     run_cmd sudo usermod -aG docker "$USER"
