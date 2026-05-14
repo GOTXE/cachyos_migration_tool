@@ -5,6 +5,7 @@
 ## Migration tool
 
 - [migration.md](migration.md) — Full usage guide: backup, bootstrap, restore, postcheck and CLI commands
+- [migration-bootstrap.md](migration-bootstrap.md) — Bootstrap blocks, supported hardware profiles and initial tests
 - [linux-migration-tool.conf.example](linux-migration-tool.conf.example) — User configuration template
 - [tui.md](tui.md) — TUI system: Python/curses (primary), whiptail (fallback), plain text and `TUI_BACKEND` variable
 
@@ -12,9 +13,14 @@
 
 - [firmware-bcm43602.md](firmware-bcm43602.md) — Broadcom BCM43602 bundle in `firmware/brcm/` and extraction tool
 
-## Hardware — MBP 2015 (MacBookPro12,1)
+## Hardware — initial Apple profiles
 
-Specific guides for MacBook Pro Retina 13" 2015 on CachyOS:
+Apple profiles already covered by the bootstrap:
+
+- `MacBookPro12,1` — MacBook Pro Retina 13" 2015
+- `MacBookPro8,1` — MacBook Pro 13" Early 2011
+
+Specific documentation currently available for MacBook Pro Retina 13" 2015 on CachyOS:
 
 - [hardware/vaapi-brave-broadwell.md](hardware/vaapi-brave-broadwell.md) — VA-API fix for Brave/Chromium on Intel Broadwell (libva-intel-driver-irql, i965, flags)
 - [hardware/vaapi-testing-notes.md](hardware/vaapi-testing-notes.md) — Testing log and VA-API acceleration verification

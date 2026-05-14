@@ -13,9 +13,14 @@
 
 - [firmware-bcm43602.md](firmware-bcm43602.md) — Bundle Broadcom BCM43602 en `firmware/brcm/` y herramienta de extracción
 
-## Hardware — MBP 2015 (MacBookPro12,1)
+## Hardware — perfiles Apple iniciales
 
-Guías específicas para MacBook Pro Retina 13" 2015 en CachyOS:
+Perfiles Apple ya contemplados en el bootstrap:
+
+- `MacBookPro12,1` — MacBook Pro Retina 13" 2015
+- `MacBookPro8,1` — MacBook Pro 13" Early 2011
+
+Documentación específica disponible de momento para MacBook Pro Retina 13" 2015 en CachyOS:
 
 - [hardware/vaapi-brave-broadwell.md](hardware/vaapi-brave-broadwell.md) — Corrección VA-API para Brave/Chromium en Intel Broadwell (libva-intel-driver-irql, i965, flags)
 - [hardware/vaapi-testing-notes.md](hardware/vaapi-testing-notes.md) — Log de pruebas y verificación de la aceleración VA-API
