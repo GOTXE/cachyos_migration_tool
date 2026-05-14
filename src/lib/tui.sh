@@ -235,31 +235,200 @@ tui_backup() {
 # Restore
 # ---------------------------------------------------------------------------
 
+_tui_is_backup_dir() {
+    local PATH_TO_CHECK="$1"
+    [ -d "$PATH_TO_CHECK" ] && [ -f "$PATH_TO_CHECK/metadata/user_ids.conf" ]
+}
+
+_tui_effective_user() {
+    printf '%s\n' "${SUDO_USER:-${USER:-$(id -un 2>/dev/null || true)}}"
+}
+
+tui_collect_restore_roots() {
+    local USER_NAME
+    USER_NAME="$(_tui_effective_user)"
+
+    {
+        [ -d "/run/media/$USER_NAME" ] && printf '%s\n' "/run/media/$USER_NAME"
+        [ -d "/media/$USER_NAME" ] && printf '%s\n' "/media/$USER_NAME"
+        [ -d "/mnt" ] && printf '%s\n' "/mnt"
+        [ -d "/run/media" ] && printf '%s\n' "/run/media"
+        [ -d "/media" ] && printf '%s\n' "/media"
+
+        lsblk -P -o MOUNTPOINT 2>/dev/null | while IFS= read -r LINE; do
+            local MP
+            MP="$(extract_lsblk_field "$LINE" "MOUNTPOINT")"
+            if [ -n "$MP" ] && [ "$MP" != "/" ] && [[ ! "$MP" =~ ^/boot ]]; then
+                printf '%s\n' "$MP"
+            fi
+        done
+    } | awk 'NF && !seen[$0]++'
+}
+
+tui_find_restore_backups() {
+    local ROOTS=()
+    local ROOT
+
+    mapfile -t ROOTS < <(tui_collect_restore_roots)
+
+    for ROOT in "${ROOTS[@]}"; do
+        [ -d "$ROOT" ] || continue
+        find "$ROOT" -maxdepth 5 -type f -path "*/metadata/user_ids.conf" 2>/dev/null | while IFS= read -r FILE; do
+            dirname "$(dirname "$FILE")"
+        done
+    done | awk 'NF && !seen[$0]++' | sort -r
+}
+
+tui_browse_directory() {
+    local TITLE="$1"
+    local START_PATH="$2"
+    local CURRENT="${START_PATH:-/}"
+    local START="$CURRENT"
+    local CHOICE=""
+    local MANUAL=""
+    local PARENT=""
+    local MENU_ARGS=()
+    local ENTRY=""
+
+    while true; do
+        CURRENT="$(realpath -m "$CURRENT")"
+        PARENT="$(dirname "${CURRENT%/}")"
+        [ -n "$PARENT" ] || PARENT="/"
+        [ "$CURRENT" = "/" ] && PARENT="/"
+
+        MENU_ARGS=()
+        MENU_ARGS+=("__use__" "[*] Usar esta ruta: $CURRENT")
+        if [ "$CURRENT" != "/" ]; then
+            MENU_ARGS+=("__up__" "../")
+        fi
+
+        while IFS= read -r ENTRY; do
+            [ -n "$ENTRY" ] || continue
+            MENU_ARGS+=("$ENTRY" "$(basename "$ENTRY")/")
+        done < <(
+            find "$CURRENT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
+        )
+
+        MENU_ARGS+=("__manual__" "Escribir ruta manualmente")
+
+        CHOICE=$(wt \
+            --title "$TITLE" \
+            --menu "Ruta actual: $CURRENT\n\nENTER abre carpeta   ESC vuelve atrás/cancela" \
+            22 78 14 \
+            "${MENU_ARGS[@]}" \
+            3>&1 1>&2 2>&3) || {
+                if [ "$CURRENT" != "$START" ]; then
+                    CURRENT="$PARENT"
+                    continue
+                fi
+                return 1
+            }
+
+        case "$CHOICE" in
+            __use__)
+                printf '%s\n' "$CURRENT"
+                return 0
+                ;;
+            __up__)
+                CURRENT="$PARENT"
+                ;;
+            __manual__)
+                MANUAL=$(wt \
+                    --title "$TITLE" \
+                    --inputbox "\nEscribe la ruta:" \
+                    9 64 "$CURRENT" \
+                    3>&1 1>&2 2>&3) || continue
+                MANUAL="$(realpath -m "$MANUAL")"
+                if [ -d "$MANUAL" ]; then
+                    CURRENT="$MANUAL"
+                else
+                    wt --title "$TITLE" \
+                        --msgbox "\nLa ruta no existe o no es un directorio:\n$MANUAL" \
+                        10 68
+                fi
+                ;;
+            *)
+                if [ -d "$CHOICE" ]; then
+                    CURRENT="$CHOICE"
+                else
+                    wt --title "$TITLE" \
+                        --msgbox "\nNo es un directorio válido:\n$CHOICE" \
+                        10 68
+                fi
+                ;;
+        esac
+    done
+}
+
+tui_choose_restore_source() {
+    local DETECTED=()
+    local ROOTS=()
+    local MENU_ARGS=()
+    local CHOICE=""
+    local SRC=""
+    local INDEX=0
+
+    mapfile -t DETECTED < <(tui_find_restore_backups)
+    mapfile -t ROOTS < <(tui_collect_restore_roots)
+
+    while true; do
+        MENU_ARGS=()
+        for INDEX in "${!DETECTED[@]}"; do
+            MENU_ARGS+=("b$INDEX" "Backup detectado: $(basename "${DETECTED[$INDEX]}")  [${DETECTED[$INDEX]}]")
+        done
+        MENU_ARGS+=("manual" "Escribir ruta manualmente")
+        for INDEX in "${!ROOTS[@]}"; do
+            MENU_ARGS+=("r$INDEX" "Explorar ${ROOTS[$INDEX]}")
+        done
+        MENU_ARGS+=("root" "Navegar desde /")
+
+        CHOICE=$(wt \
+            --title " Selecciona el origen del backup " \
+            --menu "\nSelecciona dónde está la copia a restaurar:" \
+            24 92 16 \
+            "${MENU_ARGS[@]}" \
+            3>&1 1>&2 2>&3) || return 1
+
+        case "$CHOICE" in
+            b*)
+                INDEX="${CHOICE#b}"
+                SRC="${DETECTED[$INDEX]}"
+                ;;
+            manual)
+                SRC=$(wt \
+                    --title " Selecciona el origen del backup " \
+                    --inputbox "\nRuta del backup a restaurar:" \
+                    9 64 "" \
+                    3>&1 1>&2 2>&3) || continue
+                SRC="$(realpath -m "$SRC")"
+                ;;
+            r*)
+                INDEX="${CHOICE#r}"
+                SRC="$(tui_browse_directory " Selecciona el origen del backup " "${ROOTS[$INDEX]}")" || continue
+                ;;
+            root)
+                SRC="$(tui_browse_directory " Selecciona el origen del backup " "/")" || continue
+                ;;
+            *)
+                continue
+                ;;
+        esac
+
+        if _tui_is_backup_dir "$SRC"; then
+            printf '%s\n' "$SRC"
+            return 0
+        fi
+
+        wt --title " Selecciona el origen del backup " \
+            --msgbox "\nLa ruta seleccionada no parece una copia válida.\n\nDebe contener:\nmetadata/user_ids.conf\n\nRuta:\n$SRC" \
+            14 72
+    done
+}
+
 tui_restore() {
     local SRC=""
 
-    while true; do
-        SRC=$(wt \
-            --title " Restaurar backup " \
-            --inputbox "\nRuta completa del backup a restaurar:" \
-            9 64 "$SRC" \
-            3>&1 1>&2 2>&3) || return 0
-
-        if [ -z "$SRC" ]; then
-            wt --title " Restaurar backup " \
-                --msgbox "\nDebes indicar una ruta." 8 44
-            continue
-        fi
-
-        if [ ! -d "$SRC" ]; then
-            wt --title " Restaurar backup " \
-                --msgbox "\nRuta no encontrada:\n$SRC\n\nRevisa la ruta e inténtalo de nuevo." \
-                11 64
-            continue
-        fi
-
-        break
-    done
+    SRC="$(tui_choose_restore_source)" || return 0
 
     wt --title " Restaurar backup " \
         --yesno "\nFuente : $SRC\n\n¿Iniciar restauración?" \

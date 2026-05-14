@@ -101,6 +101,18 @@ def _backup_summary(lines, max_lines=12):
         summary = [_strip_ansi(line).strip() for line in lines if line.strip()]
     return summary[-max_lines:]
 
+def _restore_summary(lines, max_lines=12):
+    summary = []
+    for raw in lines:
+        line = _strip_ansi(raw).strip()
+        if not line:
+            continue
+        if line.startswith("Bloque ") or line.strip().startswith("->") or "RESTAURACION COMPLETADA" in line or line.startswith("Backup restaurado desde:"):
+            summary.append(line)
+    if not summary:
+        summary = [_strip_ansi(line).strip() for line in lines if line.strip()]
+    return summary[-max_lines:]
+
 def _extract_backup_destination(lines):
     clean_lines = [_strip_ansi(line).strip() for line in lines]
     for idx, line in enumerate(clean_lines):
@@ -125,6 +137,18 @@ def _backup_line_attr(line):
     if "BACKUP COMPLETADO CON AVISOS" in clean or clean.startswith("Avisos detectados:"):
         return curses.color_pair(CP_CHECK) | curses.A_BOLD
     if "BACKUP COMPLETADO" in clean or clean.startswith("Verificación: OK"):
+        return curses.color_pair(CP_CHECK) | curses.A_BOLD
+    if clean.startswith("Bloque ") or clean.strip().startswith("->"):
+        return curses.color_pair(CP_CHECK)
+    return curses.color_pair(CP_NORMAL)
+
+def _restore_line_attr(line):
+    clean = _strip_ansi(line)
+    if "[ERROR]" in clean or "Backup no encontrado" in clean or "No se encontro metadata/user_ids.conf" in clean:
+        return curses.color_pair(CP_SEL) | curses.A_BOLD
+    if "AVISO" in clean:
+        return curses.color_pair(CP_CHECK) | curses.A_BOLD
+    if "RESTAURACION COMPLETADA" in clean or clean.startswith("OK:"):
         return curses.color_pair(CP_CHECK) | curses.A_BOLD
     if clean.startswith("Bloque ") or clean.strip().startswith("->"):
         return curses.color_pair(CP_CHECK)
@@ -157,6 +181,16 @@ def _humanize_backup_exit(return_code, lines, verification=None):
     if any("Ruta destino invalida" in line for line in clean_lines):
         return "Backup cancelado porque la ruta destino no es válida."
     return f"Backup finalizado con un error (código {return_code})."
+
+def _humanize_restore_exit(return_code, lines):
+    clean_lines = [_strip_ansi(line).strip() for line in lines if line.strip()]
+    if any("RESTAURACION COMPLETADA" in line for line in clean_lines):
+        return "Restauración completada correctamente."
+    if any("Backup no encontrado" in line for line in clean_lines):
+        return "Restauración cancelada porque no se encontró la copia indicada."
+    if any("No se encontro metadata/user_ids.conf" in line for line in clean_lines):
+        return "La ruta indicada no parece una copia válida para restaurar."
+    return f"Restauración finalizada con un error (código {return_code})."
 
 def _parse_backup_progress(lines):
     block_idx = None
@@ -929,6 +963,8 @@ def run_op_inline(stdscr, title, mig_args, env_extra=None, backup_verify=None):
     elif mig_args and mig_args[0] == "backup":
         final_lines = _backup_summary(lines, max_lines=12)
         final_lines.extend([""] + _backup_verification_lines(verification))
+    elif mig_args and mig_args[0] == "restore":
+        final_lines = _restore_summary(lines, max_lines=12)
     stdscr.erase()
     stdscr.bkgd(' ', curses.color_pair(CP_BORDER))
     _box(stdscr, title)
@@ -946,6 +982,14 @@ def run_op_inline(stdscr, title, mig_args, env_extra=None, backup_verify=None):
         row = 4
         for line in final_lines[:max(0, h - 8)]:
             _put(stdscr, row, 2, line[:max(0, w - 4)], _backup_line_attr(line))
+            row += 1
+        _put(stdscr, min(h - 2, row + 1), 2, "Pulsa ENTER para volver al menú.", curses.color_pair(CP_NORMAL))
+    elif mig_args and mig_args[0] == "restore":
+        message = _humanize_restore_exit(return_code, lines)
+        _put(stdscr, 2, 2, message[:max(0, w - 4)], _restore_line_attr(message))
+        row = 4
+        for line in final_lines[:max(0, h - 8)]:
+            _put(stdscr, row, 2, line[:max(0, w - 4)], _restore_line_attr(line))
             row += 1
         _put(stdscr, min(h - 2, row + 1), 2, "Pulsa ENTER para volver al menú.", curses.color_pair(CP_NORMAL))
     else:
@@ -1438,6 +1482,50 @@ def _format_mount_label(entry):
         bits.append(f"({', '.join(meta)})")
     return " ".join(bits)
 
+def _is_backup_dir(path):
+    path = os.path.abspath(path)
+    return os.path.isdir(path) and os.path.isfile(os.path.join(path, "metadata", "user_ids.conf"))
+
+def _find_backup_dirs_under(root_path, max_depth=4, max_results=24):
+    backups = []
+    seen = set()
+    root_path = os.path.abspath(root_path)
+    if not os.path.isdir(root_path):
+        return backups
+
+    queue = [(root_path, 0)]
+    while queue and len(backups) < max_results:
+        current, depth = queue.pop(0)
+        if _is_backup_dir(current) and current not in seen:
+            seen.add(current)
+            backups.append(current)
+            continue
+        if depth >= max_depth:
+            continue
+        try:
+            with os.scandir(current) as it:
+                dirs = sorted(
+                    [entry.path for entry in it if entry.is_dir(follow_symlinks=False)],
+                    key=lambda value: os.path.basename(value).lower(),
+                )
+        except (PermissionError, FileNotFoundError, OSError):
+            continue
+        for entry in dirs:
+            if entry not in seen:
+                queue.append((entry, depth + 1))
+    return backups
+
+def _discover_restore_backups():
+    backups = []
+    seen = set()
+    for root in _discover_backup_roots():
+        for backup_dir in _find_backup_dirs_under(root["path"]):
+            if backup_dir not in seen:
+                seen.add(backup_dir)
+                backups.append(backup_dir)
+    backups.sort(key=lambda path: os.path.basename(path).lower(), reverse=True)
+    return backups
+
 def browse_directory(stdscr, start_path, title="Navegar destino"):
     current = os.path.abspath(start_path or "/")
     start = current
@@ -1606,6 +1694,64 @@ def choose_backup_target(stdscr):
         return browse_directory(stdscr, "/", "Selecciona el destino de backup")
     return browse_directory(stdscr, selected, "Selecciona el destino de backup")
 
+def choose_restore_source(stdscr):
+    detected_backups = _discover_restore_backups()
+    roots = _discover_backup_roots()
+    items = []
+    for backup_dir in detected_backups:
+        label = f"Backup detectado: {os.path.basename(backup_dir)}  [{backup_dir}]"
+        items.append((f"backup:{backup_dir}", label))
+    items.append(("manual", "Escribir ruta manualmente"))
+    for root in roots:
+        items.append((f"root:{root['path']}", f"Explorar {root['label']}"))
+    items.append(("browse-root", "Navegar desde /"))
+
+    while True:
+        choice = menu(stdscr, "Selecciona el origen del backup", items)
+        if choice == -1:
+            return None
+        selected = items[choice][0]
+        if selected.startswith("backup:"):
+            source = selected.split(":", 1)[1]
+            if _is_backup_dir(source):
+                return source
+            msgbox(stdscr, "Selecciona el origen del backup", f"La copia ya no está disponible:\n{source}")
+            continue
+        if selected == "manual":
+            while True:
+                source = inputbox(stdscr, "Selecciona el origen del backup", "Ruta del backup a restaurar:", "")
+                if source is None:
+                    break
+                source = os.path.abspath(source.strip())
+                if not source:
+                    msgbox(stdscr, "Selecciona el origen del backup", "Debes escribir una ruta válida.")
+                    continue
+                if _is_backup_dir(source):
+                    return source
+                msgbox(
+                    stdscr,
+                    "Selecciona el origen del backup",
+                    "La ruta no parece una copia válida.\n\n"
+                    "Debe contener:\nmetadata/user_ids.conf\n\n"
+                    f"Ruta indicada:\n{source}",
+                )
+            continue
+        if selected == "browse-root":
+            source = browse_directory(stdscr, "/", "Selecciona el origen del backup")
+        else:
+            source = browse_directory(stdscr, selected.split(":", 1)[1], "Selecciona el origen del backup")
+        if source is None:
+            continue
+        if _is_backup_dir(source):
+            return source
+        msgbox(
+            stdscr,
+            "Selecciona el origen del backup",
+            "La ruta seleccionada no parece una copia válida.\n\n"
+            "Debes elegir la carpeta raíz del backup, la que contiene:\nmetadata/user_ids.conf\n\n"
+            f"Ruta seleccionada:\n{source}",
+        )
+
 # ── Flujos ────────────────────────────────────────────────────────────────────
 def flow_backup(stdscr):
     target = choose_backup_target(stdscr)
@@ -1665,24 +1811,12 @@ def flow_backup(stdscr):
     )
 
 def flow_restore(stdscr):
-    src = ""
-    while True:
-        src = inputbox(stdscr, "Restaurar backup",
-                       "Ruta completa del backup a restaurar:", src or "")
-        if src is None:
-            return
-        src = src.strip()
-        if not src:
-            msgbox(stdscr, "Restaurar backup", "Debes indicar una ruta.")
-            continue
-        if not os.path.isdir(src):
-            msgbox(stdscr, "Restaurar backup",
-                   f"Ruta no encontrada:\n{src}\n\nRevisa e inténtalo de nuevo.")
-            continue
-        break
+    src = choose_restore_source(stdscr)
+    if src is None:
+        return
     if not yesno(stdscr, "Restaurar backup", f"Fuente: {src}\n\n¿Iniciar restauración?"):
         return
-    run_op(stdscr, "Restaurar backup", ["restore", "--source", src])
+    run_op_inline(stdscr, "Restaurar backup", ["restore", "--source", src])
 
 def flow_bootstrap(stdscr):
     items, defaults = bootstrap_catalog()
