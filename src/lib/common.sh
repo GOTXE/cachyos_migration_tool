@@ -16,10 +16,126 @@ FORCE_RESTORE=false
 AUTO_CONFIRM=false
 [ "${AUTO_CONFIRM_ENV:-}" = "1" ] && AUTO_CONFIRM=true
 MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+
+# Identificación de Hardware
+MACBOOK_MODEL="unknown"
+if [ -r /sys/devices/virtual/dmi/id/product_name ]; then
+    MACBOOK_MODEL="$(cat /sys/devices/virtual/dmi/id/product_name | tr -d '[:space:]')"
+fi
+
+get_macbook_model() {
+    printf '%s\n' "$MACBOOK_MODEL"
+}
+
+get_macbook_profile() {
+    printf '%s\n' "$MACBOOK_MODEL"
+}
+
+get_macbook_profile_id() {
+    case "$MACBOOK_MODEL" in
+        MacBookPro12,1)
+            printf 'mbp12_1\n'
+            ;;
+        MacBookPro8,1)
+            printf 'mbp8_1\n'
+            ;;
+        *)
+            printf 'generic\n'
+            ;;
+    esac
+}
+
+get_macbook_profile_label() {
+    case "$(get_macbook_profile_id)" in
+        mbp12_1)
+            printf 'MacBook Pro Retina 13" 2015\n'
+            ;;
+        mbp8_1)
+            printf 'MacBook Pro 13" Early 2011\n'
+            ;;
+        *)
+            printf 'Perfil genérico\n'
+            ;;
+    esac
+}
+
+get_macbook_profile_traits() {
+    case "$(get_macbook_profile_id)" in
+        mbp12_1)
+            printf '%s\n' 'apple mbp intel broadwell retina2015 facetimehd broadcom-bcm43602'
+            ;;
+        mbp8_1)
+            printf '%s\n' 'apple mbp intel sandybridge retina2011'
+            ;;
+        *)
+            printf '%s\n' 'generic'
+            ;;
+    esac
+}
+
+get_macbook_profile_summary() {
+    case "$(get_macbook_profile_id)" in
+        mbp12_1)
+            printf '%s\n' 'Portátil Apple Intel, cámara FaceTime HD, Wi-Fi Broadcom BCM43602 y gráficos Broadwell.'
+            ;;
+        mbp8_1)
+            printf '%s\n' 'Portátil Apple Intel con gráficos Sandy Bridge y soporte básico de Apple portátil.'
+            ;;
+        *)
+            printf '%s\n' 'Perfil genérico sin extras Apple específicos.'
+            ;;
+    esac
+}
+
+macbook_profile_has_trait() {
+    local TRAIT="$1"
+    local TRAITS=" $(get_macbook_profile_traits) "
+
+    case "$TRAITS" in
+        *" $TRAIT "*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+get_bootstrap_context_text() {
+    local PROFILE_ID=""
+    local PROFILE_LABEL=""
+    local PROFILE_SUMMARY=""
+
+    PROFILE_LABEL="$(get_macbook_profile_label | tr -d '\n')"
+    PROFILE_ID="$(get_macbook_profile_id)"
+    PROFILE_SUMMARY="$(get_macbook_profile_summary | tr -d '\n')"
+
+    cat <<EOF
+Modelo detectado: $(get_macbook_model)
+Perfil aplicado: ${PROFILE_LABEL}
+Identificador: ${PROFILE_ID}
+Características: ${PROFILE_SUMMARY}
+EOF
+}
+
+bootstrap_context_report() {
+    log_section "Bootstrap Context"
+    while IFS= read -r LINE; do
+        [ -n "$LINE" ] || continue
+        log "$LINE"
+    done < <(get_bootstrap_context_text)
+}
+
+is_macbook_model() {
+    local TARGET_MODEL="$1"
+    [[ "$MACBOOK_MODEL" == "$TARGET_MODEL"* ]]
+}
+
 EXTRA_CONFIG_ITEMS=()
 EXTRA_REPO_SEARCH_DIRS=()
 DATA_DIRS=()
 SELECTED_DATA_DIRS=()
+SELECTED_CONFIG_ITEMS=()
 BACKUP_FS_TYPE=""
 BACKUP_RSYNC_OPTIONS=()
 BACKUP_ESTIMATED_BYTES=0
@@ -121,6 +237,16 @@ run_cmd() {
     fi
 
     log "${CYAN}$${NC} $(printf '%q ' "$@")"
+    "$@" 2>&1 | tee -a "$LOGFILE"
+    return "${PIPESTATUS[0]}"
+}
+
+run_cmd_quiet() {
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] $(printf '%q ' "$@")${NC}"
+        return 0
+    fi
+
     "$@" 2>&1 | tee -a "$LOGFILE"
     return "${PIPESTATUS[0]}"
 }
@@ -341,11 +467,18 @@ get_relative_home_path() {
 collect_repo_dirs() {
     local SEARCH_DIRS=()
     local REPO_DIRS=()
+    local DATA_DIRS=()
     local DIR
     local GIT_ENTRY
     local REPO_DIR
 
     mapfile -t SEARCH_DIRS < <(get_repo_search_dirs)
+    mapfile -t DATA_DIRS < <(get_data_dirs)
+
+    for DIR in "${DATA_DIRS[@]}"; do
+        [ -d "$DIR" ] || continue
+        append_unique_dir SEARCH_DIRS "$DIR"
+    done
 
     for DIR in "${SEARCH_DIRS[@]}"; do
         [ -d "$DIR" ] || continue
@@ -456,6 +589,7 @@ get_repo_search_dirs() {
 get_backup_config_items() {
     local ITEMS=(
         ".ssh"
+        ".gnupg"
         ".gitconfig"
         ".bashrc"
         ".profile"
@@ -466,8 +600,43 @@ get_backup_config_items() {
         ".neocoding"
         ".config/Code"
         ".vscode"
+        ".mozilla"
+        ".thunderbird"
+        ".kde"
+        ".docker"
+        ".kube"
+        ".npm"
+        ".cargo"
+        ".rustup"
+        ".var/app"
+        ".local/share/applications"
+        ".local/share/flatpak"
+        ".local/share/icons"
+        ".config/BraveSoftware"
+        ".config/chromium"
+        ".config/google-chrome"
+        ".config/kde"
+        ".config/fish"
     )
     local EXTRA_ITEM
+    local SELECTED_FROM_ENV=()
+
+    if [ -n "${SELECTED_CONFIG_ITEMS_RAW:-}" ]; then
+        mapfile -t SELECTED_FROM_ENV < <(
+            printf '%s\n' "$SELECTED_CONFIG_ITEMS_RAW" |
+            sed '/^$/d'
+        )
+
+        if [ ${#SELECTED_FROM_ENV[@]} -gt 0 ]; then
+            printf '%s\n' "${SELECTED_FROM_ENV[@]}"
+            return 0
+        fi
+    fi
+
+    if [ ${#SELECTED_CONFIG_ITEMS[@]} -gt 0 ]; then
+        printf '%s\n' "${SELECTED_CONFIG_ITEMS[@]}"
+        return 0
+    fi
 
     for EXTRA_ITEM in "${EXTRA_CONFIG_ITEMS[@]}"; do
         append_unique_dir ITEMS "$EXTRA_ITEM"
@@ -476,10 +645,39 @@ get_backup_config_items() {
     printf '%s\n' "${ITEMS[@]}"
 }
 
+backup_config_default_items() {
+    printf '%s\n' \
+        ".ssh" \
+        ".gnupg" \
+        ".gitconfig" \
+        ".bashrc" \
+        ".profile" \
+        ".zshrc" \
+        ".claude" \
+        ".claude.json" \
+        ".codex" \
+        ".neocoding" \
+        ".config/Code" \
+        ".vscode"
+}
+
 get_data_dirs() {
     local DIRS=()
     local DOCUMENTS_DIR
     local EXTRA_DIR
+    local SELECTED_FROM_ENV=()
+
+    if [ -n "${SELECTED_DATA_DIRS_RAW:-}" ]; then
+        mapfile -t SELECTED_FROM_ENV < <(
+            printf '%s\n' "$SELECTED_DATA_DIRS_RAW" |
+            sed '/^$/d'
+        )
+
+        if [ ${#SELECTED_FROM_ENV[@]} -gt 0 ]; then
+            printf '%s\n' "${SELECTED_FROM_ENV[@]}"
+            return 0
+        fi
+    fi
 
     if [ ${#SELECTED_DATA_DIRS[@]} -gt 0 ]; then
         printf '%s\n' "${SELECTED_DATA_DIRS[@]}"
@@ -592,6 +790,40 @@ detect_backup_data_candidates() {
     done
 
     printf '%s\n' "${CANDIDATES[@]}"
+}
+
+backup_data_catalog() {
+    local CANDIDATES=()
+    local DEFAULT_SELECTED=()
+    local CANDIDATE
+
+    mapfile -t CANDIDATES < <(detect_backup_data_candidates)
+    mapfile -t DEFAULT_SELECTED < <(get_data_dirs)
+
+    for CANDIDATE in "${CANDIDATES[@]}"; do
+        if printf '%s\n' "${DEFAULT_SELECTED[@]}" | grep -Fxq "$CANDIDATE"; then
+            printf '%s|%s|ON\n' "$CANDIDATE" "$CANDIDATE"
+        else
+            printf '%s|%s|OFF\n' "$CANDIDATE" "$CANDIDATE"
+        fi
+    done
+}
+
+backup_config_catalog() {
+    local CANDIDATES=()
+    local CANDIDATE
+    local DEFAULT_SELECTED=()
+
+    mapfile -t CANDIDATES < <(get_backup_config_items)
+    mapfile -t DEFAULT_SELECTED < <(backup_config_default_items)
+
+    for CANDIDATE in "${CANDIDATES[@]}"; do
+        if printf '%s\n' "${DEFAULT_SELECTED[@]}" | grep -Fxq "$CANDIDATE"; then
+            printf '%s|%s|ON\n' "$CANDIDATE" "$CANDIDATE"
+        else
+            printf '%s|%s|OFF\n' "$CANDIDATE" "$CANDIDATE"
+        fi
+    done
 }
 
 ask_backup_data_dirs() {
@@ -747,15 +979,109 @@ restore_conflicts_exist() {
 
 is_apple_laptop() {
     local SYS_VENDOR=""
-    local PRODUCT_NAME=""
 
     [ -r /sys/devices/virtual/dmi/id/sys_vendor ] &&
         SYS_VENDOR="$(< /sys/devices/virtual/dmi/id/sys_vendor)"
-    [ -r /sys/devices/virtual/dmi/id/product_name ] &&
-        PRODUCT_NAME="$(< /sys/devices/virtual/dmi/id/product_name)"
 
     [[ "$SYS_VENDOR" == "Apple Inc." ]] &&
-        [[ "$PRODUCT_NAME" == MacBook* ]]
+        [[ "$MACBOOK_MODEL" == MacBook* ]]
+}
+
+get_bootstrap_checklist_items() {
+    local APPLE_DEFAULT="OFF"
+    local FACETIME_DEFAULT="OFF"
+    local HWACCEL_VISIBLE=false
+    local VAAPI_VISIBLE=false
+    local VAAPI_LABEL="VA-API Brave/Chromium (Intel)"
+    local GPU_PROFILE=""
+
+    if macbook_profile_has_trait apple; then
+        APPLE_DEFAULT="ON"
+    fi
+
+    if command -v detect_facetimehd_camera >/dev/null 2>&1 \
+        && [ "$(detect_facetimehd_camera 2>/dev/null || true)" = "yes" ]; then
+        FACETIME_DEFAULT="ON"
+    fi
+
+    if command -v detect_gpu_profile >/dev/null 2>&1; then
+        GPU_PROFILE="$(detect_gpu_profile 2>/dev/null || true)"
+        case "$GPU_PROFILE" in
+            amd|nvidia)
+                HWACCEL_VISIBLE=true
+                ;;
+            intel*)
+                VAAPI_VISIBLE=true
+                ;;
+        esac
+    fi
+
+    case "$(get_macbook_profile_id)" in
+        mbp12_1)
+            VAAPI_VISIBLE=true
+            VAAPI_LABEL="VA-API Brave/Chromium (Intel Broadwell)"
+            ;;
+        mbp8_1)
+            VAAPI_VISIBLE=true
+            VAAPI_LABEL="VA-API Brave/Chromium (Intel Sandy Bridge)"
+            ;;
+    esac
+
+    cat <<EOF
+sync|Sincronización y actualización sistema|ON
+base_dev|Herramientas base desarrollo (git, go)|ON
+yay|AUR helper (yay)|ON
+flatpak|Soporte Flatpak + Flathub|ON
+official|Paquetes oficiales de repositorio|ON
+kde|Aplicaciones base KDE Plasma|ON
+aur|Paquetes adicionales desde AUR|ON
+docker_svc|Configuración servicio Docker|ON
+zsh|Oh My Zsh + Powerlevel10k|ON
+node|Stack Node / pnpm / bun|ON
+ai_codex|Codex CLI (@openai/codex)|OFF
+ai_claude|Claude Code CLI (nativo)|OFF
+ai_gemini|Gemini CLI (@google/gemini-cli)|OFF
+ai_opencode|OpenCode CLI|OFF
+youtube|YouTube Force H264|OFF
+iwd|iwd backend para NetworkManager|OFF
+hyprland|Hyprland|OFF
+wifi|Configurar país/región Wi-Fi|OFF
+globalmenu|Global Menu KDE (GTK + VS Code)|OFF
+EOF
+
+    if macbook_profile_has_trait apple; then
+        printf '%s\n' "mbpwatch|MBP Watch diagnóstico (systemd)|ON"
+        printf '%s\n' "plasmoid|Plasmoid KDE MBP Watch|ON"
+        printf '%s\n' "apple|Apple laptop extras|${APPLE_DEFAULT}"
+    fi
+
+    if macbook_profile_has_trait apple && macbook_profile_has_trait facetimehd && [ "$FACETIME_DEFAULT" = "ON" ]; then
+        printf '%s\n' "facetime|FaceTime HD camera (AUR)|${FACETIME_DEFAULT}"
+    fi
+
+    if [ "$HWACCEL_VISIBLE" = true ]; then
+        printf '%s\n' "hwaccel|Aceleración HW Chromium/Brave|OFF"
+    fi
+
+    if [ "$VAAPI_VISIBLE" = true ]; then
+        printf '%s\n' "vaapi|${VAAPI_LABEL}|OFF"
+    fi
+
+    cat <<'EOF'
+btrfs|Snapshots BTRFS (Snapper)|OFF
+EOF
+}
+
+bootstrap_test_report() {
+    local CHECKLIST_LINE=""
+
+    bootstrap_context_report
+    log "Bloques visibles:"
+
+    while IFS= read -r CHECKLIST_LINE; do
+        [ -n "$CHECKLIST_LINE" ] || continue
+        log " - ${CHECKLIST_LINE#*|}"
+    done < <(get_bootstrap_checklist_items)
 }
 
 print_main_menu_intro() {
