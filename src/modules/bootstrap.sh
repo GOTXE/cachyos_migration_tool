@@ -1875,30 +1875,62 @@ configure_chromium_hw_acceleration() {
     log " - chrome://gpu"
 }
 
-configure_vaapi_brave_broadwell() {
+configure_vaapi_intel() {
     local GPU_PROFILE=""
+    local MODEL=""
+    local PROMPT_LABEL=""
 
     GPU_PROFILE="$(detect_gpu_profile)"
+    MODEL="$(get_macbook_model)"
 
     if [[ "$GPU_PROFILE" != intel* ]]; then
         return
     fi
 
     log "${YELLOW}GPU Intel detectada.${NC}"
-    log "Corrección VA-API para Brave/Chromium en Intel Broadwell (MBP 2015 / Iris 6100):"
-    log " - Instala libva-intel-driver-irql (AUR): fork parcheado que corrige el fallo de"
-    log "   inicialización del frame pool en Chromium, por el que VaapiVideoDecoder cae a"
-    log "   FFmpegVideoDecoder (decodificación por CPU en lugar de GPU)."
-    log " - Crea ~/.config/environment.d/vaapi.conf  →  LIBVA_DRIVER_NAME=i965"
-    log " - Escribe ~/.config/brave-flags.conf con flags para VA-API GL"
 
-    if ! confirm_action "¿Aplicar corrección VA-API para Brave/Chromium en Intel Broadwell?"; then
-        return
-    fi
+    case "$MODEL" in
+        MacBookPro12,1)
+            # MacBook Pro 13" Retina 2015 (Broadwell / Iris 6100)
+            log "Configurando corrección VA-API para Intel Broadwell (2015):"
+            log " - Instala libva-intel-driver-irql (AUR) para corregir el fallo de frame pool."
+            log " - Configura LIBVA_DRIVER_NAME=i965"
+            PROMPT_LABEL="Intel Broadwell (2015)"
 
-    log "${YELLOW}Instalando libva-intel-driver-irql (AUR)...${NC}"
-    log_package_batch_state "AUR" "aur" libva-intel-driver-irql
-    run_cmd yay -S --needed --noconfirm libva-intel-driver-irql
+            if ! confirm_action "¿Aplicar corrección VA-API para $PROMPT_LABEL?"; then
+                return
+            fi
+
+            log "${YELLOW}Instalando libva-intel-driver-irql (AUR)...${NC}"
+            log_package_batch_state "AUR" "aur" libva-intel-driver-irql
+            run_cmd yay -S --needed --noconfirm libva-intel-driver-irql
+            ;;
+        MacBookPro8,1)
+            # MacBook Pro 13" Early 2011 (Sandy Bridge / HD Graphics 3000)
+            log "Configurando corrección VA-API para Intel Sandy Bridge (2011):"
+            log " - Instala libva-intel-driver estándar."
+            log " - Configura LIBVA_DRIVER_NAME=i965"
+            log " - Nota: Decodificación por HW limitada (sin soporte VP9/AV1)."
+            PROMPT_LABEL="Intel Sandy Bridge (2011)"
+
+            if ! confirm_action "¿Aplicar configuración VA-API para $PROMPT_LABEL?"; then
+                return
+            fi
+
+            log "${YELLOW}Instalando libva-intel-driver...${NC}"
+            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver
+            ;;
+        *)
+            log "${YELLOW}No hay perfil específico para el modelo $MODEL.${NC}"
+            log "Se intentará la configuración genérica para Intel."
+            PROMPT_LABEL="Intel genérico"
+
+            if ! confirm_action "¿Continuar con la configuración genérica de $PROMPT_LABEL?"; then
+                return
+            fi
+            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver
+            ;;
+    esac
 
     if [ "$DRY_MODE" = true ]; then
         log "${YELLOW}[DRY-RUN] crear ~/.config/environment.d/vaapi.conf${NC}"
@@ -1913,11 +1945,11 @@ configure_vaapi_brave_broadwell() {
 --ozone-platform-hint=x11'
     fi
 
-    log_warn "Reinicia la sesión para que LIBVA_DRIVER_NAME=i965 quede disponible en el entorno."
-    log "Verifica VA-API con: LIBVA_DRIVER_NAME=i965 vainfo"
-    log "Tras reiniciar Brave, valida en:"
-    log " - brave://media-internals  →  kVideoDecoderName = VaapiVideoDecoder"
-    log " - sudo intel_gpu_top       →  motor Video activo durante reproducción"
+    log_warn "Reinicia la sesión para aplicar los cambios de VA-API."
+}
+
+configure_vaapi_brave_broadwell() {
+    configure_vaapi_intel "$@"
 }
 
 configure_btrfs_snapshots() {
@@ -2014,6 +2046,7 @@ configure_facetimehd_camera() {
 bootstrap_cachyos() {
     log_section "Bootstrap CachyOS"
     show_log_location
+    bootstrap_context_report
 
     if [ "$DRY_MODE" = true ]; then
         log "${YELLOW}DRY RUN ACTIVADO por flag --dry-run.${NC}"
@@ -2035,7 +2068,7 @@ bootstrap_cachyos() {
     configure_wifi_regulatory_domain
     configure_global_menu_support
     configure_chromium_hw_acceleration
-    configure_vaapi_brave_broadwell
+    configure_vaapi_intel
     configure_btrfs_snapshots
 
     log ""

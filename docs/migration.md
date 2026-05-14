@@ -84,6 +84,36 @@ Pensado para ajuste térmico/energético en portátil Intel.
 No instala drivers Broadcom propietarios por defecto.
 Si el script detecta un MacBook por DMI, preguntará si deseas instalar estos extras.
 
+El bootstrap ya no muestra este bloque como una lista fija para el MBP 2015:
+construye el checklist según el modelo detectado y oculta bloques que no encajan
+con ese hardware. Hoy están contemplados al menos:
+
+- `MacBookPro12,1` - MacBook Pro Retina 13" 2015
+- `MacBookPro8,1` - MacBook Pro 13" Early 2011
+
+La acción de VA-API se adapta al modelo:
+
+- `MacBookPro12,1` - Intel Broadwell / `libva-intel-driver-irql`
+- `MacBookPro8,1` - Intel Sandy Bridge / `libva-intel-driver`
+
+### 4.1 Tests y preflight inicial
+
+Para esta primera versión también puedes ejecutar comprobaciones locales sin
+lanzar el bootstrap completo:
+
+```bash
+./migration.sh test profiles   # perfil detectado, características y resumen
+./migration.sh test catalog    # catálogo de bloques por hardware
+./migration.sh test syntax     # bash -n sobre el árbol principal
+./migration.sh test            # ejecuta todo lo anterior
+```
+
+Estos tests están pensados para:
+
+- verificar que el modelo Apple detectado cae en el perfil esperado
+- comprobar qué bloques de bootstrap se mostrarán antes de instalar nada
+- servir como base para automatizar validaciones cuando añadas más modelos
+
 ### 5. Cámara FaceTime HD (MBP 2013+)
 
 El MBP 2015 usa una cámara FaceTime HD conectada por **PCIe** (`14e4:1570`, Broadcom),

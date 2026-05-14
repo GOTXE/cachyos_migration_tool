@@ -60,7 +60,7 @@ main_menu() {
         log "7) Reinstalar plasmoid MBP Watch"
         log "8) Mover plasmoid MBP Watch"
         log "9) Instalar YouTube Force H264"
-        log "10) Configurar VA-API Brave/Chromium (Intel Broadwell)"
+        log "10) Configurar VA-API Brave/Chromium (Intel)"
         log "11) Salir"
         log ""
 
@@ -103,9 +103,15 @@ COMANDOS PRINCIPALES:
   restore                    Restaura una copia de seguridad previa
                              Opciones: [--source RUTA] [--force] [--dry-run]
   postcheck                  Verifica el estado del sistema tras el reinicio post-bootstrap
+  test                       Ejecuta pruebas locales y reportes de preflight
+                             Opciones: [profiles|catalog|syntax|all]
 
 HERRAMIENTAS Y AJUSTES:
-  configure-vaapi-brave      Configura aceleración hardware Intel Broadwell (MBP 2015)
+  configure-vaapi-brave      Configura aceleración VA-API Intel según el modelo detectado
+  bootstrap-context          Muestra el modelo Apple detectado y el perfil aplicado
+  bootstrap-catalog          Imprime el catálogo de bloques compatibles para la TUI
+  backup-config-catalog      Imprime la configuración importante detectada para la TUI
+  backup-data-catalog        Imprime los directorios de datos detectados para la TUI
   install-youtube-force-h264 Instala extensión para forzar códec H.264 en YouTube
 
 MBP WATCH (Diagnóstico y Overlay):
@@ -230,6 +236,7 @@ parse_bootstrap_args() {
 
 main() {
     local REQUESTED_PLASMOID_TARGET=""
+    local TEST_MODE=""
 
     if [ $# -eq 0 ]; then
         main_menu
@@ -251,6 +258,47 @@ main() {
             shift
             parse_bootstrap_args "$@"
             bootstrap_cachyos
+            ;;
+        bootstrap-context)
+            get_bootstrap_context_text
+            ;;
+        bootstrap-catalog)
+            get_bootstrap_checklist_items
+            ;;
+        backup-config-catalog)
+            backup_config_catalog
+            ;;
+        backup-data-catalog)
+            backup_data_catalog
+            ;;
+        test)
+            shift
+            TEST_MODE="${1:-all}"
+            case "$TEST_MODE" in
+                profiles)
+                    bash "$APP_DIR/../tests/test_bootstrap_profiles.sh"
+                    ;;
+                catalog)
+                    bash "$APP_DIR/../tests/test_bootstrap_catalog.sh"
+                    ;;
+                syntax)
+                    bash -n \
+                        "$APP_DIR/../migration.sh" \
+                        "$APP_DIR/main.sh" \
+                        "$APP_DIR/lib/common.sh" \
+                        "$APP_DIR/modules"/*.sh \
+                        "$APP_DIR/tools"/*.sh \
+                        "$APP_DIR/lib/tui.sh"
+                    ;;
+                all)
+                    bash "$APP_DIR/../tests/run.sh"
+                    ;;
+                *)
+                    log "${RED}Modo de test no reconocido: $TEST_MODE${NC}"
+                    usage
+                    exit 1
+                    ;;
+            esac
             ;;
         install-youtube-force-h264)
             shift

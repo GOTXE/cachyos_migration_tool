@@ -1,5 +1,30 @@
 #!/usr/bin/env bash
 
+run_backup_rsync() {
+    local LABEL="$1"
+    shift
+    local RC=0
+
+    if run_cmd_quiet "$@"; then
+        return 0
+    else
+        RC=$?
+    fi
+    case "$RC" in
+        23|24)
+            BACKUP_WARNING_COUNT=$((BACKUP_WARNING_COUNT + 1))
+            log_warn "[WARN] Copia con avisos en: $LABEL (rsync code $RC)"
+            if [ -n "${BACKUP_WARNING_LOG:-}" ]; then
+                printf '%s | rsync code %s\n' "$LABEL" "$RC" >> "$BACKUP_WARNING_LOG"
+            fi
+            return 0
+            ;;
+        *)
+            return "$RC"
+            ;;
+    esac
+}
+
 backup_system() {
     local DATE
     local BACKUP_NAME
@@ -17,6 +42,7 @@ backup_system() {
     local TOTAL_REPOS=0
     local TOTAL_DATA_DIRS=0
     local TOTAL_BLOCKS=4
+    local BACKUP_WARNING_COUNT=0
 
     require_command rsync
     extract_broadcom_bundle_silent
@@ -26,6 +52,11 @@ backup_system() {
 
     if [ -n "$BACKUP_TARGET" ]; then
         DISK_MOUNT="$BACKUP_TARGET"
+        if [ "${BACKUP_SELECTION_FROM_TUI:-0}" != "1" ] &&
+           [ -z "${SELECTED_DATA_DIRS_RAW:-}" ] &&
+           [ ${#SELECTED_DATA_DIRS[@]} -eq 0 ]; then
+            ask_backup_data_dirs
+        fi
         # Se actualiza el global para reutilizarlo en la validacion de espacio.
         # shellcheck disable=SC2034
         BACKUP_ESTIMATED_BYTES="$(estimate_backup_bytes)"
@@ -45,8 +76,9 @@ backup_system() {
 
     BACKUP_DIR="${DISK_MOUNT%/}/${BACKUP_NAME}"
     configure_backup_rsync_mode "$DISK_MOUNT"
+    BACKUP_WARNING_LOG="$BACKUP_DIR/logs/rsync_warnings.txt"
 
-    run_cmd mkdir -p \
+    run_cmd_quiet mkdir -p \
         "$BACKUP_DIR/configs" \
         "$BACKUP_DIR/repos" \
         "$BACKUP_DIR/data" \
@@ -122,7 +154,7 @@ backup_system() {
                 mapfile -t BROKEN_LINK_EXCLUDES < <(build_broken_symlink_excludes "$CONFIG_SOURCE")
             fi
 
-            run_cmd rsync "${BACKUP_RSYNC_OPTIONS[@]}" --info=progress2 \
+            run_backup_rsync "$ITEM" rsync "${BACKUP_RSYNC_OPTIONS[@]}" \
                 "${BROKEN_LINK_EXCLUDES[@]}" \
                 "$CONFIG_SOURCE" \
                 "$BACKUP_DIR/configs/"
@@ -157,13 +189,13 @@ backup_system() {
             REPO_TARGET_PARENT="$BACKUP_DIR/repos/$(dirname "$REPO_RELATIVE_PATH")"
         fi
 
-        run_cmd mkdir -p "$REPO_TARGET_PARENT"
+        run_cmd_quiet mkdir -p "$REPO_TARGET_PARENT"
 
         if [[ " ${BACKUP_RSYNC_OPTIONS[*]} " == *" --copy-links "* ]]; then
             mapfile -t BROKEN_LINK_EXCLUDES < <(build_broken_symlink_excludes "$DIR")
         fi
 
-        run_cmd rsync "${BACKUP_RSYNC_OPTIONS[@]}" --info=progress2 \
+        run_backup_rsync "$REPO_NAME" rsync "${BACKUP_RSYNC_OPTIONS[@]}" \
             "${BROKEN_LINK_EXCLUDES[@]}" \
             --exclude='venv' \
             --exclude='.venv' \
@@ -213,17 +245,40 @@ backup_system() {
             mapfile -t BROKEN_LINK_EXCLUDES < <(build_broken_symlink_excludes "$DATA_DIR")
         fi
 
-        run_cmd rsync "${BACKUP_RSYNC_OPTIONS[@]}" --info=progress2 \
+        run_backup_rsync "$DATA_DIR" rsync "${BACKUP_RSYNC_OPTIONS[@]}" \
             "${BROKEN_LINK_EXCLUDES[@]}" \
             "${RSYNC_EXCLUDES[@]}" \
             "$DATA_DIR/" \
             "$BACKUP_DIR/data/$DATA_NAME/"
     done
 
+    if [ "$DRY_MODE" != true ]; then
+        find "$BACKUP_DIR" -type f | sort > "$BACKUP_DIR/logs/copied_files.txt" 2>/dev/null || true
+        {
+            echo "CONFIG_ITEMS:"
+            printf '%s\n' "${EXISTING_CONFIGS[@]}"
+            echo ""
+            echo "DATA_DIRS:"
+            printf '%s\n' "${EXISTING_ARCHIVE_DIRS[@]}"
+        } > "$BACKUP_DIR/logs/backup_selection.txt"
+    fi
     log ""
     log "${GREEN}=================================${NC}"
-    log "${GREEN}BACKUP COMPLETADO${NC}"
+    if [ "$BACKUP_WARNING_COUNT" -gt 0 ]; then
+        log "${YELLOW}BACKUP COMPLETADO CON AVISOS${NC}"
+    else
+        log "${GREEN}BACKUP COMPLETADO${NC}"
+    fi
     log "${GREEN}=================================${NC}"
+    log ""
+    if [ "$BACKUP_WARNING_COUNT" -gt 0 ]; then
+        log "Avisos detectados: $BACKUP_WARNING_COUNT"
+        log "Detalle de avisos:"
+        log "$BACKUP_WARNING_LOG"
+        log ""
+    fi
+    log "Registro de archivos copiados:"
+    log "$BACKUP_DIR/logs/copied_files.txt"
     log ""
     log "Destino:"
     log "$BACKUP_DIR"

@@ -6,7 +6,10 @@ Migration and bootstrap script for Linux workstations. Focused on the migration 
 
 > **Tested on CachyOS only.** The bootstrap uses `pacman` and `yay` (AUR) — not compatible with apt/rpm-based distributions without adaptation.
 
-Includes specific support for **MacBook Pro Intel 2015** (BCM43602 Wi-Fi, FaceTime HD PCIe camera, hardware monitor).
+Includes model-aware support for **Intel MacBook Pro** profiles, with an initial validated base for:
+
+- **MacBookPro12,1** — MacBook Pro Retina 13" 2015
+- **MacBookPro8,1** — MacBook Pro 13" Early 2011
 
 ---
 
@@ -23,6 +26,16 @@ Includes specific support for **MacBook Pro Intel 2015** (BCM43602 Wi-Fi, FaceTi
 
 ---
 
+## Current highlights
+
+- Apple hardware detection by model and applied profile
+- Dynamic bootstrap checklist: only compatible blocks are shown for the detected machine
+- Python and `whiptail` TUIs adapted to the detected device context
+- TUI backup flow with destination browser, real `/home/user` item selection and final backup verification
+- Test commands to validate profiles, catalog and syntax before changing the system
+
+---
+
 ## Quick start
 
 ```bash
@@ -34,6 +47,12 @@ Includes specific support for **MacBook Pro Intel 2015** (BCM43602 Wi-Fi, FaceTi
 # → reboot
 ./migration.sh postcheck
 ./migration.sh restore --source /path/to/backup
+
+# Quick checks
+./migration.sh test profiles
+./migration.sh test catalog
+./migration.sh test syntax
+./migration.sh test
 ```
 
 The script selects the TUI engine in this order: **Python + curses** (no external dependencies) → **whiptail** → plain text menu. Can be forced with `TUI_BACKEND=python|whiptail|text`.
@@ -113,14 +132,39 @@ docs/                           # full documentation
 
 ---
 
-## MacBook Pro 2015 (MacBookPro12,1)
+## MacBook profiles currently covered
 
-The script automatically detects Apple hardware via DMI and offers:
+The script automatically detects Apple hardware via DMI, applies a compatibility profile, and adapts both the TUI and the bootstrap to that model.
+
+Profiles currently covered:
+
+- **MacBookPro12,1** — MacBook Pro Retina 13" 2015
+- **MacBookPro8,1** — MacBook Pro 13" Early 2011
+
+Depending on the detected profile:
+
+- only compatible bootstrap blocks are shown
+- the VA-API fix changes according to the machine's Intel GPU
+- the visible TUI summary shows detected model, applied profile and main characteristics
+
+Specific extras already covered for `MacBookPro12,1`:
 
 - **BCM43602 Wi-Fi** — copies local firmware from `firmware/brcm/` and applies `brcmfmac` workaround. To update the bundle from the current system: `bash src/tools/extract_bcm43602_bundle.sh`
 - **FaceTime HD PCIe camera** (`14e4:1570`) — installs `facetimehd-dkms` + firmware, configures persistent module and `bdc_pci` blacklist
 - **MBP Watch** — systemd daemon that monitors temperature, battery, Wi-Fi, drivers and kernel events; generates web dashboard at `http://localhost:7070/report.html` and AI digest at `/var/lib/mbp-watch/report.txt`
 - **Intel Broadwell VA-API** — `--use-gl=angle --use-angle=opengl` flags for Brave/Chromium
+
+For `MacBookPro8,1`, the initial profile already adjusts the bootstrap catalog and the VA-API path for Intel Sandy Bridge.
+
+## Backup TUI
+
+The interactive backup flow now:
+
+- lets you choose the destination from common mounted paths or browse manually
+- allows drilling down into directories before confirming the final target path
+- lets you select real items inside `/home/user`
+- keeps execution inside the TUI
+- verifies the result at the end and stores useful logs inside the backup folder
 
 ---
 

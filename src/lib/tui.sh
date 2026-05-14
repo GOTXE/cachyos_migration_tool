@@ -82,6 +82,29 @@ tui_op() {
     _tui_log_msgbox "$TITLE" "\n" 9
 }
 
+bootstrap_checklist_catalog() {
+    local -n OUT_ITEMS="$1"
+    local -n OUT_DEFAULTS="$2"
+    local CATALOG=()
+    local LINE=""
+    local TAG=""
+    local LABEL=""
+    local DEFAULT=""
+    local STATUS="OFF"
+    local INDEX=1
+
+    mapfile -t CATALOG < <(get_bootstrap_checklist_items)
+
+    for LINE in "${CATALOG[@]}"; do
+        IFS='|' read -r TAG LABEL DEFAULT <<< "$LINE"
+        [ -n "$TAG" ] || continue
+        [ "$DEFAULT" = "ON" ] && STATUS="ON" || STATUS="OFF"
+        OUT_ITEMS+=("$TAG" "${INDEX}. ${LABEL}" "$STATUS")
+        [ "$DEFAULT" = "ON" ] && OUT_DEFAULTS+=("$TAG")
+        INDEX=$((INDEX + 1))
+    done
+}
+
 # ---------------------------------------------------------------------------
 # Backup
 # ---------------------------------------------------------------------------
@@ -270,7 +293,7 @@ tui_main_menu() {
             "7"  "Reinstalar plasmoid MBP Watch" \
             "8"  "Mover plasmoid MBP Watch" \
             "9"  "Instalar YouTube Force H264" \
-            "10" "VA-API Brave/Chromium (Intel Broadwell)" \
+            "10" "VA-API Brave/Chromium (Intel)" \
             "11" "Salir" \
             3>&1 1>&2 2>&3) || break
 
@@ -309,46 +332,26 @@ tui_main_menu() {
 # ---------------------------------------------------------------------------
 
 tui_bootstrap() {
-    local APPLE_DEFAULT="OFF"
-    local FACETIME_DEFAULT="OFF"
+    local CHECKLIST_ITEMS=()
+    local CHECKLIST_DEFAULTS=()
     local SELECTED
     local TUI_WIFI_COUNTRY=""
     local TUI_BROWSER=""
+    local BOOTSTRAP_CONTEXT=""
 
-    is_apple_laptop 2>/dev/null && APPLE_DEFAULT="ON"
-    [ "$(detect_facetimehd_camera 2>/dev/null)" = "yes" ] && FACETIME_DEFAULT="ON"
+    bootstrap_checklist_catalog CHECKLIST_ITEMS CHECKLIST_DEFAULTS
+    BOOTSTRAP_CONTEXT="$(get_bootstrap_context_text)"
+
+    wt --title " Bootstrap CachyOS " \
+        --msgbox "\n${BOOTSTRAP_CONTEXT}\n\nEl listado se filtrará según este perfil.\n\nENTER = Aceptar   ESC = Cancelar" \
+        11 64
 
     SELECTED=$(wt \
         --title " Bootstrap CachyOS " \
         --checklist \
-        "Space=marcar/desmarcar   Flechas=navegar   Enter=confirmar" \
+        "Space=marcar/desmarcar   Flechas=navegar   Enter=confirmar   ESC=Atrás" \
         28 72 18 \
-        "sync"       "1. Sincronización y actualización sistema"  ON  \
-        "base_dev"   "2. Herramientas base desarrollo (git, go)"  ON  \
-        "yay"        "3. AUR helper (yay)"                        ON  \
-        "flatpak"    "4. Soporte Flatpak + Flathub"               ON  \
-        "official"   "5. Paquetes oficiales de repositorio"       ON  \
-        "kde"        "6. Aplicaciones base KDE Plasma"            ON  \
-        "aur"        "7. Paquetes adicionales desde AUR"          ON  \
-        "docker_svc" "8. Configuración servicio Docker"           ON  \
-        "zsh"        "9. Oh My Zsh + Powerlevel10k"               ON  \
-        "node"       "10. Stack Node / pnpm / bun"                ON  \
-        "ai_codex"   "11. Codex CLI (@openai/codex)"              OFF \
-        "ai_claude"  "12. Claude Code CLI (nativo)"               OFF \
-        "ai_gemini"  "13. Gemini CLI (@google/gemini-cli)"        OFF \
-        "ai_opencode" "14. OpenCode CLI"                          OFF \
-        "mbpwatch"   "15. MBP Watch diagnóstico (systemd)"        ON  \
-        "plasmoid"   "16. Plasmoid KDE MBP Watch"                 ON  \
-        "youtube"    "17. YouTube Force H264"                     OFF \
-        "apple"      "18. Apple laptop extras (MBP 2015)"         "$APPLE_DEFAULT" \
-        "facetime"   "19. FaceTime HD camera (AUR)"               "$FACETIME_DEFAULT" \
-        "iwd"        "20. iwd backend para NetworkManager"        OFF \
-        "hyprland"   "21. Hyprland"                               OFF \
-        "wifi"       "22. Configurar país/región Wi-Fi"           OFF \
-        "globalmenu" "23. Global Menu KDE (GTK + VS Code)"       OFF \
-        "hwaccel"    "24. Aceleración HW Chromium/Brave"          OFF \
-        "vaapi"      "25. VA-API Brave/Chromium Intel Broadwell" OFF \
-        "btrfs"      "26. Snapshots BTRFS (Snapper)"              OFF \
+        "${CHECKLIST_ITEMS[@]}" \
         3>&1 1>&2 2>&3) || return 0
 
     if [ -z "$SELECTED" ]; then

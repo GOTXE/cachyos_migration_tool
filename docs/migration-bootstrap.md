@@ -1,6 +1,10 @@
 # Guía de Bootstrap CachyOS
 
-Esta herramienta automatiza la configuración de un sistema CachyOS (basado en Arch Linux) optimizado para desarrollo y hardware Apple MacBook Pro (2015). El proceso se divide en bloques lógicos secuenciales para garantizar la estabilidad.
+Esta herramienta automatiza la configuración de un sistema CachyOS (basado en Arch Linux) optimizado para desarrollo y hardware Apple MacBook Pro. El proceso se divide en bloques lógicos secuenciales para garantizar la estabilidad.
+
+El bootstrap construye el checklist en runtime según el modelo Apple detectado
+y oculta los bloques que no encajan con ese hardware. Eso permite ampliar la
+compatibilidad sin mantener una lista fija de opciones para un solo MacBook.
 
 ## Bloques de Instalación
 
@@ -47,6 +51,35 @@ Instalación de interfaces de línea de comandos para asistentes de IA:
 - **Claude:** `claude` (nativo de Anthropic).
 - **Gemini:** `@google/gemini-cli` vía npm.
 - **OpenCode:** Integración con OpenCode CLI.
+
+## Perfiles de hardware contemplados
+
+- `MacBookPro12,1` - MacBook Pro Retina 13" 2015
+- `MacBookPro8,1` - MacBook Pro 13" Early 2011
+
+La corrección VA-API se adapta al perfil detectado:
+
+- `MacBookPro12,1` - Intel Broadwell / `libva-intel-driver-irql`
+- `MacBookPro8,1` - Intel Sandy Bridge / `libva-intel-driver`
+
+## Preflight y tests
+
+La versión inicial también expone un modo de comprobación para validar el
+perfil y el catálogo sin tocar el sistema:
+
+```bash
+./migration.sh test profiles
+./migration.sh test catalog
+./migration.sh test syntax
+./migration.sh test
+```
+
+Uso recomendado:
+
+- `profiles` para confirmar que el MacBook cae en el perfil correcto
+- `catalog` para ver qué bloques se mostrarán en la TUI
+- `syntax` para validar el árbol Bash antes de un cambio
+- `all` para ejecutar todo junto en una pasada
 
 ---
 *Nota: Se recomienda reiniciar el sistema tras completar el bootstrap para asegurar que todos los cambios en el PATH y los grupos de usuario se apliquen correctamente.*
