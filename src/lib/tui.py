@@ -587,15 +587,18 @@ def _newwin(stdscr, h, w, title=""):
     return win, h, w
 
 # ── Widgets ───────────────────────────────────────────────────────────────────
-def menu(stdscr, title, items):
+def menu(stdscr, title, items, show_buttons=True):
     """Devuelve índice seleccionado o -1 si se cancela."""
     curses.curs_set(0)
     sh, sw = stdscr.getmaxyx()
     w = min(sw - 4, max(56, max(len(lb) for _, lb in items) + 8))
     h = min(sh - 2, len(items) + 5)
     win, h, w = _newwin(stdscr, h, w, title)
-    _hint(win, "↑↓ Navegar   ENTER Seleccionar   TAB Botones   ESC Atrás")
-    _button_bar(win, ["Aceptar", "Cancelar"], None)
+    if show_buttons:
+        _hint(win, "↑↓ Navegar   ENTER Seleccionar   TAB Botones   ESC Atrás")
+        _button_bar(win, ["Aceptar", "Cancelar"], None)
+    else:
+        _hint(win, "↑↓ Navegar   ENTER Seleccionar   ESC Atrás")
     visible = h - 4
     sel = offset = 0
     focus_buttons = False
@@ -614,12 +617,13 @@ def menu(stdscr, title, items):
             else:
                 attr = curses.color_pair(CP_SEL) | curses.A_BOLD if idx == sel else curses.color_pair(CP_NORMAL)
             _put(win, i + 2, 2, f"{row_text:<{w-4}}", attr)
-        _button_bar(win, ["Aceptar", "Cancelar"], button_sel if focus_buttons else None)
+        if show_buttons:
+            _button_bar(win, ["Aceptar", "Cancelar"], button_sel if focus_buttons else None)
         win.refresh()
         k = win.getch()
         if k in (27,):
             return -1
-        if k in (ord('\t'), curses.KEY_BTAB):
+        if show_buttons and k in (ord('\t'), curses.KEY_BTAB):
             focus_buttons = not focus_buttons
             continue
         if focus_buttons:
@@ -1352,7 +1356,10 @@ def _discover_backup_mounts():
         for raw_line in out.splitlines():
             data = _parse_lsblk_line(raw_line)
             mountpoint = data.get("MOUNTPOINT", "").strip()
+            fstype = data.get("FSTYPE", "").strip().lower()
             if not mountpoint or mountpoint in {"/", "/boot", "/boot/efi"}:
+                continue
+            if fstype == "swap":
                 continue
             if not os.path.isdir(mountpoint):
                 continue
@@ -1383,6 +1390,8 @@ def _discover_backup_mounts():
                 fstype = parts[2]
                 if not mountpoint or mountpoint in {"/", "/boot", "/boot/efi"}:
                     continue
+                if fstype == "swap":
+                    continue
                 if mountpoint.startswith("/proc") or mountpoint.startswith("/sys") or mountpoint.startswith("/dev"):
                     continue
                 if fstype.startswith(("proc", "sysfs", "tmpfs", "devtmpfs", "cgroup", "overlay", "squashfs")):
@@ -1410,6 +1419,7 @@ def _read_fstab_mounts():
         "proc", "sysfs", "tmpfs", "devtmpfs", "devpts", "cgroup", "cgroup2",
         "overlay", "squashfs", "nfs", "nfs4", "autofs", "fusectl", "securityfs",
         "pstore", "efivarfs", "debugfs", "tracefs", "hugetlbfs", "mqueue",
+        "swap",
     }
     try:
         with open("/etc/fstab", "r", encoding="utf-8") as fh:
@@ -1929,7 +1939,7 @@ def main_loop(stdscr):
     while True:
         stdscr.clear()
         stdscr.refresh()
-        idx = menu(stdscr, f"Linux Migration Tool v{VERSION}  [python]", items)
+        idx = menu(stdscr, f"Linux Migration Tool v{VERSION}  [python]", items, show_buttons=False)
         if idx < 0:
             break
         tag, label = items[idx]

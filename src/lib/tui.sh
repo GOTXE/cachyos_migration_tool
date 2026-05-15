@@ -21,6 +21,18 @@ export NEWT_COLORS='
   compactbutton=white,black
 '
 
+_tui_is_usable_mount() {
+    local MOUNTPOINT="${1:-}"
+    local FSTYPE="${2:-}"
+
+    [ -n "$MOUNTPOINT" ] || return 1
+    [ "$MOUNTPOINT" != "/" ] || return 1
+    [[ ! "$MOUNTPOINT" =~ ^/boot ]] || return 1
+    [ "${FSTYPE,,}" != "swap" ] || return 1
+    [ -d "$MOUNTPOINT" ] || return 1
+    return 0
+}
+
 # Limpia la pantalla con ANSI sin lanzar `clear`, para evitar latencia al volver
 # al menú principal y seguir eliminando el solapamiento visual entre ventanas.
 _tui_fast_clear() {
@@ -283,9 +295,10 @@ tui_backup_select_disk() {
     mapfile -t DISKS < <(
         lsblk -P -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT,TRAN |
         while IFS= read -r LINE; do
-            local MP
+            local MP FS
             MP="$(extract_lsblk_field "$LINE" "MOUNTPOINT")"
-            if [ -n "$MP" ] && [ "$MP" != "/" ] && [[ ! "$MP" =~ ^/boot ]]; then
+            FS="$(extract_lsblk_field "$LINE" "FSTYPE")"
+            if _tui_is_usable_mount "$MP" "$FS"; then
                 printf '%s\n' "$LINE"
             fi
         done
@@ -420,10 +433,11 @@ tui_collect_restore_roots() {
         [ -d "/run/media" ] && printf '%s\n' "/run/media"
         [ -d "/media" ] && printf '%s\n' "/media"
 
-        lsblk -P -o MOUNTPOINT 2>/dev/null | while IFS= read -r LINE; do
-            local MP
+        lsblk -P -o MOUNTPOINT,FSTYPE 2>/dev/null | while IFS= read -r LINE; do
+            local MP FS
             MP="$(extract_lsblk_field "$LINE" "MOUNTPOINT")"
-            if [ -n "$MP" ] && [ "$MP" != "/" ] && [[ ! "$MP" =~ ^/boot ]]; then
+            FS="$(extract_lsblk_field "$LINE" "FSTYPE")"
+            if _tui_is_usable_mount "$MP" "$FS"; then
                 printf '%s\n' "$MP"
             fi
         done
@@ -734,6 +748,8 @@ tui_main_menu() {
         OPTION=$(wt \
             --title " Linux Migration Tool v${VERSION}  [whiptail] " \
             --menu "\nSelecciona una operación:" \
+            --ok-button "Entrar" \
+            --nocancel \
             18 64 9 \
             "1"  "Backup sistema" \
             "2"  "Bootstrap CachyOS" \
