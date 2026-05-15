@@ -44,6 +44,8 @@ main_menu() {
     esac
 
     local OPTION
+    local SUBOPTION
+    local MBP_PLASMOID_TARGET
 
     while true; do
         clear
@@ -55,13 +57,8 @@ main_menu() {
         log "2) Bootstrap CachyOS"
         log "3) Post-check tras reinicio"
         log "4) Restaurar backup"
-        log "5) Desinstalar MBP Watch"
-        log "6) Desinstalar plasmoid MBP Watch"
-        log "7) Reinstalar plasmoid MBP Watch"
-        log "8) Mover plasmoid MBP Watch"
-        log "9) Instalar YouTube Force H264"
-        log "10) Configurar VA-API Brave/Chromium (Intel)"
-        log "11) Salir"
+        log "5) MBP Watch y plasmoid"
+        log "6) Salir"
         log ""
 
         prompt_read "Selecciona opcion: " OPTION
@@ -71,17 +68,52 @@ main_menu() {
             2)  bootstrap_cachyos ;;
             3)  post_bootstrap_checks ;;
             4)  restore_system ;;
-            5)  uninstall_mbp_watch_diagnostics ;;
-            6)  uninstall_mbp_watch_plasmoid ;;
-            7)  reinstall_mbp_watch_plasmoid ;;
-            8)
-                prompt_read "Destino del plasmoid [primary|screen:N]: " MBP_PLASMOID_TARGET
-                MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
-                move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+            5)
+                while true; do
+                    log ""
+                    log "MBP Watch y plasmoid"
+                    log "──────── MBP Watch ────────"
+                    log "1) Instalar sistema MBP Watch"
+                    log "2) Desinstalar sistema MBP Watch"
+                    log "──────── Plasmoid MBP Watch ────────"
+                    log "3) Añadir widget al escritorio"
+                    log "4) Widget en pantalla..."
+                    log "5) Reinstalar widget MBP Watch"
+                    log "6) Quitar widget MBP Watch"
+                    log "7) Atrás"
+                    log ""
+
+                    prompt_read "Selecciona opcion: " SUBOPTION
+
+                    case "$SUBOPTION" in
+                        1)
+                            install_mbp_watch_diagnostics
+                            ;;
+                        2)
+                            uninstall_mbp_watch_diagnostics
+                            ;;
+                        3)
+                            prompt_read "Pantalla del widget [primary|screen:N]: " MBP_PLASMOID_TARGET
+                            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+                            add_mbp_plasmoid_to_desktop "$MBP_PLASMOID_TARGET"
+                            ;;
+                        4)
+                            prompt_read "Pantalla del widget [primary|screen:N]: " MBP_PLASMOID_TARGET
+                            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+                            move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+                            ;;
+                        5)
+                            prompt_read "Pantalla del widget [primary|screen:N]: " MBP_PLASMOID_TARGET
+                            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+                            reinstall_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+                            ;;
+                        6) uninstall_mbp_watch_plasmoid ;;
+                        7) break ;;
+                        *) log "${RED}Opcion invalida.${NC}" ;;
+                    esac
+                done
                 ;;
-            9)  install_youtube_force_h264_package ;;
-            10) configure_vaapi_brave_broadwell ;;
-            11) exit 0 ;;
+            6)  exit 0 ;;
             *)  log "${RED}Opcion invalida.${NC}" ;;
         esac
     done
@@ -96,7 +128,7 @@ USO:
 
 COMANDOS PRINCIPALES:
   (sin comando)              Lanza el menú interactivo (TUI)
-  bootstrap                  Configuración inicial del sistema (paquetes, AUR, IA, etc.)
+  bootstrap                  Configuración inicial del sistema (paquetes, AUR, IA, Apple, navegador, etc.)
                              Opciones: [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
   backup                     Realiza copia de seguridad del sistema y datos
                              Opciones: [--target RUTA] [--dry-run]
@@ -107,30 +139,28 @@ COMANDOS PRINCIPALES:
                              Opciones: [profiles|catalog|syntax|all]
 
 HERRAMIENTAS Y AJUSTES:
-  configure-vaapi-brave      Configura aceleración VA-API Intel según el modelo detectado
+  configure-vaapi-brave      Configura VA-API Intel según el modelo detectado
+                             Nota: normalmente se usa desde el bloque VA-API del bootstrap
   bootstrap-context          Muestra el modelo Apple detectado y el perfil aplicado
   bootstrap-catalog          Imprime el catálogo de bloques compatibles para la TUI
   backup-config-catalog      Imprime la configuración importante detectada para la TUI
   backup-data-catalog        Imprime los directorios de datos detectados para la TUI
-  install-youtube-force-h264 Instala extensión para forzar códec H.264 en YouTube
+  install-youtube-force-h264 Prepara la extensión local YouTube Force H264 para carga manual
+                             Nota: normalmente se usa desde el bloque YouTube Force H264 del bootstrap
 
 MBP WATCH (Diagnóstico y Overlay):
-  add-mbp-plasmoid           Añade el plasmoid MBP Watch al escritorio KDE
-  move-mbp-plasmoid          Mueve el plasmoid a otra pantalla [--target primary|screen:N]
-  reinstall-mbp-plasmoid     Reinstala el paquete del plasmoid y la instancia
+  install-mbp-watch          Instala o actualiza el daemon de diagnóstico y servicio systemd
+  add-mbp-plasmoid           Añade el widget MBP Watch al escritorio KDE
+  move-mbp-plasmoid          Mueve el widget a otra pantalla [--target primary|screen:N]
+  reinstall-mbp-plasmoid     Reinstala el paquete del widget y la instancia
   uninstall-mbp-watch        Desinstala el daemon de diagnóstico y servicio systemd
-  uninstall-mbp-plasmoid     Elimina el plasmoid del escritorio y desinstala el paquete
+  uninstall-mbp-plasmoid     Elimina el widget del escritorio y desinstala el paquete
 
 OPCIONES GLOBALES (Variables de Entorno):
   TUI_BACKEND=[python|whiptail|text]  Fuerza el motor de interfaz
   DRY_MODE=true                       Equivalente a pasar --dry-run
   TUI_WIFI_COUNTRY=ES                 Pre-configura el país para el Wi-Fi
   TUI_BROWSER=brave                   Pre-configura el navegador para aceleración HW
-
-DOCUMENTACIÓN:
-  Consulta la carpeta 'docs/' para guías detalladas:
-  - docs/migration-bootstrap.md: Detalle completo de los 23 bloques de instalación.
-  - docs/migration.md: Guía general de uso de la herramienta.
 EOF
 }
 
@@ -363,6 +393,16 @@ main() {
                 esac
             done
             move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+            ;;
+        install-mbp-watch)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            install_mbp_watch_diagnostics
             ;;
         uninstall-mbp-watch)
             shift

@@ -10,12 +10,18 @@ MIG = os.path.join(PROJECT_ROOT, "migration.sh")
 
 # ── Pares de color ────────────────────────────────────────────────────────────
 CP_BORDER, CP_SEL, CP_CHECK, CP_NORMAL = 1, 2, 3, 4
+CUSTOM_SEL_BG = 10
 
 def _init_colors():
     curses.start_color()
     curses.use_default_colors()
+    sel_bg = curses.COLOR_GREEN
+    if curses.can_change_color() and curses.COLORS > CUSTOM_SEL_BG:
+        # Verde más oscuro y menos fosforito que el COLOR_GREEN estándar.
+        curses.init_color(CUSTOM_SEL_BG, 0, 520, 0)
+        sel_bg = CUSTOM_SEL_BG
     curses.init_pair(CP_BORDER, curses.COLOR_CYAN,  -1)
-    curses.init_pair(CP_SEL,   curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(CP_SEL,   curses.COLOR_WHITE, sel_bg)
     curses.init_pair(CP_CHECK,  curses.COLOR_GREEN, -1)
     curses.init_pair(CP_NORMAL, curses.COLOR_WHITE, -1)
 
@@ -101,6 +107,18 @@ def _backup_summary(lines, max_lines=12):
         summary = [_strip_ansi(line).strip() for line in lines if line.strip()]
     return summary[-max_lines:]
 
+def _restore_summary(lines, max_lines=12):
+    summary = []
+    for raw in lines:
+        line = _strip_ansi(raw).strip()
+        if not line:
+            continue
+        if line.startswith("Bloque ") or line.strip().startswith("->") or "RESTAURACION COMPLETADA" in line or line.startswith("Backup restaurado desde:"):
+            summary.append(line)
+    if not summary:
+        summary = [_strip_ansi(line).strip() for line in lines if line.strip()]
+    return summary[-max_lines:]
+
 def _extract_backup_destination(lines):
     clean_lines = [_strip_ansi(line).strip() for line in lines]
     for idx, line in enumerate(clean_lines):
@@ -125,6 +143,18 @@ def _backup_line_attr(line):
     if "BACKUP COMPLETADO CON AVISOS" in clean or clean.startswith("Avisos detectados:"):
         return curses.color_pair(CP_CHECK) | curses.A_BOLD
     if "BACKUP COMPLETADO" in clean or clean.startswith("Verificación: OK"):
+        return curses.color_pair(CP_CHECK) | curses.A_BOLD
+    if clean.startswith("Bloque ") or clean.strip().startswith("->"):
+        return curses.color_pair(CP_CHECK)
+    return curses.color_pair(CP_NORMAL)
+
+def _restore_line_attr(line):
+    clean = _strip_ansi(line)
+    if "[ERROR]" in clean or "Backup no encontrado" in clean or "No se encontro metadata/user_ids.conf" in clean:
+        return curses.color_pair(CP_SEL) | curses.A_BOLD
+    if "AVISO" in clean:
+        return curses.color_pair(CP_CHECK) | curses.A_BOLD
+    if "RESTAURACION COMPLETADA" in clean or clean.startswith("OK:"):
         return curses.color_pair(CP_CHECK) | curses.A_BOLD
     if clean.startswith("Bloque ") or clean.strip().startswith("->"):
         return curses.color_pair(CP_CHECK)
@@ -157,6 +187,16 @@ def _humanize_backup_exit(return_code, lines, verification=None):
     if any("Ruta destino invalida" in line for line in clean_lines):
         return "Backup cancelado porque la ruta destino no es válida."
     return f"Backup finalizado con un error (código {return_code})."
+
+def _humanize_restore_exit(return_code, lines):
+    clean_lines = [_strip_ansi(line).strip() for line in lines if line.strip()]
+    if any("RESTAURACION COMPLETADA" in line for line in clean_lines):
+        return "Restauración completada correctamente."
+    if any("Backup no encontrado" in line for line in clean_lines):
+        return "Restauración cancelada porque no se encontró la copia indicada."
+    if any("No se encontro metadata/user_ids.conf" in line for line in clean_lines):
+        return "La ruta indicada no parece una copia válida para restaurar."
+    return f"Restauración finalizada con un error (código {return_code})."
 
 def _parse_backup_progress(lines):
     block_idx = None
@@ -547,15 +587,18 @@ def _newwin(stdscr, h, w, title=""):
     return win, h, w
 
 # ── Widgets ───────────────────────────────────────────────────────────────────
-def menu(stdscr, title, items):
+def menu(stdscr, title, items, show_buttons=True):
     """Devuelve índice seleccionado o -1 si se cancela."""
     curses.curs_set(0)
     sh, sw = stdscr.getmaxyx()
     w = min(sw - 4, max(56, max(len(lb) for _, lb in items) + 8))
     h = min(sh - 2, len(items) + 5)
     win, h, w = _newwin(stdscr, h, w, title)
-    _hint(win, "↑↓ Navegar   ENTER Seleccionar   TAB Botones   ESC Atrás")
-    _button_bar(win, ["Aceptar", "Cancelar"], None)
+    if show_buttons:
+        _hint(win, "↑↓ Navegar   ENTER Seleccionar   TAB Botones   ESC Atrás")
+        _button_bar(win, ["Aceptar", "Cancelar"], None)
+    else:
+        _hint(win, "↑↓ Navegar   ENTER Seleccionar   ESC Atrás")
     visible = h - 4
     sel = offset = 0
     focus_buttons = False
@@ -574,12 +617,13 @@ def menu(stdscr, title, items):
             else:
                 attr = curses.color_pair(CP_SEL) | curses.A_BOLD if idx == sel else curses.color_pair(CP_NORMAL)
             _put(win, i + 2, 2, f"{row_text:<{w-4}}", attr)
-        _button_bar(win, ["Aceptar", "Cancelar"], button_sel if focus_buttons else None)
+        if show_buttons:
+            _button_bar(win, ["Aceptar", "Cancelar"], button_sel if focus_buttons else None)
         win.refresh()
         k = win.getch()
         if k in (27,):
             return -1
-        if k in (ord('\t'), curses.KEY_BTAB):
+        if show_buttons and k in (ord('\t'), curses.KEY_BTAB):
             focus_buttons = not focus_buttons
             continue
         if focus_buttons:
@@ -929,6 +973,8 @@ def run_op_inline(stdscr, title, mig_args, env_extra=None, backup_verify=None):
     elif mig_args and mig_args[0] == "backup":
         final_lines = _backup_summary(lines, max_lines=12)
         final_lines.extend([""] + _backup_verification_lines(verification))
+    elif mig_args and mig_args[0] == "restore":
+        final_lines = _restore_summary(lines, max_lines=12)
     stdscr.erase()
     stdscr.bkgd(' ', curses.color_pair(CP_BORDER))
     _box(stdscr, title)
@@ -946,6 +992,14 @@ def run_op_inline(stdscr, title, mig_args, env_extra=None, backup_verify=None):
         row = 4
         for line in final_lines[:max(0, h - 8)]:
             _put(stdscr, row, 2, line[:max(0, w - 4)], _backup_line_attr(line))
+            row += 1
+        _put(stdscr, min(h - 2, row + 1), 2, "Pulsa ENTER para volver al menú.", curses.color_pair(CP_NORMAL))
+    elif mig_args and mig_args[0] == "restore":
+        message = _humanize_restore_exit(return_code, lines)
+        _put(stdscr, 2, 2, message[:max(0, w - 4)], _restore_line_attr(message))
+        row = 4
+        for line in final_lines[:max(0, h - 8)]:
+            _put(stdscr, row, 2, line[:max(0, w - 4)], _restore_line_attr(line))
             row += 1
         _put(stdscr, min(h - 2, row + 1), 2, "Pulsa ENTER para volver al menú.", curses.color_pair(CP_NORMAL))
     else:
@@ -1302,7 +1356,10 @@ def _discover_backup_mounts():
         for raw_line in out.splitlines():
             data = _parse_lsblk_line(raw_line)
             mountpoint = data.get("MOUNTPOINT", "").strip()
+            fstype = data.get("FSTYPE", "").strip().lower()
             if not mountpoint or mountpoint in {"/", "/boot", "/boot/efi"}:
+                continue
+            if fstype == "swap":
                 continue
             if not os.path.isdir(mountpoint):
                 continue
@@ -1333,6 +1390,8 @@ def _discover_backup_mounts():
                 fstype = parts[2]
                 if not mountpoint or mountpoint in {"/", "/boot", "/boot/efi"}:
                     continue
+                if fstype == "swap":
+                    continue
                 if mountpoint.startswith("/proc") or mountpoint.startswith("/sys") or mountpoint.startswith("/dev"):
                     continue
                 if fstype.startswith(("proc", "sysfs", "tmpfs", "devtmpfs", "cgroup", "overlay", "squashfs")):
@@ -1360,6 +1419,7 @@ def _read_fstab_mounts():
         "proc", "sysfs", "tmpfs", "devtmpfs", "devpts", "cgroup", "cgroup2",
         "overlay", "squashfs", "nfs", "nfs4", "autofs", "fusectl", "securityfs",
         "pstore", "efivarfs", "debugfs", "tracefs", "hugetlbfs", "mqueue",
+        "swap",
     }
     try:
         with open("/etc/fstab", "r", encoding="utf-8") as fh:
@@ -1437,6 +1497,50 @@ def _format_mount_label(entry):
     if meta:
         bits.append(f"({', '.join(meta)})")
     return " ".join(bits)
+
+def _is_backup_dir(path):
+    path = os.path.abspath(path)
+    return os.path.isdir(path) and os.path.isfile(os.path.join(path, "metadata", "user_ids.conf"))
+
+def _find_backup_dirs_under(root_path, max_depth=4, max_results=24):
+    backups = []
+    seen = set()
+    root_path = os.path.abspath(root_path)
+    if not os.path.isdir(root_path):
+        return backups
+
+    queue = [(root_path, 0)]
+    while queue and len(backups) < max_results:
+        current, depth = queue.pop(0)
+        if _is_backup_dir(current) and current not in seen:
+            seen.add(current)
+            backups.append(current)
+            continue
+        if depth >= max_depth:
+            continue
+        try:
+            with os.scandir(current) as it:
+                dirs = sorted(
+                    [entry.path for entry in it if entry.is_dir(follow_symlinks=False)],
+                    key=lambda value: os.path.basename(value).lower(),
+                )
+        except (PermissionError, FileNotFoundError, OSError):
+            continue
+        for entry in dirs:
+            if entry not in seen:
+                queue.append((entry, depth + 1))
+    return backups
+
+def _discover_restore_backups():
+    backups = []
+    seen = set()
+    for root in _discover_backup_roots():
+        for backup_dir in _find_backup_dirs_under(root["path"]):
+            if backup_dir not in seen:
+                seen.add(backup_dir)
+                backups.append(backup_dir)
+    backups.sort(key=lambda path: os.path.basename(path).lower(), reverse=True)
+    return backups
 
 def browse_directory(stdscr, start_path, title="Navegar destino"):
     current = os.path.abspath(start_path or "/")
@@ -1606,6 +1710,64 @@ def choose_backup_target(stdscr):
         return browse_directory(stdscr, "/", "Selecciona el destino de backup")
     return browse_directory(stdscr, selected, "Selecciona el destino de backup")
 
+def choose_restore_source(stdscr):
+    detected_backups = _discover_restore_backups()
+    roots = _discover_backup_roots()
+    items = []
+    for backup_dir in detected_backups:
+        label = f"Backup detectado: {os.path.basename(backup_dir)}  [{backup_dir}]"
+        items.append((f"backup:{backup_dir}", label))
+    items.append(("manual", "Escribir ruta manualmente"))
+    for root in roots:
+        items.append((f"root:{root['path']}", f"Explorar {root['label']}"))
+    items.append(("browse-root", "Navegar desde /"))
+
+    while True:
+        choice = menu(stdscr, "Selecciona el origen del backup", items)
+        if choice == -1:
+            return None
+        selected = items[choice][0]
+        if selected.startswith("backup:"):
+            source = selected.split(":", 1)[1]
+            if _is_backup_dir(source):
+                return source
+            msgbox(stdscr, "Selecciona el origen del backup", f"La copia ya no está disponible:\n{source}")
+            continue
+        if selected == "manual":
+            while True:
+                source = inputbox(stdscr, "Selecciona el origen del backup", "Ruta del backup a restaurar:", "")
+                if source is None:
+                    break
+                source = os.path.abspath(source.strip())
+                if not source:
+                    msgbox(stdscr, "Selecciona el origen del backup", "Debes escribir una ruta válida.")
+                    continue
+                if _is_backup_dir(source):
+                    return source
+                msgbox(
+                    stdscr,
+                    "Selecciona el origen del backup",
+                    "La ruta no parece una copia válida.\n\n"
+                    "Debe contener:\nmetadata/user_ids.conf\n\n"
+                    f"Ruta indicada:\n{source}",
+                )
+            continue
+        if selected == "browse-root":
+            source = browse_directory(stdscr, "/", "Selecciona el origen del backup")
+        else:
+            source = browse_directory(stdscr, selected.split(":", 1)[1], "Selecciona el origen del backup")
+        if source is None:
+            continue
+        if _is_backup_dir(source):
+            return source
+        msgbox(
+            stdscr,
+            "Selecciona el origen del backup",
+            "La ruta seleccionada no parece una copia válida.\n\n"
+            "Debes elegir la carpeta raíz del backup, la que contiene:\nmetadata/user_ids.conf\n\n"
+            f"Ruta seleccionada:\n{source}",
+        )
+
 # ── Flujos ────────────────────────────────────────────────────────────────────
 def flow_backup(stdscr):
     target = choose_backup_target(stdscr)
@@ -1665,24 +1827,12 @@ def flow_backup(stdscr):
     )
 
 def flow_restore(stdscr):
-    src = ""
-    while True:
-        src = inputbox(stdscr, "Restaurar backup",
-                       "Ruta completa del backup a restaurar:", src or "")
-        if src is None:
-            return
-        src = src.strip()
-        if not src:
-            msgbox(stdscr, "Restaurar backup", "Debes indicar una ruta.")
-            continue
-        if not os.path.isdir(src):
-            msgbox(stdscr, "Restaurar backup",
-                   f"Ruta no encontrada:\n{src}\n\nRevisa e inténtalo de nuevo.")
-            continue
-        break
+    src = choose_restore_source(stdscr)
+    if src is None:
+        return
     if not yesno(stdscr, "Restaurar backup", f"Fuente: {src}\n\n¿Iniciar restauración?"):
         return
-    run_op(stdscr, "Restaurar backup", ["restore", "--source", src])
+    run_op_inline(stdscr, "Restaurar backup", ["restore", "--source", src])
 
 def flow_bootstrap(stdscr):
     items, defaults = bootstrap_catalog()
@@ -1731,10 +1881,47 @@ def flow_bootstrap(stdscr):
            env_extra=env_extra)
 
 def flow_plasmoid_op(stdscr, title, command):
-    target = inputbox(stdscr, title, "Destino del plasmoid:", "primary")
+    target = inputbox(stdscr, title, "Pantalla del plasmoid [primary|screen:N]:", "primary")
     if target is None:
         return
     run_op(stdscr, title, [command, "--target", target.strip() or "primary"])
+
+def flow_watch_plasmoid_menu(stdscr):
+    items = [
+        ("sep-watch",          "──────── MBP Watch ────────"),
+        ("install-watch",      "Instalar sistema MBP Watch"),
+        ("uninstall-watch",    "Desinstalar sistema MBP Watch"),
+        ("sep-plasmoid",       "──────── Plasmoid MBP Watch ────────"),
+        ("add-plasmoid",       "Añadir widget al escritorio"),
+        ("move-plasmoid",      "Widget en pantalla..."),
+        ("reinstall-plasmoid", "Reinstalar widget MBP Watch"),
+        ("uninstall-plasmoid", "Quitar widget MBP Watch"),
+        ("back",               "Atrás"),
+    ]
+    while True:
+        idx = menu(stdscr, "MBP Watch y plasmoid", items)
+        if idx < 0:
+            return
+        tag, label = items[idx]
+        if tag == "back":
+            return
+        if tag in {"sep-watch", "sep-plasmoid"}:
+            continue
+        if tag == "install-watch":
+            if yesno(stdscr, label, "¿Instalar o actualizar el sistema MBP Watch?"):
+                run_op(stdscr, label, ["install-mbp-watch"])
+        elif tag == "add-plasmoid":
+            flow_plasmoid_op(stdscr, label, "add-mbp-plasmoid")
+        elif tag == "move-plasmoid":
+            flow_plasmoid_op(stdscr, label, "move-mbp-plasmoid")
+        elif tag == "reinstall-plasmoid":
+            flow_plasmoid_op(stdscr, label, "reinstall-mbp-plasmoid")
+        elif tag == "uninstall-plasmoid":
+            if yesno(stdscr, label, "¿Quitar el widget KDE MBP Watch?"):
+                run_op(stdscr, label, ["uninstall-mbp-plasmoid"])
+        elif tag == "uninstall-watch":
+            if yesno(stdscr, label, "¿Desinstalar el sistema MBP Watch?"):
+                run_op(stdscr, label, ["uninstall-mbp-watch"])
 
 # ── Menú principal ────────────────────────────────────────────────────────────
 def main_loop(stdscr):
@@ -1746,18 +1933,13 @@ def main_loop(stdscr):
         ("bootstrap",          "Bootstrap CachyOS"),
         ("postcheck",          "Post-check tras reinicio"),
         ("restore",            "Restaurar backup"),
-        ("uninstall-watch",    "Desinstalar MBP Watch"),
-        ("uninstall-plasmoid", "Desinstalar plasmoid MBP Watch"),
-        ("reinstall-plasmoid", "Reinstalar plasmoid MBP Watch"),
-        ("move-plasmoid",      "Mover plasmoid MBP Watch"),
-        ("youtube",            "Instalar YouTube Force H264"),
-        ("vaapi",              "VA-API Brave/Chromium (Intel Broadwell)"),
+        ("watch-plasmoid",     "MBP Watch y plasmoid"),
         ("exit",               "Salir"),
     ]
     while True:
         stdscr.clear()
         stdscr.refresh()
-        idx = menu(stdscr, f"Linux Migration Tool v{VERSION}  [python]", items)
+        idx = menu(stdscr, f"Linux Migration Tool v{VERSION}  [python]", items, show_buttons=False)
         if idx < 0:
             break
         tag, label = items[idx]
@@ -1771,22 +1953,8 @@ def main_loop(stdscr):
             run_op_inline(stdscr, label, ["postcheck"])
         elif tag == "restore":
             flow_restore(stdscr)
-        elif tag == "uninstall-watch":
-            if yesno(stdscr, label, "¿Desinstalar MBP Watch completo?"):
-                run_op(stdscr, label, ["uninstall-mbp-watch"])
-        elif tag == "uninstall-plasmoid":
-            if yesno(stdscr, label, "¿Desinstalar el plasmoid KDE MBP Watch?"):
-                run_op(stdscr, label, ["uninstall-mbp-plasmoid"])
-        elif tag == "reinstall-plasmoid":
-            flow_plasmoid_op(stdscr, label, "reinstall-mbp-plasmoid")
-        elif tag == "move-plasmoid":
-            flow_plasmoid_op(stdscr, label, "move-mbp-plasmoid")
-        elif tag == "youtube":
-            if yesno(stdscr, label, "¿Instalar YouTube Force H264?"):
-                run_op(stdscr, label, ["install-youtube-force-h264"])
-        elif tag == "vaapi":
-            if yesno(stdscr, label, "¿Aplicar corrección VA-API para el modelo detectado?"):
-                run_op(stdscr, label, ["configure-vaapi-brave"])
+        elif tag == "watch-plasmoid":
+            flow_watch_plasmoid_menu(stdscr)
 
 def main():
     if not os.path.isfile(MIG):

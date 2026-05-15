@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.1"
+VERSION="1.2.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -1029,13 +1029,13 @@ get_bootstrap_checklist_items() {
 
     cat <<EOF
 sync|Sincronización y actualización sistema|ON
-base_dev|Herramientas base desarrollo (git, go)|ON
+base_dev|Herramientas base desarrollo (git, go)|OFF
 yay|AUR helper (yay)|ON
 flatpak|Soporte Flatpak + Flathub|ON
 official|Paquetes oficiales de repositorio|ON
 kde|Aplicaciones base KDE Plasma|ON
 aur|Paquetes adicionales desde AUR|ON
-docker_svc|Configuración servicio Docker|ON
+docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON
 ai_codex|Codex CLI (@openai/codex)|OFF
@@ -1050,8 +1050,8 @@ globalmenu|Global Menu KDE (GTK + VS Code)|OFF
 EOF
 
     if macbook_profile_has_trait apple; then
-        printf '%s\n' "mbpwatch|MBP Watch diagnóstico (systemd)|ON"
-        printf '%s\n' "plasmoid|Plasmoid KDE MBP Watch|ON"
+        printf '%s\n' "mbpwatch|MBP Watch diagnóstico (systemd)|OFF"
+        printf '%s\n' "plasmoid|Plasmoid KDE MBP Watch|OFF"
         printf '%s\n' "apple|Apple laptop extras|${APPLE_DEFAULT}"
     fi
 
@@ -1126,11 +1126,14 @@ select_disk() {
     mapfile -t DISKS < <(
         lsblk -P -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT,TRAN |
         while IFS= read -r LINE; do
+            local FSTYPE
             MOUNTPOINT="$(extract_lsblk_field "$LINE" "MOUNTPOINT")"
+            FSTYPE="$(extract_lsblk_field "$LINE" "FSTYPE")"
 
             if [ -n "$MOUNTPOINT" ] &&
                [ "$MOUNTPOINT" != "/" ] &&
-               [[ ! "$MOUNTPOINT" =~ ^/boot ]]; then
+               [[ ! "$MOUNTPOINT" =~ ^/boot ]] &&
+               [ "${FSTYPE,,}" != "swap" ]; then
                 printf '%s\n' "$LINE"
             fi
         done
