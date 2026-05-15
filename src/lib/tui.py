@@ -1907,25 +1907,6 @@ def flow_watch_plasmoid_menu(stdscr):
             if yesno(stdscr, label, "¿Desinstalar el sistema MBP Watch?"):
                 run_op(stdscr, label, ["uninstall-mbp-watch"])
 
-def youtube_h264_prompt_text():
-    return (
-        "Esto no instala una extension desde la tienda del navegador.\n\n"
-        "El script copiara una extension local en:\n"
-        "~/extensions/youtube-force-h264/\n\n"
-        "La carpeta ~/extensions no es estandar del sistema.\n"
-        "Si no existe, se creara para guardar extensiones locales.\n\n"
-        "Despues tendras que activarla manualmente en un navegador compatible:\n"
-        "- Brave\n"
-        "- Google Chrome\n"
-        "- Chromium\n\n"
-        "Pasos despues de copiarla:\n"
-        "1. Abrir brave://extensions, chrome://extensions o chromium://extensions\n"
-        "2. Activar Modo desarrollador\n"
-        "3. Usar Cargar descomprimida\n"
-        "4. Seleccionar ~/extensions/youtube-force-h264/\n\n"
-        "¿Instalar ahora la extension?"
-    )
-
 # ── Menú principal ────────────────────────────────────────────────────────────
 def main_loop(stdscr):
     _init_colors()
@@ -1937,8 +1918,6 @@ def main_loop(stdscr):
         ("postcheck",          "Post-check tras reinicio"),
         ("restore",            "Restaurar backup"),
         ("watch-plasmoid",     "MBP Watch y plasmoid"),
-        ("youtube",            "Instalar YouTube Force H264"),
-        ("vaapi",              "VA-API Brave/Chromium (Intel Broadwell)"),
         ("exit",               "Salir"),
     ]
     while True:
@@ -1960,12 +1939,6 @@ def main_loop(stdscr):
             flow_restore(stdscr)
         elif tag == "watch-plasmoid":
             flow_watch_plasmoid_menu(stdscr)
-        elif tag == "youtube":
-            if yesno(stdscr, label, youtube_h264_prompt_text()):
-                run_op(stdscr, label, ["install-youtube-force-h264"])
-        elif tag == "vaapi":
-            if yesno(stdscr, label, "¿Aplicar corrección VA-API para el modelo detectado?"):
-                run_op(stdscr, label, ["configure-vaapi-brave"])
 
 def main():
     if not os.path.isfile(MIG):
