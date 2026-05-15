@@ -10,12 +10,18 @@ MIG = os.path.join(PROJECT_ROOT, "migration.sh")
 
 # ── Pares de color ────────────────────────────────────────────────────────────
 CP_BORDER, CP_SEL, CP_CHECK, CP_NORMAL = 1, 2, 3, 4
+CUSTOM_SEL_BG = 10
 
 def _init_colors():
     curses.start_color()
     curses.use_default_colors()
+    sel_bg = curses.COLOR_GREEN
+    if curses.can_change_color() and curses.COLORS > CUSTOM_SEL_BG:
+        # Verde más oscuro y menos fosforito que el COLOR_GREEN estándar.
+        curses.init_color(CUSTOM_SEL_BG, 0, 520, 0)
+        sel_bg = CUSTOM_SEL_BG
     curses.init_pair(CP_BORDER, curses.COLOR_CYAN,  -1)
-    curses.init_pair(CP_SEL,   curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(CP_SEL,   curses.COLOR_WHITE, sel_bg)
     curses.init_pair(CP_CHECK,  curses.COLOR_GREEN, -1)
     curses.init_pair(CP_NORMAL, curses.COLOR_WHITE, -1)
 

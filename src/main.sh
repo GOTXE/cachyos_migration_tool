@@ -128,7 +128,7 @@ USO:
 
 COMANDOS PRINCIPALES:
   (sin comando)              Lanza el menú interactivo (TUI)
-  bootstrap                  Configuración inicial del sistema (paquetes, AUR, IA, etc.)
+  bootstrap                  Configuración inicial del sistema (paquetes, AUR, IA, Apple, navegador, etc.)
                              Opciones: [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
   backup                     Realiza copia de seguridad del sistema y datos
                              Opciones: [--target RUTA] [--dry-run]
@@ -139,31 +139,28 @@ COMANDOS PRINCIPALES:
                              Opciones: [profiles|catalog|syntax|all]
 
 HERRAMIENTAS Y AJUSTES:
-  configure-vaapi-brave      Configura aceleración VA-API Intel según el modelo detectado
+  configure-vaapi-brave      Configura VA-API Intel según el modelo detectado
+                             Nota: normalmente se usa desde el bloque VA-API del bootstrap
   bootstrap-context          Muestra el modelo Apple detectado y el perfil aplicado
   bootstrap-catalog          Imprime el catálogo de bloques compatibles para la TUI
   backup-config-catalog      Imprime la configuración importante detectada para la TUI
   backup-data-catalog        Imprime los directorios de datos detectados para la TUI
-  install-youtube-force-h264 Instala extensión para forzar códec H.264 en YouTube
+  install-youtube-force-h264 Prepara la extensión local YouTube Force H264 para carga manual
+                             Nota: normalmente se usa desde el bloque YouTube Force H264 del bootstrap
 
 MBP WATCH (Diagnóstico y Overlay):
   install-mbp-watch          Instala o actualiza el daemon de diagnóstico y servicio systemd
-  add-mbp-plasmoid           Añade el plasmoid MBP Watch al escritorio KDE
-  move-mbp-plasmoid          Mueve el plasmoid a otra pantalla [--target primary|screen:N]
-  reinstall-mbp-plasmoid     Reinstala el paquete del plasmoid y la instancia
+  add-mbp-plasmoid           Añade el widget MBP Watch al escritorio KDE
+  move-mbp-plasmoid          Mueve el widget a otra pantalla [--target primary|screen:N]
+  reinstall-mbp-plasmoid     Reinstala el paquete del widget y la instancia
   uninstall-mbp-watch        Desinstala el daemon de diagnóstico y servicio systemd
-  uninstall-mbp-plasmoid     Elimina el plasmoid del escritorio y desinstala el paquete
+  uninstall-mbp-plasmoid     Elimina el widget del escritorio y desinstala el paquete
 
 OPCIONES GLOBALES (Variables de Entorno):
   TUI_BACKEND=[python|whiptail|text]  Fuerza el motor de interfaz
   DRY_MODE=true                       Equivalente a pasar --dry-run
   TUI_WIFI_COUNTRY=ES                 Pre-configura el país para el Wi-Fi
   TUI_BROWSER=brave                   Pre-configura el navegador para aceleración HW
-
-DOCUMENTACIÓN:
-  Consulta la carpeta 'docs/' para guías detalladas:
-  - docs/migration-bootstrap.md: Detalle completo de los 23 bloques de instalación.
-  - docs/migration.md: Guía general de uso de la herramienta.
 EOF
 }
 
