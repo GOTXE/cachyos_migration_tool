@@ -22,7 +22,7 @@ Incluye soporte específico para perfiles **MacBook Pro Intel** detectados por m
 | **Restore** | Restaura el backup en la nueva instalación, adaptando UID/GID y permisos |
 | **Post-check** | Valida el estado del sistema tras el primer reinicio post-bootstrap |
 | **MBP Watch** | Daemon systemd de monitorización de hardware + dashboard web + plasmoid KDE |
-| **Extras** | Hyprland opcional, YouTube Force H264, VA-API Brave/Chromium Intel Broadwell, BTRFS snapshots |
+| **Extras** | Hyprland opcional, YouTube Force H264, VA-API Brave/Chromium según perfil Intel detectado, BTRFS snapshots |
 
 ---
 
@@ -70,6 +70,7 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 ./migration.sh install-youtube-force-h264  [--dry-run]
 ./migration.sh configure-vaapi-brave       [--dry-run]
 
+./migration.sh install-mbp-watch           [--dry-run]
 ./migration.sh add-mbp-plasmoid            [--target primary|screen:N] [--dry-run]
 ./migration.sh move-mbp-plasmoid           [--target primary|screen:N] [--dry-run]
 ./migration.sh reinstall-mbp-plasmoid      [--target primary|screen:N] [--dry-run]
@@ -77,11 +78,13 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 ./migration.sh uninstall-mbp-watch         [--dry-run]
 ```
 
+`install-youtube-force-h264` y `configure-vaapi-brave` siguen disponibles por CLI, pero en la interfaz interactiva normal viven dentro de `bootstrap`, no como opciones sueltas del menú principal.
+
 ---
 
 ## Bootstrap — bloques seleccionables
 
-En la TUI se presentan como checklist. Activos por defecto: `base`, `zsh`, `node`, `mbpwatch`, `plasmoid`.
+En la TUI se presentan como checklist dinámico según el hardware detectado. Activos por defecto en el perfil inicial actual: `sync`, `yay`, `flatpak`, `official`, `kde`, `aur`, `zsh`, `node` y `apple` cuando aplica.
 
 | Bloque | Qué instala |
 |---|---|
@@ -99,7 +102,7 @@ En la TUI se presentan como checklist. Activos por defecto: `base`, `zsh`, `node
 | `wifi` | wireless-regdb + dominio regulatorio por país |
 | `globalmenu` | Global Menu KDE para GTK y VS Code |
 | `hwaccel` | Flags de aceleración HW para Brave/Chrome |
-| `vaapi` | VA-API Intel Broadwell (libva-intel-driver-irql, i965) |
+| `vaapi` | VA-API Brave/Chromium ajustado al perfil Intel detectado |
 | `btrfs` | Snapper + grub-btrfs + snap-pac |
 
 ---
