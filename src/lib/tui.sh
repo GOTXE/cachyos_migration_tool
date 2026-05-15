@@ -21,10 +21,15 @@ export NEWT_COLORS='
   compactbutton=white,black
 '
 
-# Limpia la pantalla antes de cada diálogo para eliminar el glitch entre ventanas.
+# Limpia la pantalla con ANSI sin lanzar `clear`, para evitar latencia al volver
+# al menú principal y seguir eliminando el solapamiento visual entre ventanas.
+_tui_fast_clear() {
+    printf '\033[H\033[2J'
+}
+
 wt() {
-    clear
-    whiptail "$@"
+    _tui_fast_clear
+    whiptail --clear "$@"
 }
 
 # Muestra un msgbox con el path del log ajustando el ancho al tamaño del path.
@@ -55,7 +60,7 @@ _tui_run_with_output() {
     printf -v LINE '%*s' "$COLS" ''
     LINE="${LINE// /━}"
 
-    clear
+    _tui_fast_clear
     printf '\033[1;36m%s\033[0m\n' "$LINE"
     printf '\033[1;36m  %s\033[0m\n' "$TITLE"
     printf '\033[1;36m%s\033[0m\n\n' "$LINE"
@@ -196,43 +201,59 @@ tui_choose_backup_target() {
     local CHOICE=""
     local TARGET=""
     local INDEX=0
+    local OPTION_INDEX=1
+    local ROOT_MAP=()
+    local MANUAL_OPTION=""
+    local ROOT_OPTION=""
 
     mapfile -t ROOTS < <(tui_collect_restore_roots)
 
     while true; do
-        MENU_ARGS=("manual" "Escribir ruta manualmente")
+        MENU_ARGS=()
+        ROOT_MAP=()
+        OPTION_INDEX=1
+        MENU_ARGS+=("$OPTION_INDEX" "Escribir ruta manualmente")
+        MANUAL_OPTION="$OPTION_INDEX"
+        OPTION_INDEX=$((OPTION_INDEX + 1))
         for INDEX in "${!ROOTS[@]}"; do
-            MENU_ARGS+=("r$INDEX" "Explorar ${ROOTS[$INDEX]}")
+            MENU_ARGS+=("$OPTION_INDEX" "Explorar ${ROOTS[$INDEX]}")
+            ROOT_MAP[$OPTION_INDEX]="$INDEX"
+            OPTION_INDEX=$((OPTION_INDEX + 1))
         done
-        MENU_ARGS+=("root" "Navegar desde /")
+        MENU_ARGS+=("$OPTION_INDEX" "Navegar desde /")
+        ROOT_OPTION="$OPTION_INDEX"
 
         CHOICE=$(wt \
             --title " Selecciona el destino de backup " \
             --menu "\nSelecciona dónde guardar la copia:" \
+            --ok-button "Aceptar" \
+            --cancel-button "Cancelar" \
+            --fullbuttons \
             22 86 14 \
             "${MENU_ARGS[@]}" \
             3>&1 1>&2 2>&3) || return 1
 
-        case "$CHOICE" in
-            manual)
-                TARGET=$(wt \
-                    --title " Selecciona el destino de backup " \
-                    --inputbox "\nRuta destino del backup:" \
-                    9 64 "" \
-                    3>&1 1>&2 2>&3) || continue
-                TARGET="$(realpath -m "$TARGET")"
-                ;;
-            r*)
-                INDEX="${CHOICE#r}"
-                TARGET="$(tui_browse_directory " Selecciona el destino de backup " "${ROOTS[$INDEX]}")" || continue
-                ;;
-            root)
-                TARGET="$(tui_browse_directory " Selecciona el destino de backup " "/")" || continue
-                ;;
-            *)
-                continue
-                ;;
-        esac
+        if [ "$CHOICE" = "$MANUAL_OPTION" ]; then
+            TARGET=$(wt \
+                --title " Selecciona el destino de backup " \
+                --inputbox "\nRuta destino del backup:" \
+                9 64 "" \
+                3>&1 1>&2 2>&3) || continue
+            TARGET="$(realpath -m "$TARGET")"
+            wt --title " Confirmar ruta destino " \
+                --yesno "\nRuta escrita:\n$TARGET\n\n¿Usar esta ruta?" \
+                --yes-button "Aceptar" \
+                --no-button "Cancelar" \
+                --fullbuttons \
+                11 68 || continue
+        elif [ -n "${ROOT_MAP[$CHOICE]:-}" ]; then
+            INDEX="${ROOT_MAP[$CHOICE]}"
+            TARGET="$(tui_browse_directory " Selecciona el destino de backup " "${ROOTS[$INDEX]}")" || continue
+        elif [ "$CHOICE" = "$ROOT_OPTION" ]; then
+            TARGET="$(tui_browse_directory " Selecciona el destino de backup " "/")" || continue
+        else
+            continue
+        fi
 
         if [ -d "$TARGET" ]; then
             printf '%s\n' "$TARGET"
@@ -458,6 +479,9 @@ tui_browse_directory() {
         CHOICE=$(wt \
             --title "$TITLE" \
             --menu "Ruta actual: $CURRENT\n\nENTER abre carpeta   ESC vuelve atrás/cancela" \
+            --ok-button "Aceptar" \
+            --cancel-button "Cancelar" \
+            --fullbuttons \
             22 78 14 \
             "${MENU_ARGS[@]}" \
             3>&1 1>&2 2>&3) || {
@@ -483,6 +507,12 @@ tui_browse_directory() {
                     9 64 "$CURRENT" \
                     3>&1 1>&2 2>&3) || continue
                 MANUAL="$(realpath -m "$MANUAL")"
+                wt --title "$TITLE" \
+                    --yesno "\nRuta escrita:\n$MANUAL\n\n¿Usar esta ruta?" \
+                    --yes-button "Aceptar" \
+                    --no-button "Cancelar" \
+                    --fullbuttons \
+                    11 68 || continue
                 if [ -d "$MANUAL" ]; then
                     CURRENT="$MANUAL"
                 else
@@ -511,52 +541,70 @@ tui_choose_restore_source() {
     local CHOICE=""
     local SRC=""
     local INDEX=0
+    local OPTION_INDEX=1
+    local DETECTED_MAP=()
+    local ROOT_MAP=()
+    local MANUAL_OPTION=""
+    local ROOT_OPTION=""
 
     mapfile -t DETECTED < <(tui_find_restore_backups)
     mapfile -t ROOTS < <(tui_collect_restore_roots)
 
     while true; do
         MENU_ARGS=()
+        DETECTED_MAP=()
+        ROOT_MAP=()
+        OPTION_INDEX=1
         for INDEX in "${!DETECTED[@]}"; do
-            MENU_ARGS+=("b$INDEX" "Backup detectado: $(basename "${DETECTED[$INDEX]}")  [${DETECTED[$INDEX]}]")
+            MENU_ARGS+=("$OPTION_INDEX" "Backup detectado: $(basename "${DETECTED[$INDEX]}")  [${DETECTED[$INDEX]}]")
+            DETECTED_MAP[$OPTION_INDEX]="$INDEX"
+            OPTION_INDEX=$((OPTION_INDEX + 1))
         done
-        MENU_ARGS+=("manual" "Escribir ruta manualmente")
+        MENU_ARGS+=("$OPTION_INDEX" "Escribir ruta manualmente")
+        MANUAL_OPTION="$OPTION_INDEX"
+        OPTION_INDEX=$((OPTION_INDEX + 1))
         for INDEX in "${!ROOTS[@]}"; do
-            MENU_ARGS+=("r$INDEX" "Explorar ${ROOTS[$INDEX]}")
+            MENU_ARGS+=("$OPTION_INDEX" "Explorar ${ROOTS[$INDEX]}")
+            ROOT_MAP[$OPTION_INDEX]="$INDEX"
+            OPTION_INDEX=$((OPTION_INDEX + 1))
         done
-        MENU_ARGS+=("root" "Navegar desde /")
+        MENU_ARGS+=("$OPTION_INDEX" "Navegar desde /")
+        ROOT_OPTION="$OPTION_INDEX"
 
         CHOICE=$(wt \
             --title " Selecciona el origen del backup " \
             --menu "\nSelecciona dónde está la copia a restaurar:" \
+            --ok-button "Aceptar" \
+            --cancel-button "Cancelar" \
+            --fullbuttons \
             24 92 16 \
             "${MENU_ARGS[@]}" \
             3>&1 1>&2 2>&3) || return 1
 
-        case "$CHOICE" in
-            b*)
-                INDEX="${CHOICE#b}"
-                SRC="${DETECTED[$INDEX]}"
-                ;;
-            manual)
-                SRC=$(wt \
-                    --title " Selecciona el origen del backup " \
-                    --inputbox "\nRuta del backup a restaurar:" \
-                    9 64 "" \
-                    3>&1 1>&2 2>&3) || continue
-                SRC="$(realpath -m "$SRC")"
-                ;;
-            r*)
-                INDEX="${CHOICE#r}"
-                SRC="$(tui_browse_directory " Selecciona el origen del backup " "${ROOTS[$INDEX]}")" || continue
-                ;;
-            root)
-                SRC="$(tui_browse_directory " Selecciona el origen del backup " "/")" || continue
-                ;;
-            *)
-                continue
-                ;;
-        esac
+        if [ -n "${DETECTED_MAP[$CHOICE]:-}" ]; then
+            INDEX="${DETECTED_MAP[$CHOICE]}"
+            SRC="${DETECTED[$INDEX]}"
+        elif [ "$CHOICE" = "$MANUAL_OPTION" ]; then
+            SRC=$(wt \
+                --title " Selecciona el origen del backup " \
+                --inputbox "\nRuta del backup a restaurar:" \
+                9 64 "" \
+                3>&1 1>&2 2>&3) || continue
+            SRC="$(realpath -m "$SRC")"
+            wt --title " Confirmar ruta origen " \
+                --yesno "\nRuta escrita:\n$SRC\n\n¿Usar esta ruta?" \
+                --yes-button "Aceptar" \
+                --no-button "Cancelar" \
+                --fullbuttons \
+                11 68 || continue
+        elif [ -n "${ROOT_MAP[$CHOICE]:-}" ]; then
+            INDEX="${ROOT_MAP[$CHOICE]}"
+            SRC="$(tui_browse_directory " Selecciona el origen del backup " "${ROOTS[$INDEX]}")" || continue
+        elif [ "$CHOICE" = "$ROOT_OPTION" ]; then
+            SRC="$(tui_browse_directory " Selecciona el origen del backup " "/")" || continue
+        else
+            continue
+        fi
 
         if _tui_is_backup_dir "$SRC"; then
             printf '%s\n' "$SRC"
@@ -631,6 +679,9 @@ tui_watch_plasmoid_menu() {
                 TUI_TARGET=$(wt \
                     --title " Añadir widget al escritorio " \
                     --inputbox "\nPantalla del widget [primary|screen:N]:" \
+                    --ok-button "Aceptar" \
+                    --cancel-button "Cancelar" \
+                    --fullbuttons \
                     9 58 "primary" \
                     3>&1 1>&2 2>&3) || continue
                 tui_op "Widget añadido" add_mbp_plasmoid_to_desktop "${TUI_TARGET:-primary}"
@@ -639,6 +690,9 @@ tui_watch_plasmoid_menu() {
                 TUI_TARGET=$(wt \
                     --title " Widget en pantalla... " \
                     --inputbox "\nPantalla del widget [primary|screen:N]:" \
+                    --ok-button "Aceptar" \
+                    --cancel-button "Cancelar" \
+                    --fullbuttons \
                     9 58 "primary" \
                     3>&1 1>&2 2>&3) || continue
                 tui_op "Widget movido" move_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
@@ -647,6 +701,9 @@ tui_watch_plasmoid_menu() {
                 TUI_TARGET=$(wt \
                     --title " Reinstalar widget MBP Watch " \
                     --inputbox "\nPantalla del widget [primary|screen:N]:" \
+                    --ok-button "Aceptar" \
+                    --cancel-button "Cancelar" \
+                    --fullbuttons \
                     9 58 "primary" \
                     3>&1 1>&2 2>&3) || continue
                 tui_op "Widget reinstalado" reinstall_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
@@ -742,6 +799,9 @@ tui_bootstrap() {
         TUI_WIFI_COUNTRY=$(wt \
             --title " Configurar Wi-Fi " \
             --inputbox "\nCódigo de país para Wi-Fi (ej. ES para España):" \
+            --ok-button "Aceptar" \
+            --cancel-button "Cancelar" \
+            --fullbuttons \
             9 56 "ES" \
             3>&1 1>&2 2>&3) || return 0
         TUI_WIFI_COUNTRY="$(printf '%s' "$TUI_WIFI_COUNTRY" | tr '[:lower:]' '[:upper:]')"
