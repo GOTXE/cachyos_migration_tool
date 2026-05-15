@@ -1865,10 +1865,47 @@ def flow_bootstrap(stdscr):
            env_extra=env_extra)
 
 def flow_plasmoid_op(stdscr, title, command):
-    target = inputbox(stdscr, title, "Destino del plasmoid:", "primary")
+    target = inputbox(stdscr, title, "Pantalla del plasmoid [primary|screen:N]:", "primary")
     if target is None:
         return
     run_op(stdscr, title, [command, "--target", target.strip() or "primary"])
+
+def flow_watch_plasmoid_menu(stdscr):
+    items = [
+        ("sep-watch",          "──────── MBP Watch ────────"),
+        ("install-watch",      "Instalar sistema MBP Watch"),
+        ("uninstall-watch",    "Desinstalar sistema MBP Watch"),
+        ("sep-plasmoid",       "──────── Plasmoid MBP Watch ────────"),
+        ("add-plasmoid",       "Añadir widget al escritorio"),
+        ("move-plasmoid",      "Widget en pantalla..."),
+        ("reinstall-plasmoid", "Reinstalar widget MBP Watch"),
+        ("uninstall-plasmoid", "Quitar widget MBP Watch"),
+        ("back",               "Atrás"),
+    ]
+    while True:
+        idx = menu(stdscr, "MBP Watch y plasmoid", items)
+        if idx < 0:
+            return
+        tag, label = items[idx]
+        if tag == "back":
+            return
+        if tag in {"sep-watch", "sep-plasmoid"}:
+            continue
+        if tag == "install-watch":
+            if yesno(stdscr, label, "¿Instalar o actualizar el sistema MBP Watch?"):
+                run_op(stdscr, label, ["install-mbp-watch"])
+        elif tag == "add-plasmoid":
+            flow_plasmoid_op(stdscr, label, "add-mbp-plasmoid")
+        elif tag == "move-plasmoid":
+            flow_plasmoid_op(stdscr, label, "move-mbp-plasmoid")
+        elif tag == "reinstall-plasmoid":
+            flow_plasmoid_op(stdscr, label, "reinstall-mbp-plasmoid")
+        elif tag == "uninstall-plasmoid":
+            if yesno(stdscr, label, "¿Quitar el widget KDE MBP Watch?"):
+                run_op(stdscr, label, ["uninstall-mbp-plasmoid"])
+        elif tag == "uninstall-watch":
+            if yesno(stdscr, label, "¿Desinstalar el sistema MBP Watch?"):
+                run_op(stdscr, label, ["uninstall-mbp-watch"])
 
 # ── Menú principal ────────────────────────────────────────────────────────────
 def main_loop(stdscr):
@@ -1880,10 +1917,7 @@ def main_loop(stdscr):
         ("bootstrap",          "Bootstrap CachyOS"),
         ("postcheck",          "Post-check tras reinicio"),
         ("restore",            "Restaurar backup"),
-        ("uninstall-watch",    "Desinstalar MBP Watch"),
-        ("uninstall-plasmoid", "Desinstalar plasmoid MBP Watch"),
-        ("reinstall-plasmoid", "Reinstalar plasmoid MBP Watch"),
-        ("move-plasmoid",      "Mover plasmoid MBP Watch"),
+        ("watch-plasmoid",     "MBP Watch y plasmoid"),
         ("youtube",            "Instalar YouTube Force H264"),
         ("vaapi",              "VA-API Brave/Chromium (Intel Broadwell)"),
         ("exit",               "Salir"),
@@ -1905,16 +1939,8 @@ def main_loop(stdscr):
             run_op_inline(stdscr, label, ["postcheck"])
         elif tag == "restore":
             flow_restore(stdscr)
-        elif tag == "uninstall-watch":
-            if yesno(stdscr, label, "¿Desinstalar MBP Watch completo?"):
-                run_op(stdscr, label, ["uninstall-mbp-watch"])
-        elif tag == "uninstall-plasmoid":
-            if yesno(stdscr, label, "¿Desinstalar el plasmoid KDE MBP Watch?"):
-                run_op(stdscr, label, ["uninstall-mbp-plasmoid"])
-        elif tag == "reinstall-plasmoid":
-            flow_plasmoid_op(stdscr, label, "reinstall-mbp-plasmoid")
-        elif tag == "move-plasmoid":
-            flow_plasmoid_op(stdscr, label, "move-mbp-plasmoid")
+        elif tag == "watch-plasmoid":
+            flow_watch_plasmoid_menu(stdscr)
         elif tag == "youtube":
             if yesno(stdscr, label, "¿Instalar YouTube Force H264?"):
                 run_op(stdscr, label, ["install-youtube-force-h264"])

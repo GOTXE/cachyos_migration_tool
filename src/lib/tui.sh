@@ -440,6 +440,64 @@ tui_restore() {
     _tui_log_msgbox "Restore completado" "\nRestore completado.\n\n" 11
 }
 
+tui_watch_plasmoid_menu() {
+    local OPTION
+    local TUI_TARGET
+
+    while true; do
+        OPTION=$(wt \
+            --title " MBP Watch y plasmoid " \
+            --menu "\nSelecciona una operación:" \
+            22 72 10 \
+            "s1" "──────── MBP Watch ────────" \
+            "1" "Instalar sistema MBP Watch" \
+            "2" "Desinstalar sistema MBP Watch" \
+            "s2" "──────── Plasmoid MBP Watch ────────" \
+            "3" "Añadir widget al escritorio" \
+            "4" "Widget en pantalla..." \
+            "5" "Reinstalar widget MBP Watch" \
+            "6" "Quitar widget MBP Watch" \
+            "7" "Atrás" \
+            3>&1 1>&2 2>&3) || return 0
+
+        case "$OPTION" in
+            s1|s2) continue ;;
+            1)
+                tui_op "Sistema MBP Watch instalado" install_mbp_watch_diagnostics
+                ;;
+            2)
+                tui_op "Sistema MBP Watch desinstalado" uninstall_mbp_watch_diagnostics
+                ;;
+            3)
+                TUI_TARGET=$(wt \
+                    --title " Añadir widget al escritorio " \
+                    --inputbox "\nPantalla del widget [primary|screen:N]:" \
+                    9 58 "primary" \
+                    3>&1 1>&2 2>&3) || continue
+                tui_op "Widget añadido" add_mbp_plasmoid_to_desktop "${TUI_TARGET:-primary}"
+                ;;
+            4)
+                TUI_TARGET=$(wt \
+                    --title " Widget en pantalla... " \
+                    --inputbox "\nPantalla del widget [primary|screen:N]:" \
+                    9 58 "primary" \
+                    3>&1 1>&2 2>&3) || continue
+                tui_op "Widget movido" move_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
+                ;;
+            5)
+                TUI_TARGET=$(wt \
+                    --title " Reinstalar widget MBP Watch " \
+                    --inputbox "\nPantalla del widget [primary|screen:N]:" \
+                    9 58 "primary" \
+                    3>&1 1>&2 2>&3) || continue
+                tui_op "Widget reinstalado" reinstall_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
+                ;;
+            6) tui_op "Widget quitado" uninstall_mbp_watch_plasmoid ;;
+            7) return 0 ;;
+        esac
+    done
+}
+
 # ---------------------------------------------------------------------------
 # Menú principal
 # ---------------------------------------------------------------------------
@@ -452,18 +510,15 @@ tui_main_menu() {
         OPTION=$(wt \
             --title " Linux Migration Tool v${VERSION}  [whiptail] " \
             --menu "\nSelecciona una operación:" \
-            23 64 12 \
+            20 64 11 \
             "1"  "Backup sistema" \
             "2"  "Bootstrap CachyOS" \
             "3"  "Post-check tras reinicio" \
             "4"  "Restaurar backup" \
-            "5"  "Desinstalar MBP Watch" \
-            "6"  "Desinstalar plasmoid MBP Watch" \
-            "7"  "Reinstalar plasmoid MBP Watch" \
-            "8"  "Mover plasmoid MBP Watch" \
-            "9"  "Instalar YouTube Force H264" \
-            "10" "VA-API Brave/Chromium (Intel)" \
-            "11" "Salir" \
+            "5"  "MBP Watch y plasmoid" \
+            "6"  "Instalar YouTube Force H264" \
+            "7"  "VA-API Brave/Chromium (Intel)" \
+            "8"  "Salir" \
             3>&1 1>&2 2>&3) || break
 
         case "$OPTION" in
@@ -471,27 +526,10 @@ tui_main_menu() {
             2)  tui_bootstrap ;;
             3)  tui_op "Post-check completado"  post_bootstrap_checks ;;
             4)  tui_restore ;;
-            5)  tui_op "MBP Watch desinstalado" uninstall_mbp_watch_diagnostics ;;
-            6)  tui_op "Plasmoid desinstalado"  uninstall_mbp_watch_plasmoid ;;
-            7)
-                TUI_TARGET=$(wt \
-                    --title " Reinstalar plasmoid MBP Watch " \
-                    --inputbox "\nDestino del plasmoid:" \
-                    9 52 "primary" \
-                    3>&1 1>&2 2>&3) || continue
-                tui_op "Plasmoid reinstalado" reinstall_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
-                ;;
-            8)
-                TUI_TARGET=$(wt \
-                    --title " Mover plasmoid MBP Watch " \
-                    --inputbox "\nDestino del plasmoid:" \
-                    9 52 "primary" \
-                    3>&1 1>&2 2>&3) || continue
-                tui_op "Plasmoid movido" move_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
-                ;;
-            9)  tui_op "YouTube H264 instalado" install_youtube_force_h264_package ;;
-            10) tui_op "VA-API configurado"     configure_vaapi_brave_broadwell ;;
-            11) break ;;
+            5)  tui_watch_plasmoid_menu ;;
+            6)  tui_op "YouTube H264 instalado" install_youtube_force_h264_package ;;
+            7)  tui_op "VA-API configurado"     configure_vaapi_brave_broadwell ;;
+            8) break ;;
         esac
     done
 }

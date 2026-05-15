@@ -44,6 +44,8 @@ main_menu() {
     esac
 
     local OPTION
+    local SUBOPTION
+    local MBP_PLASMOID_TARGET
 
     while true; do
         clear
@@ -55,13 +57,10 @@ main_menu() {
         log "2) Bootstrap CachyOS"
         log "3) Post-check tras reinicio"
         log "4) Restaurar backup"
-        log "5) Desinstalar MBP Watch"
-        log "6) Desinstalar plasmoid MBP Watch"
-        log "7) Reinstalar plasmoid MBP Watch"
-        log "8) Mover plasmoid MBP Watch"
-        log "9) Instalar YouTube Force H264"
-        log "10) Configurar VA-API Brave/Chromium (Intel)"
-        log "11) Salir"
+        log "5) MBP Watch y plasmoid"
+        log "6) Instalar YouTube Force H264"
+        log "7) Configurar VA-API Brave/Chromium (Intel)"
+        log "8) Salir"
         log ""
 
         prompt_read "Selecciona opcion: " OPTION
@@ -71,17 +70,54 @@ main_menu() {
             2)  bootstrap_cachyos ;;
             3)  post_bootstrap_checks ;;
             4)  restore_system ;;
-            5)  uninstall_mbp_watch_diagnostics ;;
-            6)  uninstall_mbp_watch_plasmoid ;;
-            7)  reinstall_mbp_watch_plasmoid ;;
-            8)
-                prompt_read "Destino del plasmoid [primary|screen:N]: " MBP_PLASMOID_TARGET
-                MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
-                move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+            5)
+                while true; do
+                    log ""
+                    log "MBP Watch y plasmoid"
+                    log "──────── MBP Watch ────────"
+                    log "1) Instalar sistema MBP Watch"
+                    log "2) Desinstalar sistema MBP Watch"
+                    log "──────── Plasmoid MBP Watch ────────"
+                    log "3) Añadir widget al escritorio"
+                    log "4) Widget en pantalla..."
+                    log "5) Reinstalar widget MBP Watch"
+                    log "6) Quitar widget MBP Watch"
+                    log "7) Atrás"
+                    log ""
+
+                    prompt_read "Selecciona opcion: " SUBOPTION
+
+                    case "$SUBOPTION" in
+                        1)
+                            install_mbp_watch_diagnostics
+                            ;;
+                        2)
+                            uninstall_mbp_watch_diagnostics
+                            ;;
+                        3)
+                            prompt_read "Pantalla del widget [primary|screen:N]: " MBP_PLASMOID_TARGET
+                            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+                            add_mbp_plasmoid_to_desktop "$MBP_PLASMOID_TARGET"
+                            ;;
+                        4)
+                            prompt_read "Pantalla del widget [primary|screen:N]: " MBP_PLASMOID_TARGET
+                            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+                            move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+                            ;;
+                        5)
+                            prompt_read "Pantalla del widget [primary|screen:N]: " MBP_PLASMOID_TARGET
+                            MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+                            reinstall_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+                            ;;
+                        6) uninstall_mbp_watch_plasmoid ;;
+                        7) break ;;
+                        *) log "${RED}Opcion invalida.${NC}" ;;
+                    esac
+                done
                 ;;
-            9)  install_youtube_force_h264_package ;;
-            10) configure_vaapi_brave_broadwell ;;
-            11) exit 0 ;;
+            6)  install_youtube_force_h264_package ;;
+            7)  configure_vaapi_brave_broadwell ;;
+            8)  exit 0 ;;
             *)  log "${RED}Opcion invalida.${NC}" ;;
         esac
     done
@@ -115,6 +151,7 @@ HERRAMIENTAS Y AJUSTES:
   install-youtube-force-h264 Instala extensión para forzar códec H.264 en YouTube
 
 MBP WATCH (Diagnóstico y Overlay):
+  install-mbp-watch          Instala o actualiza el daemon de diagnóstico y servicio systemd
   add-mbp-plasmoid           Añade el plasmoid MBP Watch al escritorio KDE
   move-mbp-plasmoid          Mueve el plasmoid a otra pantalla [--target primary|screen:N]
   reinstall-mbp-plasmoid     Reinstala el paquete del plasmoid y la instancia
@@ -363,6 +400,16 @@ main() {
                 esac
             done
             move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+            ;;
+        install-mbp-watch)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            install_mbp_watch_diagnostics
             ;;
         uninstall-mbp-watch)
             shift
