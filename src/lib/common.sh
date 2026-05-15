@@ -1029,13 +1029,13 @@ get_bootstrap_checklist_items() {
 
     cat <<EOF
 sync|Sincronización y actualización sistema|ON
-base_dev|Herramientas base desarrollo (git, go)|ON
+base_dev|Herramientas base desarrollo (git, go)|OFF
 yay|AUR helper (yay)|ON
 flatpak|Soporte Flatpak + Flathub|ON
 official|Paquetes oficiales de repositorio|ON
 kde|Aplicaciones base KDE Plasma|ON
 aur|Paquetes adicionales desde AUR|ON
-docker_svc|Configuración servicio Docker|ON
+docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON
 ai_codex|Codex CLI (@openai/codex)|OFF
@@ -1050,8 +1050,8 @@ globalmenu|Global Menu KDE (GTK + VS Code)|OFF
 EOF
 
     if macbook_profile_has_trait apple; then
-        printf '%s\n' "mbpwatch|MBP Watch diagnóstico (systemd)|ON"
-        printf '%s\n' "plasmoid|Plasmoid KDE MBP Watch|ON"
+        printf '%s\n' "mbpwatch|MBP Watch diagnóstico (systemd)|OFF"
+        printf '%s\n' "plasmoid|Plasmoid KDE MBP Watch|OFF"
         printf '%s\n' "apple|Apple laptop extras|${APPLE_DEFAULT}"
     fi
 
