@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.1"
+VERSION="1.2.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -1126,11 +1126,14 @@ select_disk() {
     mapfile -t DISKS < <(
         lsblk -P -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT,TRAN |
         while IFS= read -r LINE; do
+            local FSTYPE
             MOUNTPOINT="$(extract_lsblk_field "$LINE" "MOUNTPOINT")"
+            FSTYPE="$(extract_lsblk_field "$LINE" "FSTYPE")"
 
             if [ -n "$MOUNTPOINT" ] &&
                [ "$MOUNTPOINT" != "/" ] &&
-               [[ ! "$MOUNTPOINT" =~ ^/boot ]]; then
+               [[ ! "$MOUNTPOINT" =~ ^/boot ]] &&
+               [ "${FSTYPE,,}" != "swap" ]; then
                 printf '%s\n' "$LINE"
             fi
         done
