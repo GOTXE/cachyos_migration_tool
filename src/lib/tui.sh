@@ -527,7 +527,12 @@ tui_main_menu() {
             3)  tui_op "Post-check completado"  post_bootstrap_checks ;;
             4)  tui_restore ;;
             5)  tui_watch_plasmoid_menu ;;
-            6)  tui_op "YouTube H264 instalado" install_youtube_force_h264_package ;;
+            6)
+                wt --title " Instalar YouTube Force H264 " \
+                    --yesno "\nEsto no instala una extensión desde la tienda.\n\nSe copiará una extensión local en:\n~/extensions/youtube-force-h264/\n\nLa carpeta ~/extensions no es estándar del sistema.\nSi no existe, se creará para guardar extensiones locales.\n\nDespués tendrás que activarla manualmente en un navegador compatible:\n- Brave\n- Google Chrome\n- Chromium\n\nPasos después de copiarla:\n1. Abrir brave://extensions, chrome://extensions o chromium://extensions\n2. Activar Modo desarrollador\n3. Usar Cargar descomprimida\n4. Seleccionar ~/extensions/youtube-force-h264/\n\n¿Instalar ahora la extensión?" \
+                    23 76 || continue
+                tui_op "YouTube H264 instalado" install_youtube_force_h264_package
+                ;;
             7)  tui_op "VA-API configurado"     configure_vaapi_brave_broadwell ;;
             8) break ;;
         esac

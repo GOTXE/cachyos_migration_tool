@@ -115,7 +115,21 @@ main_menu() {
                     esac
                 done
                 ;;
-            6)  install_youtube_force_h264_package ;;
+            6)
+                log ""
+                log "YouTube Force H264"
+                log " - No se instala desde la tienda del navegador."
+                log " - Se copiará una extensión local en: ~/extensions/youtube-force-h264/"
+                log " - La carpeta ~/extensions no es estándar del sistema; se crea si no existe."
+                log " - Navegadores compatibles: Brave, Google Chrome, Chromium."
+                log " - Después tendrás que activarla manualmente desde:"
+                log "   brave://extensions  o  chrome://extensions  o  chromium://extensions"
+                log " - Pasos: activar Modo desarrollador -> Cargar descomprimida -> elegir ~/extensions/youtube-force-h264/"
+                log ""
+                if confirm_action "¿Instalar ahora la extensión local YouTube Force H264?" "yes"; then
+                    install_youtube_force_h264_package
+                fi
+                ;;
             7)  configure_vaapi_brave_broadwell ;;
             8)  exit 0 ;;
             *)  log "${RED}Opcion invalida.${NC}" ;;
