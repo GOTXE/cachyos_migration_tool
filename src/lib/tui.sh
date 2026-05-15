@@ -610,9 +610,21 @@ tui_watch_plasmoid_menu() {
         case "$OPTION" in
             s1|s2) continue ;;
             1)
+                wt --title " Instalar sistema MBP Watch " \
+                    --yesno "\n¿Instalar o actualizar el sistema MBP Watch?" \
+                    --yes-button "Aceptar" \
+                    --no-button "Cancelar" \
+                    --fullbuttons \
+                    9 58 || continue
                 tui_op "Sistema MBP Watch instalado" install_mbp_watch_diagnostics
                 ;;
             2)
+                wt --title " Desinstalar sistema MBP Watch " \
+                    --yesno "\n¿Desinstalar el sistema MBP Watch?" \
+                    --yes-button "Aceptar" \
+                    --no-button "Cancelar" \
+                    --fullbuttons \
+                    9 56 || continue
                 tui_op "Sistema MBP Watch desinstalado" uninstall_mbp_watch_diagnostics
                 ;;
             3)
@@ -639,7 +651,15 @@ tui_watch_plasmoid_menu() {
                     3>&1 1>&2 2>&3) || continue
                 tui_op "Widget reinstalado" reinstall_mbp_watch_plasmoid "${TUI_TARGET:-primary}"
                 ;;
-            6) tui_op "Widget quitado" uninstall_mbp_watch_plasmoid ;;
+            6)
+                wt --title " Quitar widget MBP Watch " \
+                    --yesno "\n¿Quitar el widget KDE MBP Watch?" \
+                    --yes-button "Aceptar" \
+                    --no-button "Cancelar" \
+                    --fullbuttons \
+                    9 56 || continue
+                tui_op "Widget quitado" uninstall_mbp_watch_plasmoid
+                ;;
             7) return 0 ;;
         esac
     done
