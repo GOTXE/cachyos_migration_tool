@@ -110,6 +110,12 @@ bootstrap_checklist_catalog() {
 # ---------------------------------------------------------------------------
 
 tui_backup_select_dirs() {
+    local CONFIG_CANDIDATES=()
+    local CONFIG_ARGS=()
+    local CONFIG_SELECTED_RAW=""
+    local CONFIG_TAG=""
+    local CONFIG_LABEL=""
+    local CONFIG_STATUS=""
     local CANDIDATES=()
     local DEFAULTS=()
     local CHECKLIST_ARGS=()
@@ -117,6 +123,35 @@ tui_backup_select_dirs() {
     local DEFAULT_DIR
     local STATUS
     local i
+
+    mapfile -t CONFIG_CANDIDATES < <(backup_config_catalog)
+    for i in "${!CONFIG_CANDIDATES[@]}"; do
+        IFS='|' read -r CONFIG_TAG CONFIG_LABEL CONFIG_STATUS <<< "${CONFIG_CANDIDATES[$i]}"
+        CONFIG_ARGS+=("$CONFIG_TAG" "$CONFIG_LABEL" "$CONFIG_STATUS")
+    done
+
+    wt --title " Backup sistema " \
+        --msgbox "\nAhora vas a seleccionar qué quieres salvar de tu usuario.\n\nPrimero: configuración importante.\nDespués: carpetas de datos." \
+        --ok-button "Continuar" \
+        --fullbuttons \
+        11 66
+
+    CONFIG_SELECTED_RAW=$(wt \
+        --title " Configuración importante a salvar " \
+        --checklist "Space=marcar/desmarcar   Flechas=navegar   Enter=confirmar   ESC=Atrás" \
+        --ok-button "Aceptar" \
+        --cancel-button "Cancelar" \
+        --fullbuttons \
+        24 78 14 \
+        "${CONFIG_ARGS[@]}" \
+        3>&1 1>&2 2>&3) || return 1
+
+    SELECTED_CONFIG_ITEMS=()
+    for TOKEN in $CONFIG_SELECTED_RAW; do
+        TOKEN="${TOKEN//\"/}"
+        [ -n "$TOKEN" ] || continue
+        SELECTED_CONFIG_ITEMS+=("$TOKEN")
+    done
 
     mapfile -t CANDIDATES < <(detect_backup_data_candidates)
     if [ ${#CANDIDATES[@]} -eq 0 ]; then
@@ -134,8 +169,11 @@ tui_backup_select_dirs() {
     done
 
     SELECTED_RAW=$(wt \
-        --title " Directorios de datos para backup " \
-        --checklist "Space=marcar/desmarcar   Enter=confirmar" \
+        --title " Carpetas de datos a salvar " \
+        --checklist "Space=marcar/desmarcar   Flechas=navegar   Enter=confirmar   ESC=Atrás" \
+        --ok-button "Aceptar" \
+        --cancel-button "Cancelar" \
+        --fullbuttons \
         22 74 12 \
         "${CHECKLIST_ARGS[@]}" \
         3>&1 1>&2 2>&3) || return 1
@@ -150,6 +188,61 @@ tui_backup_select_dirs() {
     if [ ${#SELECTED_DATA_DIRS[@]} -eq 0 ]; then
         SELECTED_DATA_DIRS=("${DEFAULTS[@]}")
     fi
+}
+
+tui_choose_backup_target() {
+    local ROOTS=()
+    local MENU_ARGS=()
+    local CHOICE=""
+    local TARGET=""
+    local INDEX=0
+
+    mapfile -t ROOTS < <(tui_collect_restore_roots)
+
+    while true; do
+        MENU_ARGS=("manual" "Escribir ruta manualmente")
+        for INDEX in "${!ROOTS[@]}"; do
+            MENU_ARGS+=("r$INDEX" "Explorar ${ROOTS[$INDEX]}")
+        done
+        MENU_ARGS+=("root" "Navegar desde /")
+
+        CHOICE=$(wt \
+            --title " Selecciona el destino de backup " \
+            --menu "\nSelecciona dónde guardar la copia:" \
+            22 86 14 \
+            "${MENU_ARGS[@]}" \
+            3>&1 1>&2 2>&3) || return 1
+
+        case "$CHOICE" in
+            manual)
+                TARGET=$(wt \
+                    --title " Selecciona el destino de backup " \
+                    --inputbox "\nRuta destino del backup:" \
+                    9 64 "" \
+                    3>&1 1>&2 2>&3) || continue
+                TARGET="$(realpath -m "$TARGET")"
+                ;;
+            r*)
+                INDEX="${CHOICE#r}"
+                TARGET="$(tui_browse_directory " Selecciona el destino de backup " "${ROOTS[$INDEX]}")" || continue
+                ;;
+            root)
+                TARGET="$(tui_browse_directory " Selecciona el destino de backup " "/")" || continue
+                ;;
+            *)
+                continue
+                ;;
+        esac
+
+        if [ -d "$TARGET" ]; then
+            printf '%s\n' "$TARGET"
+            return 0
+        fi
+
+        wt --title " Selecciona el destino de backup " \
+            --msgbox "\nLa ruta no existe o no es un directorio:\n$TARGET" \
+            10 68
+    done
 }
 
 tui_backup_select_disk() {
@@ -218,14 +311,65 @@ tui_backup_select_disk() {
 }
 
 tui_backup() {
-    tui_backup_select_dirs || return 0
-    tui_backup_select_disk || return 0
+    local SUMMARY=""
+    local ITEM=""
+    local COUNT=0
+    local AVAILABLE_BYTES=0
 
-    wt --title " Backup CachyOS " \
-        --yesno "\nDestino : $DISK_MOUNT\nNecesario: $(format_bytes_human "$BACKUP_ESTIMATED_BYTES")\n\n¿Iniciar backup?" \
-        11 60 || return 0
+    DISK_MOUNT="$(tui_choose_backup_target)" || return 0
 
     BACKUP_TARGET="$DISK_MOUNT"
+
+    tui_backup_select_dirs || return 0
+
+    if [ ${#SELECTED_CONFIG_ITEMS[@]} -eq 0 ] && [ ${#SELECTED_DATA_DIRS[@]} -eq 0 ]; then
+        wt --title " Backup sistema " \
+            --msgbox "\nDebes seleccionar al menos un elemento del usuario." \
+            9 56
+        return 0
+    fi
+
+    BACKUP_ESTIMATED_BYTES="$(estimate_backup_bytes)"
+    AVAILABLE_BYTES="$(get_mount_available_bytes "$DISK_MOUNT")"
+    AVAILABLE_BYTES="${AVAILABLE_BYTES:-0}"
+    if [ "$AVAILABLE_BYTES" -lt "$BACKUP_ESTIMATED_BYTES" ]; then
+        wt --title " Espacio insuficiente " \
+            --msgbox "\nEspacio insuficiente en el destino seleccionado.\n\nNecesario : $(format_bytes_human "$BACKUP_ESTIMATED_BYTES")\nDisponible: $(format_bytes_human "$AVAILABLE_BYTES")" \
+            11 60
+        return 0
+    fi
+
+    SUMMARY="Destino: $DISK_MOUNT\n\nElementos de configuración:"
+    COUNT=0
+    for ITEM in "${SELECTED_CONFIG_ITEMS[@]}"; do
+        SUMMARY="${SUMMARY}\n- $ITEM"
+        COUNT=$((COUNT + 1))
+        [ "$COUNT" -ge 8 ] && break
+    done
+    if [ ${#SELECTED_CONFIG_ITEMS[@]} -gt 8 ]; then
+        SUMMARY="${SUMMARY}\n- ... y $((${#SELECTED_CONFIG_ITEMS[@]} - 8)) más"
+    fi
+
+    SUMMARY="${SUMMARY}\n\nCarpetas de datos:"
+    COUNT=0
+    for ITEM in "${SELECTED_DATA_DIRS[@]}"; do
+        SUMMARY="${SUMMARY}\n- $ITEM"
+        COUNT=$((COUNT + 1))
+        [ "$COUNT" -ge 8 ] && break
+    done
+    if [ ${#SELECTED_DATA_DIRS[@]} -gt 8 ]; then
+        SUMMARY="${SUMMARY}\n- ... y $((${#SELECTED_DATA_DIRS[@]} - 8)) más"
+    fi
+
+    wt --title " Backup CachyOS " \
+        --yesno "\n${SUMMARY}\n\n¿Iniciar backup?" \
+        --yes-button "Aceptar" \
+        --no-button "Cancelar" \
+        --fullbuttons \
+        22 78 || return 0
+
+    BACKUP_TARGET="$DISK_MOUNT"
+    BACKUP_SELECTION_FROM_TUI=1
     _tui_run_with_output "Backup CachyOS" backup_system
 
     _tui_log_msgbox "Backup completado" "\nBackup completado.\n\n" 11
@@ -546,13 +690,18 @@ tui_bootstrap() {
     BOOTSTRAP_CONTEXT="$(get_bootstrap_context_text)"
 
     wt --title " Bootstrap CachyOS " \
-        --msgbox "\n${BOOTSTRAP_CONTEXT}\n\nEl listado se filtrará según este perfil.\n\nENTER = Aceptar   ESC = Cancelar" \
+        --msgbox "\n${BOOTSTRAP_CONTEXT}\n\nEl listado se filtrará según este perfil." \
+        --ok-button "Continuar" \
+        --fullbuttons \
         11 64
 
     SELECTED=$(wt \
         --title " Bootstrap CachyOS " \
         --checklist \
         "Space=marcar/desmarcar   Flechas=navegar   Enter=confirmar   ESC=Atrás" \
+        --ok-button "Aceptar" \
+        --cancel-button "Cancelar" \
+        --fullbuttons \
         28 72 18 \
         "${CHECKLIST_ITEMS[@]}" \
         3>&1 1>&2 2>&3) || return 0
@@ -587,6 +736,9 @@ tui_bootstrap() {
 
     wt --title " Bootstrap CachyOS " \
         --yesno "\nSe ejecutarán los bloques seleccionados.\n¿Continuar?" \
+        --yes-button "Aceptar" \
+        --no-button "Cancelar" \
+        --fullbuttons \
         9 52 || return 0
 
     _tui_run_with_output "Bootstrap CachyOS" \
