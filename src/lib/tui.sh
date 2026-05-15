@@ -576,12 +576,15 @@ tui_restore() {
 
     wt --title " Restaurar backup " \
         --yesno "\nFuente : $SRC\n\n¿Iniciar restauración?" \
+        --yes-button "Aceptar" \
+        --no-button "Cancelar" \
+        --fullbuttons \
         10 60 || return 0
 
     BACKUP_SOURCE="$SRC"
     _tui_run_with_output "Restaurar backup" restore_system
 
-    _tui_log_msgbox "Restore completado" "\nRestore completado.\n\n" 11
+    _tui_log_msgbox "Restaurar backup" "\nRestauración completada.\n\n" 11
 }
 
 tui_watch_plasmoid_menu() {
