@@ -567,7 +567,7 @@ Conclusión:
 ### Crashpad lock
 
 ~~~text
-open /home/gtx/.config/BraveSoftware/Brave-Browser/Crash Reports/pending/...lock: File exists (17)
+open /home/<user>/.config/BraveSoftware/Brave-Browser/Crash Reports/pending/...lock: File exists (17)
 ~~~
 
 Interpretación:

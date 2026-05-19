@@ -11,7 +11,7 @@ Definir una secuencia concreta de commits para que la implementación del plasmo
 
 Este documento complementa la guía general de IA:
 
-- [mbp-watch-kde-plasmoid-ai-implementation-guide.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-ai-implementation-guide.md:1)
+- [mbp-watch-kde-plasmoid-ai-implementation-guide.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-ai-implementation-guide.md:1)
 
 ---
 

@@ -123,9 +123,9 @@ METRICS SNAPSHOT:
 
 TOP PROCESSES:
   by_cpu:
-    gtx 11.1% 3.3% 40:06 claude
-    gtx 7.8% 3.2% /opt/visual-studio-code/code --type=zygote
-    gtx 4.1% 1.2% --type=zygote --no-zygote-sandbox
+    user 11.1% 3.3% 40:06 claude
+    user 7.8% 3.2% /opt/visual-studio-code/code --type=zygote
+    user 4.1% 1.2% --type=zygote --no-zygote-sandbox
   by_memory:
     [3 procesos]
 
@@ -142,7 +142,7 @@ RECOMMENDATIONS:
 ```
 PERFORMANCE_ANALYSIS (Python/web dev + music)
 load: 3.2 | memory: 44% | swap: 0MB | swappiness: 60
-top_process: claude (gtx)
+top_process: claude (user)
 context_switches: 28450
 ⚠️  LOAD HIGH: 3.2 (avoid music + compilation)
 ```

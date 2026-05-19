@@ -59,7 +59,7 @@ El daemon sirve estos archivos en el puerto `7070` (configurable via `MBP_WATCH_
 
 ### `move_mbp_plasmoid.sh`
 
-Recoloca el plasmoid `io.github.gtx.mbpwatch` en una pantalla objetivo sin reinstalarlo.
+Recoloca el plasmoid `io.github.cachyosmigrationtool.mbpwatch` en una pantalla objetivo sin reinstalarlo.
 
 ```bash
 bash assets/diagnostics/move_mbp_plasmoid.sh --target primary

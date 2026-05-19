@@ -17,8 +17,8 @@ Este documento fija:
 
 Documentos relacionados:
 
-- [mbp-watch-kde-plasmoid-v1-installation-flow.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
-- [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
+- [mbp-watch-kde-plasmoid-v1-installation-flow.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
+- [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
 
 ---
 
@@ -47,7 +47,7 @@ No debe:
 El script v1 debe trabajar con:
 
 ```text
-io.github.gtx.mbpwatch
+io.github.cachyosmigrationtool.mbpwatch
 ```
 
 Ese valor debe coincidir con `KPlugin.Id` del `metadata.json`.
@@ -59,7 +59,7 @@ Ese valor debe coincidir con `KPlugin.Id` del `metadata.json`.
 Este es el script canónico que debe usarse como base de implementación:
 
 ```javascript
-const pluginId = "io.github.gtx.mbpwatch";
+const pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 const widgetWidth = 360;
 const widgetMargin = 24;
 const widgetTop = 24;

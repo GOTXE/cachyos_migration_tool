@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-PLUGIN_ID="io.github.gtx.mbpwatch"
+PLUGIN_ID="io.github.cachyosmigrationtool.mbpwatch"
 PACKAGE_TYPE="Plasma/Applet"
 DRY_RUN=false
 TARGET_USER=""
@@ -194,7 +194,7 @@ build_move_script() {
     local TARGET_SPEC="$1"
 
     cat <<EOF
-var pluginId = "io.github.gtx.mbpwatch";
+var pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 var targetSpec = ${TARGET_SPEC@Q};
 var widgetWidth = 360;
 var widgetMargin = 24;

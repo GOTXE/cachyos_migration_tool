@@ -2,7 +2,7 @@
 
 ## 1. Objetivo
 
-Definir cómo debe integrarse el plasmoid `mbp-watch` en [src/modules/bootstrap.sh](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh:1) sin ambigüedad:
+Definir cómo debe integrarse el plasmoid `mbp-watch` en [src/modules/bootstrap.sh](/path/to/repo/src/modules/bootstrap.sh:1) sin ambigüedad:
 
 - funciones nuevas,
 - orden de ejecución,
@@ -14,10 +14,10 @@ Este documento no implementa el plasmoid. Define el contrato exacto para que lue
 
 Documentos base:
 
-- [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
-- [mbp-watch-kde-plasmoid-v1-mapping.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
-- [mbp-watch-kde-plasmoid-v1-file-structure.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
-- [mbp-watch-kde-plasmoid-v1-installation-flow.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
+- [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+- [mbp-watch-kde-plasmoid-v1-mapping.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
+- [mbp-watch-kde-plasmoid-v1-file-structure.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
+- [mbp-watch-kde-plasmoid-v1-installation-flow.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
 
 ---
 
@@ -70,7 +70,7 @@ Motivo:
 
 ## 4. Nuevas funciones requeridas
 
-La implementación en [bootstrap.sh](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh:1) debe añadir estas funciones.
+La implementación en [bootstrap.sh](/path/to/repo/src/modules/bootstrap.sh:1) debe añadir estas funciones.
 
 ## 4.1 `is_kde_plasma_session()`
 
@@ -187,7 +187,7 @@ Responsabilidad:
 Estrategia:
 
 - ejecutar `kpackagetool6 --type Plasma/Applet --list`
-- buscar `io.github.gtx.mbpwatch`
+- buscar `io.github.cachyosmigrationtool.mbpwatch`
 
 ## 4.8 `install_or_upgrade_mbp_plasmoid()`
 
@@ -270,7 +270,7 @@ Debe:
 Deben centralizarse al principio del módulo o en bloque de constantes claramente visible:
 
 ```bash
-MBP_PLASMOID_ID="io.github.gtx.mbpwatch"
+MBP_PLASMOID_ID="io.github.cachyosmigrationtool.mbpwatch"
 MBP_PLASMOID_PACKAGE_TYPE="Plasma/Applet"
 MBP_PLASMOID_RELATIVE_DIR="assets/plasmoids/mbp-watch"
 MBP_PLASMOID_WEB_URL="http://127.0.0.1:7070/report.html"
@@ -335,7 +335,7 @@ El bloque de integración debe seguir este orden:
 La implementación debe generar un JS equivalente a este contrato:
 
 ```javascript
-const pluginId = "io.github.gtx.mbpwatch";
+const pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 if (!knownWidgetTypes.includes(pluginId)) {
     throw new Error("plasmoid-not-installed");
 }

@@ -3,8 +3,8 @@
     "KPlugin": {
         "Authors": [
             {
-                "Email": "gtx@localhost",
-                "Name": "gtx"
+                "Email": "maintainers@example.invalid",
+                "Name": "CachyOS Migration Tool Contributors"
             }
         ],
         "Category": "System Information",
@@ -12,7 +12,7 @@
         "Description[es]": "Overlay de MBP Watch para KDE Plasma",
         "EnabledByDefault": true,
         "Icon": "utilities-system-monitor",
-        "Id": "io.github.gtx.mbpwatch",
+        "Id": "io.github.cachyosmigrationtool.mbpwatch",
         "License": "MIT",
         "Name": "MBP Watch",
         "Name[es]": "MBP Watch",

@@ -389,7 +389,7 @@ Con `--purge` (o eligiendo "sí" al confirmar desde el menú):
 El desinstalador del plasmoid KDE:
 
 - intenta quitar instancias activas del escritorio con `qdbus6`
-- elimina el paquete de usuario con `kpackagetool6 --type Plasma/Applet --remove io.github.gtx.mbpwatch`
+- elimina el paquete de usuario con `kpackagetool6 --type Plasma/Applet --remove io.github.cachyosmigrationtool.mbpwatch`
 - no edita directamente archivos internos de configuración de Plasma
 
 El reinstalador del plasmoid KDE:
@@ -473,7 +473,7 @@ Ejemplo:
  Size   : 931G
  FS     : ext4
  Label  : BACKUP
- Mount  : /media/gotxe/BACKUP
+ Mount  : /media/<user>/BACKUP
  Type   : usb
 ```
 

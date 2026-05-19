@@ -1159,9 +1159,9 @@ esac
 pacman -Q libnotify 2>/dev/null || echo "AVISO: instalar libnotify"
 
 # Test manual desde terminal (como root, con sesión gráfica activa)
-GRAPHICAL_UID=$(id -u gtx)
+GRAPHICAL_UID=$(id -u user)
 DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${GRAPHICAL_UID}/bus" \
-sudo -u gtx notify-send --urgency=critical "MBP Watch Test" "Notificación de prueba"
+sudo -u user notify-send --urgency=critical "MBP Watch Test" "Notificación de prueba"
 
 # Verificar que llega a KDE Plasma
 # Debería aparecer en la esquina superior derecha (o según config de KDE Notifications)

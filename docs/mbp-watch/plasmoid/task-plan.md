@@ -6,8 +6,8 @@ Traducir la especificación y el mapeo ya cerrados en un **backlog técnico secu
 
 Documentos base de referencia:
 
-- [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
-- [mbp-watch-kde-plasmoid-v1-mapping.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
+- [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+- [mbp-watch-kde-plasmoid-v1-mapping.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
 
 ---
 

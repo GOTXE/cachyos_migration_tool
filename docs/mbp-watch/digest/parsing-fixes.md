@@ -59,7 +59,7 @@ get_last_snapshot_section 'wifi_link' | head -1
 ```
 ❌ Salida: 
 load: 1,00 | memory: memory_used_pct:% | swap: M | swappiness: 150
-top_process: claude (gtx)--type=zygote (gtx)--no-zygote-sandbox (gtx)
+top_process: claude (user)--type=zygote (user)--no-zygote-sandbox (user)
 ```
 
 **Causas múltiples:**
@@ -99,11 +99,11 @@ grep -oE '[0-9]+' | tail -1 con validación <= 100
 ```bash
 # Problema
 awk '{cpu=$2; cmd=$NF; user=$1; printf "%s (%s)", cmd, user}' 
-# Salida: claude (gtx)--type=zygote (gtx)
+# Salida: claude (user)--type=zygote (user)
 
 # Solución
 awk '{print $NF " (" $1 ")"}' | head -1
-# Salida: claude (gtx)
+# Salida: claude (user)
 ```
 
 ---
@@ -162,7 +162,7 @@ tail -20 /var/lib/mbp-watch/report.txt
 # Debería mostrar:
 # PERFORMANCE_ANALYSIS (Python/web dev + music)
 # load: 1.69 | memory: 42% | swap: 128MB | swappiness: 60
-# top_process: claude (gtx)
+# top_process: claude (user)
 ```
 
 ---
@@ -185,7 +185,7 @@ Cuando el script regenere el reporte, debería ver:
 ```
 PERFORMANCE_ANALYSIS (Python/web dev + music)
 load: 1.69 | memory: 42% | swap: 128MB | swappiness: 60
-top_process: claude (gtx)
+top_process: claude (user)
 ```
 
 Sin valores corruptos, sin parsing rotos, sin información incompleta.

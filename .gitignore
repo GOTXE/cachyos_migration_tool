@@ -1,4 +1,7 @@
 *.log
+*.py[cod]
+__pycache__/
+.pytest_cache/
 .mbp-watch/
 .claude/
 .agents/

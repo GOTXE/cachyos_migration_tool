@@ -5,7 +5,7 @@ El directorio `assets/plasmoids/mbp-watch/` contiene el paquete KDE Plasma 6 que
 ## Identificador
 
 ```
-io.github.gtx.mbpwatch
+io.github.cachyosmigrationtool.mbpwatch
 ```
 
 ## Estructura del paquete

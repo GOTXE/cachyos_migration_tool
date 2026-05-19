@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MBP_PLASMOID_ID="io.github.gtx.mbpwatch"
+MBP_PLASMOID_ID="io.github.cachyosmigrationtool.mbpwatch"
 MBP_PLASMOID_PACKAGE_TYPE="Plasma/Applet"
 MBP_PLASMOID_RELATIVE_DIR="assets/plasmoids/mbp-watch"
 MBP_PLASMOID_WEB_URL="http://127.0.0.1:7070/report.html"
@@ -956,7 +956,7 @@ build_mbp_plasmoid_autoload_script() {
     local TARGET_SCREEN_INDEX="$1"
 
     cat <<EOF
-var pluginId = "io.github.gtx.mbpwatch";
+var pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 var preferredScreen = ${TARGET_SCREEN_INDEX};
 var widgetWidth = 360;
 var widgetMargin = 24;

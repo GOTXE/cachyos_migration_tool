@@ -16,7 +16,7 @@ para que la implementación posterior se reduzca a:
 
 Este documento no redefine la UX general. La UX base ya está fijada en:
 
-- [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+- [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
 
 Aquí se fija:
 
