@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.2.1"
+VERSION="1.2.2"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -1035,6 +1035,7 @@ flatpak|Soporte Flatpak + Flathub|ON
 official|Paquetes oficiales de repositorio|ON
 kde|Aplicaciones base KDE Plasma|ON
 aur|Paquetes adicionales desde AUR|ON
+handy|Handy (speech-to-text offline, AUR)|OFF
 docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON

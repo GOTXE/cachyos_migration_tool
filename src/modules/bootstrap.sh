@@ -305,6 +305,12 @@ install_aur_packages() {
         webapp-manager
 }
 
+install_handy_package() {
+    log "${YELLOW}Instalando Handy desde AUR...${NC}"
+    log_package_batch_state "AUR" "aur" handy-bin
+    run_cmd yay -S --needed --noconfirm handy-bin
+}
+
 setup_docker() {
     log "${YELLOW}8. Configurando servicios finales (Docker)...${NC}"
     run_cmd sudo systemctl enable docker

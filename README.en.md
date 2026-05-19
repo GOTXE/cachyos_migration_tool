@@ -97,6 +97,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `youtube` | YouTube Force H264 extension |
 | `apple` | thermald, powertop (Intel Apple laptop extras) |
 | `facetime` | facetimehd-dkms + firmware (PCIe camera MBP 2013+) |
+| `handy` | `handy-bin` from AUR (offline speech-to-text) |
 | `iwd` | iwd backend for NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim, mako |
 | `wifi` | wireless-regdb + country regulatory domain |

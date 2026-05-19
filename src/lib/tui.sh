@@ -867,6 +867,7 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"official"'* ]]    && install_official_packages
     [[ "$SELECTED" == *'"kde"'* ]]         && install_kde_packages
     [[ "$SELECTED" == *'"aur"'* ]]         && install_aur_packages
+    [[ "$SELECTED" == *'"handy"'* ]]       && install_handy_package
     [[ "$SELECTED" == *'"docker_svc"'* ]]  && setup_docker
     [[ "$SELECTED" == *'"zsh"'* ]]         && { install_ohmyzsh; install_powerlevel10k; }
     [[ "$SELECTED" == *'"node"'* ]]        && install_node_stack
