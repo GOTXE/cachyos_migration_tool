@@ -11,10 +11,10 @@ Definir el flujo exacto de instalación, actualización, registro y añadido aut
 
 Este documento complementa:
 
-- [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
-- [mbp-watch-kde-plasmoid-v1-mapping.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
-- [mbp-watch-kde-plasmoid-v1-task-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
-- [mbp-watch-kde-plasmoid-v1-file-structure.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
+- [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+- [mbp-watch-kde-plasmoid-v1-mapping.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
+- [mbp-watch-kde-plasmoid-v1-task-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
+- [mbp-watch-kde-plasmoid-v1-file-structure.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
 
 ---
 
@@ -115,7 +115,7 @@ Si falla cualquiera de esos puntos:
 Estos valores deben quedar centralizados y no dispersos por scripts:
 
 ```text
-PLUGIN_ID=io.github.gtx.mbpwatch
+PLUGIN_ID=io.github.cachyosmigrationtool.mbpwatch
 PLUGIN_PACKAGE_TYPE=Plasma/Applet
 PLUGIN_SOURCE_DIR=<repo>/assets/plasmoids/mbp-watch
 PLUGIN_MAIN_QML=contents/ui/main.qml
@@ -259,7 +259,7 @@ No debe intentarse una colocación “inteligente” más compleja en v1.
 El comportamiento esperado del script de Plasma debe ser este:
 
 ```text
-1. pluginId = "io.github.gtx.mbpwatch"
+1. pluginId = "io.github.cachyosmigrationtool.mbpwatch"
 2. comprobar knownWidgetTypes.includes(pluginId)
 3. recorrer desktops()
 4. en cada desktop, comprobar si ya existe widgets(pluginId)
@@ -358,7 +358,7 @@ kpackagetool6 --type Plasma/Applet --list
 Prueba rápida en ventana:
 
 ```bash
-plasmawindowed io.github.gtx.mbpwatch
+plasmawindowed io.github.cachyosmigrationtool.mbpwatch
 ```
 
 ---
@@ -389,7 +389,7 @@ La desinstalación debe contemplar dos niveles:
 Paquete:
 
 ```bash
-kpackagetool6 --type Plasma/Applet --remove io.github.gtx.mbpwatch
+kpackagetool6 --type Plasma/Applet --remove io.github.cachyosmigrationtool.mbpwatch
 ```
 
 La eliminación automática de instancias desde scripting puede definirse más adelante, pero no es requisito bloqueante de v1 si existe un desinstalador claro.

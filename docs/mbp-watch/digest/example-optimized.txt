@@ -57,7 +57,7 @@ RECENT ERRORS (unique events, last 200 window)
 
 PERFORMANCE_ANALYSIS (Python/web dev + music)
 load: 3.2 | memory: 44% | swap: 0MB | swappiness: 60
-top_process: claude (gtx)
+top_process: claude (user)
 context_switches: 28450
 ⚠️  LOAD HIGH: 3.2 (avoid music + compilation)
 

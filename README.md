@@ -97,6 +97,9 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 | `youtube` | Extensión YouTube Force H264 |
 | `apple` | thermald, powertop (extras Apple laptop Intel) |
 | `facetime` | facetimehd-dkms + firmware (cámara PCIe MBP 2013+) |
+| `handy` | `handy-bin` desde AUR (speech-to-text offline) |
+| `obsidian` | Obsidian desde repositorio oficial |
+| `sshpass` | `sshpass` para SSH con contraseña no interactiva |
 | `iwd` | iwd backend para NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim, mako |
 | `wifi` | wireless-regdb + dominio regulatorio por país |
@@ -198,4 +201,5 @@ Distribuido bajo la [GNU General Public License v3.0](LICENSE). Sin garantía de
 - [Scripts de diagnóstico y MBP Watch](docs/diagnostics.md)
 - [Plasmoid KDE MBP Watch](docs/plasmoid-mbp-watch.md)
 - [Hardware MBP 2015 en CachyOS](docs/hardware/mbp2015-cachyos-setup.md)
+- [Logitech Craft + MX Master 3 en CachyOS](docs/logitech-cachyos.md)
 - [Extensión YouTube Force H264](docs/extensions/youtube-force-h264.md)

@@ -17,9 +17,9 @@ Este documento pretende que la fase de implementación sea casi directa:
 
 Documentos previos:
 
-- [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
-- [mbp-watch-kde-plasmoid-v1-mapping.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
-- [mbp-watch-kde-plasmoid-v1-task-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
+- [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+- [mbp-watch-kde-plasmoid-v1-mapping.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
+- [mbp-watch-kde-plasmoid-v1-task-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
 
 ---
 

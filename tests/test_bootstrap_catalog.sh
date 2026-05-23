@@ -45,6 +45,9 @@ assert_contains "$CATALOG_2015" "plasmoid|Plasmoid KDE MBP Watch|OFF" "catalog 1
 assert_contains "$CATALOG_2015" "apple|Apple laptop extras|ON" "catalog 12,1 apple"
 assert_contains "$CATALOG_2015" "facetime|FaceTime HD camera (AUR)|ON" "catalog 12,1 facetime"
 assert_contains "$CATALOG_2015" "vaapi|VA-API Brave/Chromium (Intel Broadwell)|OFF" "catalog 12,1 vaapi"
+assert_contains "$CATALOG_2015" "handy|Handy (speech-to-text offline, AUR)|OFF" "catalog 12,1 handy"
+assert_contains "$CATALOG_2015" "obsidian|Obsidian (Markdown knowledge base)|OFF" "catalog 12,1 obsidian"
+assert_contains "$CATALOG_2015" "sshpass|sshpass para contraseñas SSH no interactivas|OFF" "catalog 12,1 sshpass"
 assert_not_contains "$CATALOG_2015" "hwaccel|Aceleración HW Chromium/Brave|OFF" "catalog 12,1 hwaccel hidden"
 
 MACBOOK_MODEL="MacBookPro8,1"
@@ -58,5 +61,8 @@ MACBOOK_MODEL="MacBookPro9,2"
 CATALOG_GENERIC="$(get_bootstrap_checklist_items)"
 assert_not_contains "$CATALOG_GENERIC" "mbpwatch|MBP Watch diagnóstico (systemd)|OFF" "catalog generic mbpwatch hidden"
 assert_not_contains "$CATALOG_GENERIC" "apple|Apple laptop extras|ON" "catalog generic apple hidden"
+assert_contains "$CATALOG_GENERIC" "handy|Handy (speech-to-text offline, AUR)|OFF" "catalog generic handy"
+assert_contains "$CATALOG_GENERIC" "obsidian|Obsidian (Markdown knowledge base)|OFF" "catalog generic obsidian"
+assert_contains "$CATALOG_GENERIC" "sshpass|sshpass para contraseñas SSH no interactivas|OFF" "catalog generic sshpass"
 
 printf 'OK bootstrap catalog\n'

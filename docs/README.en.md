@@ -26,6 +26,11 @@ Specific documentation currently available for MacBook Pro Retina 13" 2015 on Ca
 - [hardware/vaapi-testing-notes.md](hardware/vaapi-testing-notes.md) — Testing log and VA-API acceleration verification
 - [hardware/mbp2015-cachyos-setup.md](hardware/mbp2015-cachyos-setup.md) — General CachyOS installation adjustments on MBP 2015
 
+## Logitech peripherals
+
+- [logitech-cachyos.md](logitech-cachyos.md) — Solaar + logiops for Logitech Craft and MX Master 3 on CachyOS (KDE/Wayland)
+- [logitech-cachyos-status.md](logitech-cachyos-status.md) — Applied system state, effective configuration and remaining manual validations
+
 ## MBP Watch
 
 Hardware monitor for MBP 2015 (systemd daemon + local web):

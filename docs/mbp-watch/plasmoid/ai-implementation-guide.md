@@ -37,12 +37,12 @@ Si encuentra una ambigüedad real:
 
 Antes de escribir código, la IA debe tomar como referencia obligatoria estos documentos:
 
-1. [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
-2. [mbp-watch-kde-plasmoid-v1-mapping.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
-3. [mbp-watch-kde-plasmoid-v1-task-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
-4. [mbp-watch-kde-plasmoid-v1-file-structure.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
-5. [mbp-watch-kde-plasmoid-v1-installation-flow.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
-6. [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
+1. [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+2. [mbp-watch-kde-plasmoid-v1-mapping.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
+3. [mbp-watch-kde-plasmoid-v1-task-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
+4. [mbp-watch-kde-plasmoid-v1-file-structure.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
+5. [mbp-watch-kde-plasmoid-v1-installation-flow.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
+6. [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
 
 Regla:
 

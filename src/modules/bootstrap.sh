@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MBP_PLASMOID_ID="io.github.gtx.mbpwatch"
+MBP_PLASMOID_ID="io.github.cachyosmigrationtool.mbpwatch"
 MBP_PLASMOID_PACKAGE_TYPE="Plasma/Applet"
 MBP_PLASMOID_RELATIVE_DIR="assets/plasmoids/mbp-watch"
 MBP_PLASMOID_WEB_URL="http://127.0.0.1:7070/report.html"
@@ -303,6 +303,24 @@ install_aur_packages() {
         angryipscanner \
         pamac-aur \
         webapp-manager
+}
+
+install_handy_package() {
+    log "${YELLOW}Instalando Handy desde AUR...${NC}"
+    log_package_batch_state "AUR" "aur" handy-bin
+    run_cmd yay -S --needed --noconfirm handy-bin
+}
+
+install_obsidian_package() {
+    log "${YELLOW}Instalando Obsidian desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" obsidian
+    run_cmd sudo pacman -S --needed --noconfirm obsidian
+}
+
+install_sshpass_package() {
+    log "${YELLOW}Instalando sshpass desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" sshpass
+    run_cmd sudo pacman -S --needed --noconfirm sshpass
 }
 
 setup_docker() {
@@ -950,7 +968,7 @@ build_mbp_plasmoid_autoload_script() {
     local TARGET_SCREEN_INDEX="$1"
 
     cat <<EOF
-var pluginId = "io.github.gtx.mbpwatch";
+var pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 var preferredScreen = ${TARGET_SCREEN_INDEX};
 var widgetWidth = 360;
 var widgetMargin = 24;

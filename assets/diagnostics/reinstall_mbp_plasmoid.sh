@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-PLUGIN_ID="io.github.gtx.mbpwatch"
+PLUGIN_ID="io.github.cachyosmigrationtool.mbpwatch"
 PACKAGE_TYPE="Plasma/Applet"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -203,7 +203,7 @@ normalize_target_spec() {
 
 build_presence_script() {
     cat <<'EOF'
-var pluginId = "io.github.gtx.mbpwatch";
+var pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 var allDesktops = desktops();
 var present = false;
 
@@ -289,7 +289,7 @@ build_autoload_script() {
     local TARGET_SCREEN_INDEX="$1"
 
     cat <<EOF
-var pluginId = "io.github.gtx.mbpwatch";
+var pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 var preferredScreen = ${TARGET_SCREEN_INDEX};
 var widgetWidth = 360;
 var widgetMargin = 24;

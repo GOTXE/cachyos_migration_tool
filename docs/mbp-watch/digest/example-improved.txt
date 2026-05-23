@@ -70,10 +70,10 @@ METRICS SNAPSHOT:
 TOP PROCESSES:
   by_cpu:
     root     87 19 python3 app.py
-    gtx      62 12 firefox
+    user      62 12 firefox
     root     45 8 node index.js
   by_memory:
-    gtx      28 6800 firefox
+    user      28 6800 firefox
     root     15 3200 python3 app.py
     root     12 2400 node index.js
 

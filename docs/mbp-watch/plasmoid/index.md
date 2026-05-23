@@ -20,11 +20,11 @@ Si un agente sólo leyera un documento para orientarse, debería ser este.
 
 El código del plasmoid debe generarse en:
 
-- [assets/plasmoids/mbp-watch](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/plasmoids/mbp-watch)
+- [assets/plasmoids/mbp-watch](/path/to/repo/assets/plasmoids/mbp-watch)
 
 La integración de instalación debe tocar:
 
-- [src/modules/bootstrap.sh](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh:1)
+- [src/modules/bootstrap.sh](/path/to/repo/src/modules/bootstrap.sh:1)
 
 No debe generarse código del plasmoid en:
 
@@ -41,16 +41,16 @@ salvo la integración concreta de `bootstrap.sh`.
 
 El orden correcto para cualquier agente es este:
 
-1. [mbp-watch-kde-plasmoid-v1-index.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-index.md:1)
-2. [mbp-watch-kde-plasmoid-ai-implementation-guide.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-ai-implementation-guide.md:1)
-3. [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
-4. [mbp-watch-kde-plasmoid-v1-mapping.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
-5. [mbp-watch-kde-plasmoid-v1-task-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
-6. [mbp-watch-kde-plasmoid-v1-file-structure.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
-7. [mbp-watch-kde-plasmoid-v1-installation-flow.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
-8. [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
-9. [mbp-watch-kde-plasmoid-v1-autoload-script.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-autoload-script.md:1)
-10. [mbp-watch-kde-plasmoid-v1-commit-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-commit-plan.md:1)
+1. [mbp-watch-kde-plasmoid-v1-index.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-index.md:1)
+2. [mbp-watch-kde-plasmoid-ai-implementation-guide.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-ai-implementation-guide.md:1)
+3. [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+4. [mbp-watch-kde-plasmoid-v1-mapping.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
+5. [mbp-watch-kde-plasmoid-v1-task-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
+6. [mbp-watch-kde-plasmoid-v1-file-structure.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
+7. [mbp-watch-kde-plasmoid-v1-installation-flow.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
+8. [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
+9. [mbp-watch-kde-plasmoid-v1-autoload-script.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-autoload-script.md:1)
+10. [mbp-watch-kde-plasmoid-v1-commit-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-commit-plan.md:1)
 
 Regla:
 
@@ -65,7 +65,7 @@ Regla:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-spec.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
+- [mbp-watch-kde-plasmoid-v1-spec.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-spec.md:1)
 
 Responde:
 
@@ -79,7 +79,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-mapping.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
+- [mbp-watch-kde-plasmoid-v1-mapping.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-mapping.md:1)
 
 Responde:
 
@@ -92,7 +92,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-task-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
+- [mbp-watch-kde-plasmoid-v1-task-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
 
 Responde:
 
@@ -104,7 +104,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-file-structure.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
+- [mbp-watch-kde-plasmoid-v1-file-structure.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
 
 Responde:
 
@@ -116,7 +116,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-installation-flow.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
+- [mbp-watch-kde-plasmoid-v1-installation-flow.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-installation-flow.md:1)
 
 Responde:
 
@@ -129,7 +129,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
+- [mbp-watch-kde-plasmoid-v1-bootstrap-integration.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-bootstrap-integration.md:1)
 
 Responde:
 
@@ -141,7 +141,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-autoload-script.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-autoload-script.md:1)
+- [mbp-watch-kde-plasmoid-v1-autoload-script.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-autoload-script.md:1)
 
 Responde:
 
@@ -153,7 +153,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-ai-implementation-guide.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-ai-implementation-guide.md:1)
+- [mbp-watch-kde-plasmoid-ai-implementation-guide.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-ai-implementation-guide.md:1)
 
 Responde:
 
@@ -166,7 +166,7 @@ Responde:
 
 Documento:
 
-- [mbp-watch-kde-plasmoid-v1-commit-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-commit-plan.md:1)
+- [mbp-watch-kde-plasmoid-v1-commit-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-commit-plan.md:1)
 
 Responde:
 
@@ -205,9 +205,9 @@ La v1 no debe incluir inicialmente:
 
 El primer bloque de implementación real debe crear como mínimo:
 
-1. [assets/plasmoids/mbp-watch/metadata.json](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/plasmoids/mbp-watch/metadata.json)
-2. [assets/plasmoids/mbp-watch/contents/ui/main.qml](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/plasmoids/mbp-watch/contents/ui/main.qml)
-3. el árbol base descrito en [mbp-watch-kde-plasmoid-v1-file-structure.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
+1. [assets/plasmoids/mbp-watch/metadata.json](/path/to/repo/assets/plasmoids/mbp-watch/metadata.json)
+2. [assets/plasmoids/mbp-watch/contents/ui/main.qml](/path/to/repo/assets/plasmoids/mbp-watch/contents/ui/main.qml)
+3. el árbol base descrito en [mbp-watch-kde-plasmoid-v1-file-structure.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-file-structure.md:1)
 
 No debe empezar por `bootstrap.sh`.
 
@@ -243,7 +243,7 @@ La implementación debe seguir esta secuencia:
 
 Referencia principal:
 
-- [mbp-watch-kde-plasmoid-v1-task-plan.md](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
+- [mbp-watch-kde-plasmoid-v1-task-plan.md](/path/to/repo/docs/mbp-watch-kde-plasmoid-v1-task-plan.md:1)
 
 ---
 
@@ -299,11 +299,11 @@ Esto deja la documentación inicial y la implementación v1 con trazabilidad en 
 
 La implementación completa del plasmoid v1 vive en:
 
-- [assets/plasmoids/mbp-watch](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/plasmoids/mbp-watch)
+- [assets/plasmoids/mbp-watch](/path/to/repo/assets/plasmoids/mbp-watch)
 
 La integración de instalación, upgrade y auto-add vive en:
 
-- [src/modules/bootstrap.sh](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh:1)
+- [src/modules/bootstrap.sh](/path/to/repo/src/modules/bootstrap.sh:1)
 
 Validaciones no destructivas realizadas:
 
@@ -315,7 +315,7 @@ Limitación pendiente:
 
 - No se ha verificado todavía dentro de una sesión KDE Plasma real el runtime del plasmoid.
 - No se ha ejecutado todavía `kpackagetool6 --install/--upgrade assets/plasmoids/mbp-watch` contra el usuario real.
-- No se ha ejecutado todavía `plasmawindowed io.github.gtx.mbpwatch`.
+- No se ha ejecutado todavía `plasmawindowed io.github.cachyosmigrationtool.mbpwatch`.
 - No se ha ejecutado todavía el `qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript ...` de auto-add contra una sesión real de `org.kde.plasmashell`.
 
 Por tanto, para siguientes agentes: no rehacer la implementación v1 desde cero. El trabajo pendiente es validación runtime en Plasma real y corrección de cualquier incidencia que aparezca ahí.
@@ -328,8 +328,8 @@ Si un agente va a retomar el plasmoid, debería hacer esto:
 
 1. leer este índice
 2. revisar el estado de implementación anterior
-3. inspeccionar [assets/plasmoids/mbp-watch](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/plasmoids/mbp-watch)
-4. inspeccionar el bloque de integración en [src/modules/bootstrap.sh](/home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/src/modules/bootstrap.sh:1)
+3. inspeccionar [assets/plasmoids/mbp-watch](/path/to/repo/assets/plasmoids/mbp-watch)
+4. inspeccionar el bloque de integración en [src/modules/bootstrap.sh](/path/to/repo/src/modules/bootstrap.sh:1)
 5. repetir las validaciones no destructivas
 6. validar runtime en una sesión KDE Plasma real
 7. corregir sólo las incidencias observadas en runtime

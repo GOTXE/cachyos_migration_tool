@@ -13,12 +13,12 @@ Crear un reporte **compacto, inteligente y optimizado para IA** que:
 
 ### 1. **PERFORMANCE_ANALYSIS mejorado**
 
-**Antes:** Solo `top_process: claude (gtx)`
+**Antes:** Solo `top_process: claude (user)`
 
 **Ahora:** Debería mostrar:
 ```
 load: 1.69 | memory: 42% | swap: 53MB | swappiness: 60
-top_process: claude (gtx)
+top_process: claude (user)
 ⚠️  LOAD MODERATE: 1.69 — monitor during music playback
 ```
 
@@ -127,7 +127,7 @@ RECENT ERRORS (unique events, last 200 window)
 
 PERFORMANCE_ANALYSIS (Python/web dev + music)
 load: 1.69 | memory: 42% | swap: 53MB | swappiness: 60
-top_process: claude (gtx)
+top_process: claude (user)
 ⚠️  LOAD MODERATE: 1.69 — monitor during music playback
 
 RAW_LOGS
@@ -143,7 +143,7 @@ daily_errors:   /var/lib/mbp-watch/daily_errors.log
 
 ```bash
 # Opción 1: Regenerar desde la CLI
-sudo /home/gtx/Documentos/Prog_Local/ScriptMigrationCachyOS_v1_1/assets/diagnostics/mbp_watch.sh report
+sudo /path/to/repo/assets/diagnostics/mbp_watch.sh report
 
 # Opción 2: Ver el reporte actual
 cat /var/lib/mbp-watch/report.txt

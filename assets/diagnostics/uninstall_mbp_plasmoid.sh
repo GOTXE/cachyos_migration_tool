@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-PLUGIN_ID="io.github.gtx.mbpwatch"
+PLUGIN_ID="io.github.cachyosmigrationtool.mbpwatch"
 PACKAGE_TYPE="Plasma/Applet"
 DRY_RUN=false
 TARGET_USER=""
@@ -113,7 +113,7 @@ run_as_target_plasma_session() {
 
 build_remove_instances_script() {
     cat <<'EOF'
-var pluginId = "io.github.gtx.mbpwatch";
+var pluginId = "io.github.cachyosmigrationtool.mbpwatch";
 var removed = 0;
 var failures = 0;
 var allDesktops = desktops();
