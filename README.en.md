@@ -98,6 +98,8 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `apple` | thermald, powertop (Intel Apple laptop extras) |
 | `facetime` | facetimehd-dkms + firmware (PCIe camera MBP 2013+) |
 | `handy` | `handy-bin` from AUR (offline speech-to-text) |
+| `obsidian` | Obsidian from the official repository |
+| `sshpass` | `sshpass` for non-interactive password-based SSH |
 | `iwd` | iwd backend for NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim, mako |
 | `wifi` | wireless-regdb + country regulatory domain |
@@ -199,4 +201,5 @@ Distributed under the [GNU General Public License v3.0](LICENSE). No warranty of
 - [Diagnostics scripts and MBP Watch](docs/diagnostics.md)
 - [KDE MBP Watch plasmoid](docs/plasmoid-mbp-watch.md)
 - [MBP 2015 hardware on CachyOS](docs/hardware/mbp2015-cachyos-setup.md)
+- [Logitech Craft + MX Master 3 on CachyOS](docs/logitech-cachyos.md)
 - [YouTube Force H264 extension](docs/extensions/youtube-force-h264.md)

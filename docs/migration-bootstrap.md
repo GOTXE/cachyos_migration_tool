@@ -31,6 +31,8 @@ Incluye herramientas de alta confianza probadas por CachyOS/Arch:
 - **Utilidades:** jq, yq, ripgrep, curl, wget, zip/unzip.
 - **Docker:** Motor de contenedores y docker-compose.
 - **Internet y Multimedia:** Firefox, LibreOffice (en español), FFmpeg, yt-dlp.
+- **Aplicaciones extra seleccionables:** Obsidian como bloque opcional desde repositorio oficial.
+- **Utilidades SSH opcionales:** `sshpass` como bloque opcional desde repositorio oficial.
 
 ### 6. Aplicaciones KDE Plasma
 Herramientas nativas del escritorio KDE:
@@ -44,6 +46,7 @@ Software que no está en repositorios oficiales por licencias o naturaleza:
 - **Navegadores y Editores:** Brave Browser, Visual Studio Code.
 - **Redes y Utilidades:** Angry IP Scanner, Webapp-manager.
 - **Tienda Visual:** Pamac (interfaz gráfica para instalar paquetes).
+- **Utilidades opcionales:** Handy (`handy-bin`) como bloque extra seleccionable.
 
 ### 8. Herramientas de IA (CLI)
 Instalación de interfaces de línea de comandos para asistentes de IA:

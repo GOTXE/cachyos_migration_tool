@@ -311,6 +311,18 @@ install_handy_package() {
     run_cmd yay -S --needed --noconfirm handy-bin
 }
 
+install_obsidian_package() {
+    log "${YELLOW}Instalando Obsidian desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" obsidian
+    run_cmd sudo pacman -S --needed --noconfirm obsidian
+}
+
+install_sshpass_package() {
+    log "${YELLOW}Instalando sshpass desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" sshpass
+    run_cmd sudo pacman -S --needed --noconfirm sshpass
+}
+
 setup_docker() {
     log "${YELLOW}8. Configurando servicios finales (Docker)...${NC}"
     run_cmd sudo systemctl enable docker
