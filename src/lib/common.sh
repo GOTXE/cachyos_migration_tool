@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.3.0"
+VERSION="1.4.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -16,6 +16,7 @@ FORCE_RESTORE=false
 AUTO_CONFIRM=false
 [ "${AUTO_CONFIRM_ENV:-}" = "1" ] && AUTO_CONFIRM=true
 MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
+CODEXBAR_TRAY_REPO_DIR="${CODEXBAR_TRAY_REPO_DIR:-}"
 
 # Identificación de Hardware
 MACBOOK_MODEL="unknown"
@@ -89,7 +90,9 @@ get_macbook_profile_summary() {
 
 macbook_profile_has_trait() {
     local TRAIT="$1"
-    local TRAITS=" $(get_macbook_profile_traits) "
+    local TRAITS=""
+
+    TRAITS=" $(get_macbook_profile_traits) "
 
     case "$TRAITS" in
         *" $TRAIT "*)
@@ -1035,9 +1038,10 @@ flatpak|Soporte Flatpak + Flathub|ON
 official|Paquetes oficiales de repositorio|ON
 kde|Aplicaciones base KDE Plasma|ON
 aur|Paquetes adicionales desde AUR|ON
-handy|Handy (speech-to-text offline, AUR)|OFF
+talk2ai|talk2ai (descarga/actualiza desde GitHub)|OFF
 obsidian|Obsidian (Markdown knowledge base)|OFF
 sshpass|sshpass para contraseñas SSH no interactivas|OFF
+codexbar_tray|codexBar Tray KDE (instala desde repo local restaurado)|OFF
 docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON

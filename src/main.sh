@@ -145,6 +145,8 @@ HERRAMIENTAS Y AJUSTES:
   bootstrap-catalog          Imprime el catálogo de bloques compatibles para la TUI
   backup-config-catalog      Imprime la configuración importante detectada para la TUI
   backup-data-catalog        Imprime los directorios de datos detectados para la TUI
+  install-talk2ai            Instala o actualiza talk2ai descargandolo desde GitHub
+  install-codexbar-tray      Instala codexBar Tray desde un repo local restaurado/detectado
   install-youtube-force-h264 Prepara la extensión local YouTube Force H264 para carga manual
                              Nota: normalmente se usa desde el bloque YouTube Force H264 del bootstrap
 
@@ -339,6 +341,26 @@ main() {
                 esac
             done
             install_youtube_force_h264_package
+            ;;
+        install-talk2ai)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            install_talk2ai_from_github
+            ;;
+        install-codexbar-tray)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            install_codexbar_tray_from_local_repo
             ;;
         configure-vaapi-brave)
             shift

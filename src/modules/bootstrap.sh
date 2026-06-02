@@ -311,6 +311,110 @@ install_handy_package() {
     run_cmd yay -S --needed --noconfirm handy-bin
 }
 
+find_repo_dir_by_name() {
+    local OVERRIDE_DIR="$1"
+    local SEARCH_PATTERN="$2"
+    local SEARCH_DIRS=()
+    local CANDIDATES=()
+    local SEARCH_DIR=""
+    local MATCH=""
+
+    if [ -n "$OVERRIDE_DIR" ]; then
+        if [ -d "$OVERRIDE_DIR" ]; then
+            printf '%s\n' "$OVERRIDE_DIR"
+            return 0
+        fi
+
+        log_warn "Ruta configurada no encontrada: $OVERRIDE_DIR"
+        return 1
+    fi
+
+    mapfile -t SEARCH_DIRS < <(get_repo_search_dirs)
+    for SEARCH_DIR in "${SEARCH_DIRS[@]}"; do
+        [ -d "$SEARCH_DIR" ] || continue
+        while IFS= read -r -d '' MATCH; do
+            if [ -d "$MATCH/.git" ] || [ -f "$MATCH/.git" ]; then
+                CANDIDATES+=("$MATCH")
+            fi
+        done < <(find "$SEARCH_DIR" -mindepth 1 -maxdepth 3 -type d -iname "$SEARCH_PATTERN" -print0 2>/dev/null)
+    done
+
+    if [ ${#CANDIDATES[@]} -eq 0 ]; then
+        return 1
+    fi
+
+    printf '%s\n' "${CANDIDATES[0]}"
+}
+
+find_codexbar_tray_repo_dir() {
+    find_repo_dir_by_name "$CODEXBAR_TRAY_REPO_DIR" "codexbar-tray*"
+}
+
+get_talk2ai_repo_url() {
+    printf '%s\n' "https://github.com/GOTXE/talk2ai.git"
+}
+
+get_talk2ai_managed_dir() {
+    local DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+    printf '%s\n' "$DATA_HOME/linux-migration-tool/repos/talk2ai"
+}
+
+sync_talk2ai_repo() {
+    local REPO_URL=""
+    local TARGET_DIR=""
+
+    REPO_URL="$(get_talk2ai_repo_url)"
+    TARGET_DIR="$(get_talk2ai_managed_dir)"
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] preparar checkout gestionado de talk2ai en $TARGET_DIR${NC}"
+        log "${YELLOW}[DRY-RUN] git clone --depth=1 $REPO_URL $TARGET_DIR${NC}"
+        log "${YELLOW}[DRY-RUN] o git -C $TARGET_DIR pull --ff-only${NC}"
+        printf '%s\n' "$TARGET_DIR"
+        return 0
+    fi
+
+    run_cmd mkdir -p "$(dirname "$TARGET_DIR")"
+
+    if [ -d "$TARGET_DIR/.git" ]; then
+        log_info "Actualizando checkout gestionado de talk2ai..."
+        run_cmd git -C "$TARGET_DIR" fetch --depth=1 origin
+        run_shell "cd \"$TARGET_DIR\" && git pull --ff-only"
+    else
+        log_info "Clonando talk2ai desde GitHub..."
+        run_cmd git clone --depth=1 "$REPO_URL" "$TARGET_DIR"
+    fi
+
+    printf '%s\n' "$TARGET_DIR"
+}
+
+install_talk2ai_from_github() {
+    local REPO_DIR=""
+
+    install_handy_package
+
+    REPO_DIR="$(sync_talk2ai_repo)"
+
+    if [ ! -f "$REPO_DIR/install.sh" ]; then
+        log_warn "El checkout gestionado de talk2ai no contiene install.sh: $REPO_DIR"
+        return 1
+    fi
+
+    log "${YELLOW}Instalando/actualizando talk2ai desde GitHub...${NC}"
+    log_info "Checkout gestionado: $REPO_DIR"
+    log_info "Se respondera 'no' al contexto opcional del instalador para mantener el flujo no interactivo."
+    run_shell "cd \"$REPO_DIR\" && printf 'n\n' | bash ./install.sh"
+}
+
+install_talk2ai_if_accepted() {
+    log_info "talk2ai se descargara o actualizara desde GitHub en un checkout gestionado por el instalador."
+    if confirm_action "¿Instalar/actualizar talk2ai desde GitHub?"; then
+        install_talk2ai_from_github
+    else
+        log_info "Instalacion de talk2ai omitida por decision del usuario."
+    fi
+}
+
 install_obsidian_package() {
     log "${YELLOW}Instalando Obsidian desde repositorio oficial...${NC}"
     log_package_batch_state "repo" "repo" obsidian
@@ -321,6 +425,61 @@ install_sshpass_package() {
     log "${YELLOW}Instalando sshpass desde repositorio oficial...${NC}"
     log_package_batch_state "repo" "repo" sshpass
     run_cmd sudo pacman -S --needed --noconfirm sshpass
+}
+
+install_codexbar_tray_dependencies() {
+    log "${YELLOW}Preparando dependencias de codexBar Tray...${NC}"
+    log_package_batch_state "repo" "repo" python-pyqt6
+    run_cmd sudo pacman -S --needed --noconfirm python-pyqt6
+
+    if command -v codexbar >/dev/null 2>&1; then
+        log_success "codexbar CLI ya disponible en PATH."
+        return 0
+    fi
+
+    log_info "codexbar CLI no detectado. Se intentara instalar desde AUR (codexbar-cli)."
+    install_base_devel
+    install_yay
+    log_package_batch_state "AUR" "aur" codexbar-cli
+    run_cmd yay -S --needed --noconfirm codexbar-cli
+}
+
+install_codexbar_tray_from_local_repo() {
+    local REPO_DIR=""
+
+    REPO_DIR="$(find_codexbar_tray_repo_dir 2>/dev/null || true)"
+    if [ -z "$REPO_DIR" ]; then
+        log_warn "No se encontro un repo local de codexBar Tray en las rutas de repos configuradas."
+        log_warn "Puedes fijarlo en tu config con CODEXBAR_TRAY_REPO_DIR."
+        return 1
+    fi
+
+    if [ ! -f "$REPO_DIR/scripts/install_systemd_user_service.sh" ]; then
+        log_warn "El repo detectado de codexBar Tray no contiene el instalador esperado: $REPO_DIR"
+        return 1
+    fi
+
+    install_codexbar_tray_dependencies
+
+    log "${YELLOW}Instalando codexBar Tray desde repo local detectado...${NC}"
+    log_info "Repo detectado: $(basename "$REPO_DIR")"
+    run_shell "cd \"$REPO_DIR\" && bash ./scripts/install_desktop_entry.sh --autostart"
+    run_shell "cd \"$REPO_DIR\" && bash ./scripts/install_systemd_user_service.sh"
+}
+
+install_codexbar_tray_if_accepted() {
+    local REPO_DIR=""
+
+    REPO_DIR="$(find_codexbar_tray_repo_dir 2>/dev/null || true)"
+    [ -n "$REPO_DIR" ] || return 0
+
+    log_info "Repo local de codexBar Tray detectado: $(basename "$REPO_DIR")"
+    log_info "Se instalara desde el repo restaurado y, si hace falta, intentara preparar codexbar-cli."
+    if confirm_action "¿Instalar codexBar Tray desde el repo local detectado?"; then
+        install_codexbar_tray_from_local_repo
+    else
+        log_info "Instalacion de codexBar Tray omitida por decision del usuario."
+    fi
 }
 
 setup_docker() {
@@ -2092,6 +2251,8 @@ bootstrap_cachyos() {
     install_powerlevel10k
     install_node_stack
     install_ai_tools
+    install_talk2ai_if_accepted || true
+    install_codexbar_tray_if_accepted || true
     install_mbp_watch_diagnostics
     install_mbp_plasmoid_if_accepted
     install_youtube_force_h264_package
