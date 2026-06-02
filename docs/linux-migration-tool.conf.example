@@ -17,6 +17,11 @@
 # EXTRA_REPO_SEARCH_DIRS+=("$HOME/dev")
 # EXTRA_REPO_SEARCH_DIRS+=("/mnt/data/repos")
 
+# Optional local repo override for codexBar Tray installer.
+# Keep it empty unless the repo lives outside the standard search roots.
+# Example:
+# CODEXBAR_TRAY_REPO_DIR="$HOME/path/to/codexbar-tray"
+
 # Extra user data directories to archive in backup/data.
 # XDG Documents is included by default. Add others only if you want them copied
 # outside the repo backup flow.

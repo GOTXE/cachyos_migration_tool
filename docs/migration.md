@@ -886,6 +886,8 @@ Durante `Bootstrap CachyOS` el script ahora puede ofrecer tambien:
 - Escribir un fichero de flags para `Brave` o `Google Chrome` y dejar activada aceleracion hardware en combinaciones soportadas por la wiki de CachyOS.
 - Preparar la extension local `YouTube Force H264` en `~/extensions/youtube-force-h264/` para cargarla como `Load unpacked` desde `brave://extensions` o `chrome://extensions`.
 - Instalar solo esa extension con `./migration.sh install-youtube-force-h264` sin ejecutar todo `Bootstrap CachyOS`.
+- Instalar o actualizar `talk2ai` descargándolo desde GitHub en un checkout local gestionado por el script, con `./migration.sh install-talk2ai`; el flujo instala también `handy-bin` como dependencia.
+- Instalar `codexBar Tray` desde un repo local restaurado o detectado en las raíces de repositorio configuradas, con `./migration.sh install-codexbar-tray`.
 
 Notas:
 
@@ -898,6 +900,7 @@ Notas:
 - La extension `YouTube Force H264` queda preparada en `~/extensions/youtube-force-h264/` con `manifest.json`, `content.js`, `inject.js` y `README.md`.
 - Para activarla, abre `brave://extensions` o `chrome://extensions`, activa `Modo desarrollador` y usa `Cargar descomprimida`.
 - Si solo quieres ese paquete, puedes ejecutar `./migration.sh install-youtube-force-h264`.
+- Si `codexBar Tray` vive fuera de las rutas estándar de repos, puedes fijar `CODEXBAR_TRAY_REPO_DIR` en `~/.config/linux-migration-tool.conf`.
 - El popup de la extension incluye un slide para activar o desactivar el parche sin desinstalarla; recarga la pestaña de YouTube para aplicar el cambio.
 - La aceleracion Chromium se ofrece solo para combinaciones conservadoras automatizadas:
   - `Brave + AMD`

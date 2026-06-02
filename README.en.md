@@ -68,6 +68,8 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 ./migration.sh restore   [--source PATH] [--force] [--dry-run]
 
 ./migration.sh install-youtube-force-h264  [--dry-run]
+./migration.sh install-talk2ai            [--dry-run]
+./migration.sh install-codexbar-tray      [--dry-run]
 ./migration.sh configure-vaapi-brave       [--dry-run]
 
 ./migration.sh install-mbp-watch           [--dry-run]
@@ -97,9 +99,10 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `youtube` | YouTube Force H264 extension |
 | `apple` | thermald, powertop (Intel Apple laptop extras) |
 | `facetime` | facetimehd-dkms + firmware (PCIe camera MBP 2013+) |
-| `handy` | `handy-bin` from AUR (offline speech-to-text) |
+| `talk2ai` | Downloads or updates `talk2ai` from GitHub and installs `handy-bin` as a dependency |
 | `obsidian` | Obsidian from the official repository |
 | `sshpass` | `sshpass` for non-interactive password-based SSH |
+| `codexbar_tray` | Installs `codexBar Tray` from a restored/detected local repo |
 | `iwd` | iwd backend for NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim, mako |
 | `wifi` | wireless-regdb + country regulatory domain |

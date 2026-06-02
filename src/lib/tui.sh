@@ -229,7 +229,7 @@ tui_choose_backup_target() {
         OPTION_INDEX=$((OPTION_INDEX + 1))
         for INDEX in "${!ROOTS[@]}"; do
             MENU_ARGS+=("$OPTION_INDEX" "Explorar ${ROOTS[$INDEX]}")
-            ROOT_MAP[$OPTION_INDEX]="$INDEX"
+            ROOT_MAP[OPTION_INDEX]="$INDEX"
             OPTION_INDEX=$((OPTION_INDEX + 1))
         done
         MENU_ARGS+=("$OPTION_INDEX" "Navegar desde /")
@@ -571,7 +571,7 @@ tui_choose_restore_source() {
         OPTION_INDEX=1
         for INDEX in "${!DETECTED[@]}"; do
             MENU_ARGS+=("$OPTION_INDEX" "Backup detectado: $(basename "${DETECTED[$INDEX]}")  [${DETECTED[$INDEX]}]")
-            DETECTED_MAP[$OPTION_INDEX]="$INDEX"
+            DETECTED_MAP[OPTION_INDEX]="$INDEX"
             OPTION_INDEX=$((OPTION_INDEX + 1))
         done
         MENU_ARGS+=("$OPTION_INDEX" "Escribir ruta manualmente")
@@ -579,7 +579,7 @@ tui_choose_restore_source() {
         OPTION_INDEX=$((OPTION_INDEX + 1))
         for INDEX in "${!ROOTS[@]}"; do
             MENU_ARGS+=("$OPTION_INDEX" "Explorar ${ROOTS[$INDEX]}")
-            ROOT_MAP[$OPTION_INDEX]="$INDEX"
+            ROOT_MAP[OPTION_INDEX]="$INDEX"
             OPTION_INDEX=$((OPTION_INDEX + 1))
         done
         MENU_ARGS+=("$OPTION_INDEX" "Navegar desde /")
@@ -867,9 +867,10 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"official"'* ]]    && install_official_packages
     [[ "$SELECTED" == *'"kde"'* ]]         && install_kde_packages
     [[ "$SELECTED" == *'"aur"'* ]]         && install_aur_packages
-    [[ "$SELECTED" == *'"handy"'* ]]       && install_handy_package
+    [[ "$SELECTED" == *'"talk2ai"'* ]]     && install_talk2ai_from_github
     [[ "$SELECTED" == *'"obsidian"'* ]]    && install_obsidian_package
     [[ "$SELECTED" == *'"sshpass"'* ]]     && install_sshpass_package
+    [[ "$SELECTED" == *'"codexbar_tray"'* ]] && install_codexbar_tray_from_local_repo
     [[ "$SELECTED" == *'"docker_svc"'* ]]  && setup_docker
     [[ "$SELECTED" == *'"zsh"'* ]]         && { install_ohmyzsh; install_powerlevel10k; }
     [[ "$SELECTED" == *'"node"'* ]]        && install_node_stack

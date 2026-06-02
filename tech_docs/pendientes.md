@@ -8,7 +8,11 @@ Estado:
 
 - `[ ]` Añadir bloque seleccionable para `ipscan` en el bootstrap y exponerlo en ambas TUI.
 - `[ ]` Añadir bloque seleccionable para `libreoffice-fresh-es` en el bootstrap y exponerlo en ambas TUI.
-- `[x]` Añadir bloque seleccionable para `handy-bin` (`Handy`) en el bootstrap y exponerlo en ambas TUI.
+
+## Bootstrap: apps locales restauradas
+
+- `[x]` Añadir bloque seleccionable para `talk2ai` en el bootstrap y hacer que instale `handy-bin` como dependencia.
+- `[x]` Añadir bloque seleccionable para `codexBar Tray` en el bootstrap y exponerlo en ambas TUI.
 
 Comandos de referencia para validar la implementación:
 
