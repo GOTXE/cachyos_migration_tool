@@ -52,7 +52,7 @@ WIFI_INTERFERENCE_SIGNAL_DBM="${MBP_WATCH_WIFI_INTERFERENCE_SIGNAL_DBM:--75}"
 # snd_hda_intel (audio), thunderbolt, PM suspend/resume errors
 FAILURE_EVENT_REGEX='brcmf.*(fail|error|timeout|unknown frame|crashed)|wpa_supplicant.*(fail|error|timeout)|dhcp4 .* (failed|timeout)|device .*Activation: failed|NetworkManager.*(failed|error|timed out|activation failed)|bluetoothd.*(fail|error)|iwlwifi.*(fail|error|timeout)|mt76.*(fail|error|timeout)|ath.*(fail|error|timeout)|rtl.*(fail|error|timeout)|rtw.*(fail|error|timeout)|i915.*(error|fail|hang|reset|gpu hang)|applesmc.*(error|fail)|snd_hda_intel.*(error|fail)|thunderbolt.*(error|fail|timeout)|PM: .*(error|fail)|PM: suspend.*failed|PM: resume.*fail|cpu.*throttl|thermal.*throttl|CPU.*max.*freq|turbo.*disabled'
 
-NOISY_EVENT_REGEX='brave\[[0-9]+\]: .*ERROR:gpu/command_buffer/|brave\[[0-9]+\]: .*SharedImageManager::ProduceSkia|brcmf_inetaddr_changed: fail to get arp ip table|brcmf_cfg80211_get_station: GET STA INFO failed|brcmf_p2p_send_action_frame: Unknown Frame|brcmfmac.*Direct firmware load for brcm/brcmfmac43602.*failed with error -2'
+NOISY_EVENT_REGEX='brave\[[0-9]+\]: .*ERROR:gpu/command_buffer/|brave\[[0-9]+\]: .*SharedImageManager::ProduceSkia|brcmf_inetaddr_changed: fail to get arp ip table|brcmf_cfg80211_get_station: GET STA INFO failed|brcmf_p2p_send_action_frame: Unknown Frame|brcmfmac.*Direct firmware load for brcm/brcmfmac43602.*failed with error -2|iwd-manager.*(if_nametoindex failed|is not a Wifi device)'
 
 MAX_EVENT_LINES=10000
 MAX_SNAPSHOT_LINES=500
