@@ -1370,22 +1370,23 @@ keyword_count_for_date() {
 # persistent historical record for multi-day AI analysis.
 update_daily_summary() {
     local TODAY
-    local W N G B T P A TH TOT
+    local W N E G B T P A TH TOT
     local NEW_LINE TMP_FILE
 
     TODAY="$(date +%Y-%m-%d)"
 
     W="$(keyword_count_for_date "$TODAY" 'brcmf|wpa_supplicant|iwlwifi|mt76|ath|rtl|rtw')"
-    N="$(keyword_count_for_date "$TODAY" 'NetworkManager.*(failed|error|timeout|no lease|activation failed)|dhcp4 .* (failed|timeout|no lease)|wpa_supplicant.*(fail|error|timeout)|device .*Activation: failed')"
+    N="$(keyword_count_for_date "$TODAY" 'dhcp4 \(wlan[0-9]\).*(failed|timeout|no lease)|device \(wlan[0-9]\).*Activation: failed|wpa_supplicant.*(fail|error|timeout)')"
+    E="$(keyword_count_for_date "$TODAY" 'dhcp4 \(en[a-z0-9]+\).*(no lease|timeout|failed)|device \(en[a-z0-9]+\).*Activation: failed|device \(en[a-z0-9]+\).*carrier')"
     G="$(keyword_count_for_date "$TODAY" 'gpu|drm|i915')"
     B="$(keyword_count_for_date "$TODAY" 'bluetoothd|bluetooth')"
     T="$(keyword_count_for_date "$TODAY" 'thermal|acpi')"
     P="$(keyword_count_for_date "$TODAY" 'PM:|s2idle')"
     A="$(keyword_count_for_date "$TODAY" 'snd_hda|applesmc|thunderbolt')"
     TH="$(keyword_count_for_date "$TODAY" 'cpu.*throttl|thermal.*throttl')"
-    TOT=$((W + N + G + B + T + P + A + TH))
+    TOT=$((W + N + E + G + B + T + P + A + TH))
 
-    NEW_LINE="$TODAY wifi=$W net=$N gpu=$G bt=$B thermal=$T pm=$P audio=$A throttle=$TH total=$TOT"
+    NEW_LINE="$TODAY wifi=$W net=$N eth=$E gpu=$G bt=$B thermal=$T pm=$P audio=$A throttle=$TH total=$TOT"
 
     touch "$DAILY_LOG"
     chmod 644 "$DAILY_LOG"
@@ -1406,7 +1407,8 @@ generate_ai_digest() {
     local PERF_ISSUE=""
 
     WIFI_COUNT="$(keyword_count 'brcmf|wpa_supplicant|iwlwifi|mt76|ath|rtl|rtw')"
-    NET_COUNT="$(keyword_count 'NetworkManager.*(failed|error|timeout|no lease|activation failed)|dhcp4 .* (failed|timeout|no lease)|wpa_supplicant.*(fail|error|timeout)|device .*Activation: failed')"
+    NET_COUNT="$(keyword_count 'dhcp4 \(wlan[0-9]\).*(failed|timeout|no lease)|device \(wlan[0-9]\).*Activation: failed|wpa_supplicant.*(fail|error|timeout)')"
+    ETH_COUNT="$(keyword_count 'dhcp4 \(en[a-z0-9]+\).*(no lease|timeout|failed)|device \(en[a-z0-9]+\).*Activation: failed|device \(en[a-z0-9]+\).*carrier')"
     GPU_COUNT="$(keyword_count 'gpu|drm|i915')"
     BT_COUNT="$(keyword_count 'bluetoothd|bluetooth')"
     THERMAL_COUNT="$(keyword_count 'thermal|acpi')"
@@ -1431,7 +1433,7 @@ generate_ai_digest() {
         NET_COUNT=0
     fi
 
-    TOTAL_COUNT=$((WIFI_COUNT + NET_COUNT + GPU_COUNT + BT_COUNT + THERMAL_COUNT + PM_COUNT + AUDIO_HW_COUNT + THROTTLE_COUNT))
+    TOTAL_COUNT=$((WIFI_COUNT + NET_COUNT + ETH_COUNT + GPU_COUNT + BT_COUNT + THERMAL_COUNT + PM_COUNT + AUDIO_HW_COUNT + THROTTLE_COUNT))
 
     # Assess performance-related issues
     if [ "$swap_mb" -gt 256 ]; then
@@ -1451,11 +1453,11 @@ generate_ai_digest() {
     if [ "$TOTAL_COUNT" -gt 0 ] || [ -n "$PERF_ISSUE" ]; then
         SEVERITY_CLASS="warn"
         SEVERITY_TITLE="Warnings Found"
-        SEVERITY_REASON="${TOTAL_COUNT} hw_events — wifi=${WIFI_COUNT} net=${NET_COUNT} gpu=${GPU_COUNT} bt=${BT_COUNT} thermal=${THERMAL_COUNT} pm=${PM_COUNT} audio=${AUDIO_HW_COUNT} throttle=${THROTTLE_COUNT}${PERF_ISSUE:+ | perf_issues=$PERF_ISSUE}"
+        SEVERITY_REASON="${TOTAL_COUNT} hw_events — wifi=${WIFI_COUNT} net=${NET_COUNT} eth=${ETH_COUNT} gpu=${GPU_COUNT} bt=${BT_COUNT} thermal=${THERMAL_COUNT} pm=${PM_COUNT} audio=${AUDIO_HW_COUNT} throttle=${THROTTLE_COUNT}${PERF_ISSUE:+ | perf_issues=$PERF_ISSUE}"
     fi
 
-    if [ "$WIFI_COUNT" -ge 3 ] || [ "$NET_COUNT" -ge 3 ] || [ "$GPU_COUNT" -ge 3 ] || \
-       [ "$PM_COUNT" -ge 2 ] || [ "$AUDIO_HW_COUNT" -ge 3 ] || \
+    if [ "$WIFI_COUNT" -ge 3 ] || [ "$NET_COUNT" -ge 3 ] || [ "$ETH_COUNT" -ge 10 ] || \
+       [ "$GPU_COUNT" -ge 3 ] || [ "$PM_COUNT" -ge 2 ] || [ "$AUDIO_HW_COUNT" -ge 3 ] || \
        [ "$BT_COUNT" -ge 5 ] || [ "$THERMAL_COUNT" -ge 5 ] || [ "$THROTTLE_COUNT" -ge 3 ] || \
        [ "$swap_mb" -gt 512 ] || (( $(echo "$load1 > 4" | bc 2>/dev/null || echo 0) )); then
         SEVERITY_CLASS="critical"
@@ -1463,6 +1465,7 @@ generate_ai_digest() {
         local REASONS=""
         [ "$WIFI_COUNT" -ge 3 ]     && REASONS="${REASONS}wifi=${WIFI_COUNT} "
         [ "$NET_COUNT" -ge 3 ]      && REASONS="${REASONS}connectivity=${NET_COUNT} "
+        [ "$ETH_COUNT" -ge 10 ]     && REASONS="${REASONS}eth=${ETH_COUNT} "
         [ "$GPU_COUNT" -ge 3 ]      && REASONS="${REASONS}gpu=${GPU_COUNT} "
         [ "$PM_COUNT" -ge 2 ]       && REASONS="${REASONS}suspend_pm=${PM_COUNT} "
         [ "$AUDIO_HW_COUNT" -ge 3 ] && REASONS="${REASONS}audio_hw=${AUDIO_HW_COUNT} "
@@ -1518,6 +1521,7 @@ reason:         $SEVERITY_REASON
 COUNTERS (last $COUNT_WINDOW_LINES journal events)
 wifi:           $WIFI_COUNT
 connectivity:   $NET_COUNT
+eth:            $ETH_COUNT
 gpu_drm:        $GPU_COUNT
 bluetooth:      $BT_COUNT
 thermal_acpi:   $THERMAL_COUNT
@@ -1619,7 +1623,8 @@ generate_data_json() {
     update_daily_summary
 
     WIFI_COUNT="$(keyword_count 'brcmf|wpa_supplicant|iwlwifi|mt76|ath|rtl|rtw')"
-    NET_COUNT="$(keyword_count 'NetworkManager.*(failed|error|timeout|no lease|activation failed)|dhcp4 .* (failed|timeout|no lease)|wpa_supplicant.*(fail|error|timeout)|device .*Activation: failed')"
+    NET_COUNT="$(keyword_count 'dhcp4 \(wlan[0-9]\).*(failed|timeout|no lease)|device \(wlan[0-9]\).*Activation: failed|wpa_supplicant.*(fail|error|timeout)')"
+    ETH_COUNT="$(keyword_count 'dhcp4 \(en[a-z0-9]+\).*(no lease|timeout|failed)|device \(en[a-z0-9]+\).*Activation: failed|device \(en[a-z0-9]+\).*carrier')"
     GPU_COUNT="$(keyword_count 'gpu|drm|i915')"
     BT_COUNT="$(keyword_count 'bluetoothd|bluetooth')"
     THERMAL_COUNT="$(keyword_count 'thermal|acpi')"
@@ -1633,7 +1638,7 @@ generate_data_json() {
         NET_COUNT=0
     fi
 
-    TOTAL_COUNT=$((WIFI_COUNT + NET_COUNT + GPU_COUNT + BT_COUNT + THERMAL_COUNT + PM_COUNT + AUDIO_HW_COUNT + THROTTLE_COUNT))
+    TOTAL_COUNT=$((WIFI_COUNT + NET_COUNT + ETH_COUNT + GPU_COUNT + BT_COUNT + THERMAL_COUNT + PM_COUNT + AUDIO_HW_COUNT + THROTTLE_COUNT))
     SEVERITY_CLASS="ok"
     SEVERITY_TITLE="Stable"
     SEVERITY_TEXT="No hardware errors detected in the last ${COUNT_WINDOW_LINES} journal events."
@@ -1643,11 +1648,11 @@ generate_data_json() {
         SEVERITY_CLASS="warn"
         SEVERITY_TITLE="Warnings Found"
         SEVERITY_TEXT="Matched events detected. Review the recent events section."
-        SEVERITY_REASON="${TOTAL_COUNT} matched event(s) — wifi=${WIFI_COUNT} net=${NET_COUNT} gpu=${GPU_COUNT} bt=${BT_COUNT} thermal=${THERMAL_COUNT} pm=${PM_COUNT} audio=${AUDIO_HW_COUNT} throttle=${THROTTLE_COUNT}"
+        SEVERITY_REASON="${TOTAL_COUNT} matched event(s) — wifi=${WIFI_COUNT} net=${NET_COUNT} eth=${ETH_COUNT} gpu=${GPU_COUNT} bt=${BT_COUNT} thermal=${THERMAL_COUNT} pm=${PM_COUNT} audio=${AUDIO_HW_COUNT} throttle=${THROTTLE_COUNT}"
     fi
 
-    if [ "$WIFI_COUNT" -ge 3 ] || [ "$NET_COUNT" -ge 3 ] || [ "$GPU_COUNT" -ge 3 ] || \
-       [ "$PM_COUNT" -ge 2 ] || [ "$AUDIO_HW_COUNT" -ge 3 ] || \
+    if [ "$WIFI_COUNT" -ge 3 ] || [ "$NET_COUNT" -ge 3 ] || [ "$ETH_COUNT" -ge 10 ] || \
+       [ "$GPU_COUNT" -ge 3 ] || [ "$PM_COUNT" -ge 2 ] || [ "$AUDIO_HW_COUNT" -ge 3 ] || \
        [ "$BT_COUNT" -ge 5 ] || [ "$THERMAL_COUNT" -ge 5 ] || [ "$THROTTLE_COUNT" -ge 3 ]; then
         SEVERITY_CLASS="critical"
         SEVERITY_TITLE="Critical Issues Detected"
@@ -1655,6 +1660,7 @@ generate_data_json() {
         local REASONS=""
         [ "$WIFI_COUNT" -ge 3 ]     && REASONS="${REASONS}wifi=${WIFI_COUNT} "
         [ "$NET_COUNT" -ge 3 ]      && REASONS="${REASONS}connectivity=${NET_COUNT} "
+        [ "$ETH_COUNT" -ge 10 ]     && REASONS="${REASONS}eth=${ETH_COUNT} "
         [ "$GPU_COUNT" -ge 3 ]      && REASONS="${REASONS}gpu=${GPU_COUNT} "
         [ "$PM_COUNT" -ge 2 ]       && REASONS="${REASONS}suspend_pm=${PM_COUNT} "
         [ "$AUDIO_HW_COUNT" -ge 3 ] && REASONS="${REASONS}audio_hw=${AUDIO_HW_COUNT} "
@@ -1859,6 +1865,7 @@ generate_data_json() {
   "counters": {
     "wifi": $WIFI_COUNT,
     "connectivity": $NET_COUNT,
+    "eth": $ETH_COUNT,
     "gpu": $GPU_COUNT,
     "bluetooth": $BT_COUNT,
     "thermal": $THERMAL_COUNT,
