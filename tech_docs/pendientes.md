@@ -6,8 +6,9 @@ Estado:
 
 ## Bootstrap: nuevos bloques seleccionables
 
-- `[ ]` Añadir bloque seleccionable para `ipscan` en el bootstrap y exponerlo en ambas TUI.
-- `[ ]` Añadir bloque seleccionable para `libreoffice-fresh-es` en el bootstrap y exponerlo en ambas TUI.
+- `[x]` Añadir bloque seleccionable para `ipscan` en el bootstrap y exponerlo en ambas TUI.
+- `[x]` Añadir bloque seleccionable para `libreoffice-fresh-es` en el bootstrap y exponerlo en ambas TUI.
+- `[x]` Añadir bloque seleccionable para `markdownpart` en el bootstrap y exponerlo en ambas TUI.
 
 ## Bootstrap: apps locales restauradas
 
@@ -24,7 +25,7 @@ sudo pacman -S libreoffice-fresh-es
 
 ## Criterio de cierre
 
-- `[ ]` El bloque aparece en `bootstrap-catalog`.
-- `[ ]` El bloque se puede marcar desde la TUI Python.
-- `[ ]` El bloque se puede marcar desde `whiptail`.
-- `[ ]` El bloque queda documentado en README y/o docs si cambia el flujo visible.
+- `[x]` El bloque aparece en `bootstrap-catalog`.
+- `[x]` El bloque se puede marcar desde la TUI Python.
+- `[x]` El bloque se puede marcar desde `whiptail`.
+- `[x]` El bloque queda documentado en README y/o docs si cambia el flujo visible.

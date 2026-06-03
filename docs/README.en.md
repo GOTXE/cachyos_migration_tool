@@ -6,8 +6,13 @@
 
 - [migration.md](migration.md) — Full usage guide: backup, bootstrap, restore, postcheck and CLI commands
 - [migration-bootstrap.md](migration-bootstrap.md) — Bootstrap blocks, supported hardware profiles and initial tests
+- [kate-markdown-preview.md](kate-markdown-preview.md) — Enable Markdown preview in Kate with `markdownpart`
+- [postinstall-ai-context.md](postinstall-ai-context.md) — Export a local post-install summary for AI analysis
 - [linux-migration-tool.conf.example](linux-migration-tool.conf.example) — User configuration template
 - [tui.md](tui.md) — TUI system: Python/curses (primary), whiptail (fallback), plain text and `TUI_BACKEND` variable
+- [backup-sftp-restic.md](backup-sftp-restic.md) — Generic SFTP/SSH target preparation for Restic backups
+- [backup-synology-sftp.md](backup-synology-sftp.md) — Synology DSM preparation as an SFTP target for Restic
+- [backup-restic.env.example](backup-restic.env.example) — Environment template for Restic backups with LAN/remote fallback
 
 ## Wi-Fi Firmware
 

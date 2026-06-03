@@ -868,6 +868,11 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"kde"'* ]]         && install_kde_packages
     [[ "$SELECTED" == *'"aur"'* ]]         && install_aur_packages
     [[ "$SELECTED" == *'"talk2ai"'* ]]     && install_talk2ai_from_github
+    [[ "$SELECTED" == *'"restic"'* ]]      && install_restic_package
+    [[ "$SELECTED" == *'"filezilla"'* ]]   && install_filezilla_package
+    [[ "$SELECTED" == *'"markdownpart"'* ]] && install_markdownpart_package
+    [[ "$SELECTED" == *'"libreoffice"'* ]] && install_libreoffice_package
+    [[ "$SELECTED" == *'"ipscan"'* ]]      && install_ipscan_package
     [[ "$SELECTED" == *'"obsidian"'* ]]    && install_obsidian_package
     [[ "$SELECTED" == *'"sshpass"'* ]]     && install_sshpass_package
     [[ "$SELECTED" == *'"codexbar_tray"'* ]] && install_codexbar_tray_from_local_repo

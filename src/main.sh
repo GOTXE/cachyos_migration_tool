@@ -135,6 +135,7 @@ COMANDOS PRINCIPALES:
   restore                    Restaura una copia de seguridad previa
                              Opciones: [--source RUTA] [--force] [--dry-run]
   postcheck                  Verifica el estado del sistema tras el reinicio post-bootstrap
+                             y genera contexto local para analisis con IA
   test                       Ejecuta pruebas locales y reportes de preflight
                              Opciones: [profiles|catalog|syntax|all]
 
@@ -145,6 +146,8 @@ HERRAMIENTAS Y AJUSTES:
   bootstrap-catalog          Imprime el catálogo de bloques compatibles para la TUI
   backup-config-catalog      Imprime la configuración importante detectada para la TUI
   backup-data-catalog        Imprime los directorios de datos detectados para la TUI
+  export-ai-context          Exporta un resumen post-instalacion para analisis con IA
+                             Salidas: ~/.local/state/linux-migration-tool/{postinstall-ai-context.txt,postinstall-ai-context.redacted.txt}
   install-talk2ai            Instala o actualiza talk2ai descargandolo desde GitHub
   install-codexbar-tray      Instala codexBar Tray desde un repo local restaurado/detectado
   install-youtube-force-h264 Prepara la extensión local YouTube Force H264 para carga manual
@@ -302,6 +305,16 @@ main() {
             ;;
         backup-data-catalog)
             backup_data_catalog
+            ;;
+        export-ai-context)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            export_postinstall_ai_context
             ;;
         test)
             shift

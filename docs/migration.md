@@ -106,6 +106,7 @@ lanzar el bootstrap completo:
 ./migration.sh test catalog    # catálogo de bloques por hardware
 ./migration.sh test syntax     # bash -n sobre el árbol principal
 ./migration.sh test            # ejecuta todo lo anterior
+./migration.sh export-ai-context
 ```
 
 Estos tests están pensados para:
@@ -113,6 +114,7 @@ Estos tests están pensados para:
 - verificar que el modelo Apple detectado cae en el perfil esperado
 - comprobar qué bloques de bootstrap se mostrarán antes de instalar nada
 - servir como base para automatizar validaciones cuando añadas más modelos
+- generar un resumen local reutilizable en agentes IA tras la instalación
 
 ### 5. Cámara FaceTime HD (MBP 2013+)
 
