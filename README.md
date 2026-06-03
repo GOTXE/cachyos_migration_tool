@@ -67,6 +67,7 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 ./migration.sh postcheck
 ./migration.sh restore   [--source RUTA] [--force] [--dry-run]
 
+./migration.sh export-ai-context         [--dry-run]
 ./migration.sh install-youtube-force-h264  [--dry-run]
 ./migration.sh install-talk2ai            [--dry-run]
 ./migration.sh install-codexbar-tray      [--dry-run]
@@ -100,6 +101,11 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 | `apple` | thermald, powertop (extras Apple laptop Intel) |
 | `facetime` | facetimehd-dkms + firmware (cámara PCIe MBP 2013+) |
 | `talk2ai` | Descarga o actualiza `talk2ai` desde GitHub e instala `handy-bin` como dependencia |
+| `restic` | Instala `restic` y queda marcado por defecto para backups/restores |
+| `filezilla` | Instala FileZilla como cliente gráfico SFTP/FTP |
+| `markdownpart` | Añade vista previa Markdown en Kate |
+| `libreoffice` | Instala LibreOffice Fresh ES |
+| `ipscan` | Instala Angry IP Scanner desde AUR |
 | `obsidian` | Obsidian desde repositorio oficial |
 | `sshpass` | `sshpass` para SSH con contraseña no interactiva |
 | `codexbar_tray` | Instala `codexBar Tray` desde un repo local restaurado/detectado |
@@ -200,6 +206,7 @@ Distribuido bajo la [GNU General Public License v3.0](LICENSE). Sin garantía de
 
 - [Guía completa de uso](docs/migration.md)
 - [Sistema TUI](docs/tui.md)
+- [Backup Restic por SFTP/SSH](docs/backup-sftp-restic.md)
 - [Firmware Wi-Fi BCM43602](docs/firmware-bcm43602.md)
 - [Scripts de diagnóstico y MBP Watch](docs/diagnostics.md)
 - [Plasmoid KDE MBP Watch](docs/plasmoid-mbp-watch.md)

@@ -262,7 +262,6 @@ install_official_packages() {
         wl-clipboard
         noto-fonts
         noto-fonts-emoji
-        libreoffice-fresh-es
     )
     log "${YELLOW}5. Instalando paquetes oficiales de repositorio...${NC}"
     log_package_batch_state "repo" "repo" "${COMMON_PACKAGES[@]}"
@@ -287,12 +286,13 @@ install_kde_packages() {
 
 install_aur_packages() {
     log "${YELLOW}7. Instalando paquetes desde AUR...${NC}"
+    install_base_devel
+    install_yay
     log_package_batch_state "AUR" "aur" \
         visual-studio-code-bin \
         brave-bin \
         opencode-desktop-bin \
         ttf-jetbrains-mono-nerd \
-        angryipscanner \
         pamac-aur \
         webapp-manager
     run_cmd yay -S --needed --noconfirm \
@@ -300,13 +300,14 @@ install_aur_packages() {
         brave-bin \
         opencode-desktop-bin \
         ttf-jetbrains-mono-nerd \
-        angryipscanner \
         pamac-aur \
         webapp-manager
 }
 
 install_handy_package() {
     log "${YELLOW}Instalando Handy desde AUR...${NC}"
+    install_base_devel
+    install_yay
     log_package_batch_state "AUR" "aur" handy-bin
     run_cmd yay -S --needed --noconfirm handy-bin
 }
@@ -421,10 +422,83 @@ install_obsidian_package() {
     run_cmd sudo pacman -S --needed --noconfirm obsidian
 }
 
+install_markdownpart_package() {
+    log "${YELLOW}Instalando markdownpart desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" markdownpart
+    run_cmd sudo pacman -S --needed --noconfirm markdownpart
+}
+
+install_markdownpart_if_accepted() {
+    if confirm_action "¿Instalar MarkdownPart para vista previa Markdown en Kate?"; then
+        install_markdownpart_package
+    else
+        log_info "Instalacion de MarkdownPart omitida por decision del usuario."
+    fi
+}
+
+install_libreoffice_package() {
+    log "${YELLOW}Instalando LibreOffice Fresh ES desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" libreoffice-fresh-es
+    run_cmd sudo pacman -S --needed --noconfirm libreoffice-fresh-es
+}
+
+install_libreoffice_if_accepted() {
+    if confirm_action "¿Instalar LibreOffice Fresh ES como suite ofimatica opcional?"; then
+        install_libreoffice_package
+    else
+        log_info "Instalacion de LibreOffice Fresh ES omitida por decision del usuario."
+    fi
+}
+
+install_filezilla_package() {
+    log "${YELLOW}Instalando FileZilla desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" filezilla
+    run_cmd sudo pacman -S --needed --noconfirm filezilla
+}
+
+install_restic_package() {
+    log "${YELLOW}Instalando Restic desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" restic
+    run_cmd sudo pacman -S --needed --noconfirm restic
+}
+
 install_sshpass_package() {
     log "${YELLOW}Instalando sshpass desde repositorio oficial...${NC}"
     log_package_batch_state "repo" "repo" sshpass
     run_cmd sudo pacman -S --needed --noconfirm sshpass
+}
+
+install_ipscan_package() {
+    log "${YELLOW}Instalando Angry IP Scanner desde AUR...${NC}"
+    install_base_devel
+    install_yay
+    log_package_batch_state "AUR" "aur" angryipscanner
+    run_cmd yay -S --needed --noconfirm angryipscanner
+}
+
+install_ipscan_if_accepted() {
+    if confirm_action "¿Instalar Angry IP Scanner desde AUR como herramienta de red opcional?"; then
+        install_ipscan_package
+    else
+        log_info "Instalacion de Angry IP Scanner omitida por decision del usuario."
+    fi
+}
+
+install_filezilla_if_accepted() {
+    if confirm_action "¿Instalar FileZilla como cliente SFTP/FTP opcional?"; then
+        install_filezilla_package
+    else
+        log_info "Instalacion de FileZilla omitida por decision del usuario."
+    fi
+}
+
+install_restic_if_accepted() {
+    log_info "Restic puede usarse para backups/restores contra repositorios SFTP/SSH."
+    if confirm_action "¿Instalar Restic como herramienta de backup/restore?" "yes"; then
+        install_restic_package
+    else
+        log_info "Instalacion de Restic omitida por decision del usuario."
+    fi
 }
 
 install_codexbar_tray_dependencies() {
@@ -2251,6 +2325,11 @@ bootstrap_cachyos() {
     install_powerlevel10k
     install_node_stack
     install_ai_tools
+    install_restic_if_accepted
+    install_filezilla_if_accepted
+    install_markdownpart_if_accepted
+    install_libreoffice_if_accepted
+    install_ipscan_if_accepted
     install_talk2ai_if_accepted || true
     install_codexbar_tray_if_accepted || true
     install_mbp_watch_diagnostics
@@ -2277,6 +2356,230 @@ bootstrap_cachyos() {
     log "- Tras reiniciar, ejecuta: ./migration.sh postcheck"
     show_log_location
     log ""
+}
+
+get_ai_context_state_dir() {
+    printf '%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}/linux-migration-tool"
+}
+
+get_ai_context_raw_file() {
+    printf '%s\n' "$(get_ai_context_state_dir)/postinstall-ai-context.txt"
+}
+
+get_ai_context_redacted_file() {
+    printf '%s\n' "$(get_ai_context_state_dir)/postinstall-ai-context.redacted.txt"
+}
+
+collect_default_route() {
+    ip route show default 2>/dev/null | head -n 1
+}
+
+collect_default_gateway() {
+    collect_default_route | awk '{for (i = 1; i <= NF; i++) if ($i == "via") { print $(i+1); exit }}'
+}
+
+collect_default_interface() {
+    collect_default_route | awk '{for (i = 1; i <= NF; i++) if ($i == "dev") { print $(i+1); exit }}'
+}
+
+collect_dns_servers() {
+    if command -v resolvectl >/dev/null 2>&1; then
+        resolvectl dns 2>/dev/null |
+            awk '{$1=""; sub(/^ /, ""); print}' |
+            tr ' ' '\n' |
+            sed '/^$/d' |
+            sort -u
+        return 0
+    fi
+
+    sed -n 's/^nameserver[[:space:]]\+//p' /etc/resolv.conf 2>/dev/null | sort -u
+}
+
+collect_current_wifi_ssid() {
+    nmcli -t -f ACTIVE,SSID dev wifi 2>/dev/null | awk -F: '$1 == "yes" {print $2; exit}'
+}
+
+collect_saved_wifi_profiles() {
+    nmcli -t -f NAME,TYPE connection show 2>/dev/null | awk -F: '$2 == "802-11-wireless" {print $1}'
+}
+
+collect_service_state() {
+    local SCOPE="$1"
+    local SERVICE_NAME="$2"
+
+    case "$SCOPE" in
+        user)
+            if systemctl --user list-unit-files --type=service 2>/dev/null | grep -q "^${SERVICE_NAME}[[:space:]]"; then
+                if systemctl --user is-enabled "$SERVICE_NAME" >/dev/null 2>&1; then
+                    printf 'enabled\n'
+                else
+                    printf 'installed-disabled\n'
+                fi
+            else
+                printf 'not-installed\n'
+            fi
+            ;;
+        *)
+            if systemctl list-unit-files --type=service 2>/dev/null | grep -q "^${SERVICE_NAME}[[:space:]]"; then
+                if systemctl is-enabled "$SERVICE_NAME" >/dev/null 2>&1; then
+                    printf 'enabled\n'
+                else
+                    printf 'installed-disabled\n'
+                fi
+            else
+                printf 'not-installed\n'
+            fi
+            ;;
+    esac
+}
+
+collect_package_state() {
+    local PACKAGE_NAME="$1"
+
+    if pacman -Q "$PACKAGE_NAME" >/dev/null 2>&1; then
+        printf 'installed\n'
+    else
+        printf 'missing\n'
+    fi
+}
+
+collect_single_line_file() {
+    local FILE_PATH="$1"
+
+    if [ -r "$FILE_PATH" ]; then
+        tr '\n' ' ' < "$FILE_PATH" | sed 's/[[:space:]]\+/ /g; s/[[:space:]]$//'
+    else
+        printf 'not-present\n'
+    fi
+}
+
+render_ai_context_value() {
+    local MODE="$1"
+    local KEY="$2"
+    local VALUE="$3"
+
+    case "$MODE:$KEY" in
+        redacted:hostname|redacted:pretty_hostname|redacted:transient_hostname|redacted:default_route|redacted:default_gateway|redacted:dns_servers|redacted:current_ssid|redacted:saved_wifi_profiles)
+            printf '<redacted>\n'
+            ;;
+        *)
+            printf '%s\n' "$VALUE"
+            ;;
+    esac
+}
+
+write_postinstall_ai_context_file() {
+    local OUTPUT_PATH="$1"
+    local MODE="$2"
+    local STATE_DIR=""
+    local DNS_JOINED=""
+    local WIFI_PROFILES_JOINED=""
+    local DEFAULT_ROUTE=""
+    local DEFAULT_GATEWAY=""
+    local DEFAULT_INTERFACE=""
+    local CURRENT_SSID=""
+    local HOSTNAME_VALUE=""
+    local PRETTY_HOSTNAME=""
+    local TRANSIENT_HOSTNAME=""
+    local KERNEL_VALUE=""
+    local SESSION_TYPE_VALUE=""
+    local DOCKER_SERVICE_STATE=""
+    local SYNCTHING_SERVICE_STATE=""
+    local TALK2AI_SERVICE_STATE=""
+    local CODEXBAR_TRAY_SERVICE_STATE=""
+    local IWD_BACKEND_CONF=""
+    local WIRELESS_REGDOM_CONF=""
+    local BRAVE_FLAGS=""
+    local VAAPI_CONF=""
+
+    STATE_DIR="$(dirname "$OUTPUT_PATH")"
+    mkdir -p "$STATE_DIR"
+
+    DEFAULT_ROUTE="$(collect_default_route)"
+    DEFAULT_GATEWAY="$(collect_default_gateway)"
+    DEFAULT_INTERFACE="$(collect_default_interface)"
+    CURRENT_SSID="$(collect_current_wifi_ssid)"
+    HOSTNAME_VALUE="$(hostnamectl --static 2>/dev/null || hostname 2>/dev/null || printf 'unknown\n')"
+    PRETTY_HOSTNAME="$(hostnamectl --pretty 2>/dev/null || printf '\n')"
+    TRANSIENT_HOSTNAME="$(hostnamectl --transient 2>/dev/null || printf '\n')"
+    KERNEL_VALUE="$(uname -r)"
+    SESSION_TYPE_VALUE="${XDG_SESSION_TYPE:-unknown}"
+    DOCKER_SERVICE_STATE="$(collect_service_state system docker.service)"
+    SYNCTHING_SERVICE_STATE="$(collect_service_state user syncthing.service)"
+    TALK2AI_SERVICE_STATE="$(collect_service_state user talk2ai.service)"
+    CODEXBAR_TRAY_SERVICE_STATE="$(collect_service_state user codexbar-tray.service)"
+    IWD_BACKEND_CONF="$(collect_single_line_file /etc/NetworkManager/conf.d/wifi_backend.conf)"
+    WIRELESS_REGDOM_CONF="$(collect_single_line_file /etc/conf.d/wireless-regdom)"
+    BRAVE_FLAGS="$(collect_single_line_file "$HOME/.config/brave-flags.conf")"
+    VAAPI_CONF="$(collect_single_line_file "$HOME/.config/environment.d/vaapi.conf")"
+
+    DNS_JOINED="$(collect_dns_servers | paste -sd ',' - | sed 's/,/, /g')"
+    WIFI_PROFILES_JOINED="$(collect_saved_wifi_profiles | paste -sd ',' - | sed 's/,/, /g')"
+    [ -n "$DNS_JOINED" ] || DNS_JOINED="none"
+    [ -n "$WIFI_PROFILES_JOINED" ] || WIFI_PROFILES_JOINED="none"
+    [ -n "$CURRENT_SSID" ] || CURRENT_SSID="not-connected"
+    [ -n "$DEFAULT_ROUTE" ] || DEFAULT_ROUTE="none"
+    [ -n "$DEFAULT_GATEWAY" ] || DEFAULT_GATEWAY="none"
+    [ -n "$DEFAULT_INTERFACE" ] || DEFAULT_INTERFACE="none"
+    [ -n "$PRETTY_HOSTNAME" ] || PRETTY_HOSTNAME="not-set"
+    [ -n "$TRANSIENT_HOSTNAME" ] || TRANSIENT_HOSTNAME="not-set"
+
+    {
+        printf '# Linux Migration Tool - Post-install AI Context (%s)\n' "$MODE"
+        printf 'generated_at: %s\n' "$(date --iso-8601=seconds)"
+        printf 'tool_version: %s\n' "$VERSION"
+        printf 'macbook_model: %s\n' "$(get_macbook_model)"
+        printf 'profile_id: %s\n' "$(get_macbook_profile_id)"
+        printf '\n[system]\n'
+        printf 'hostname: %s\n' "$(render_ai_context_value "$MODE" hostname "$HOSTNAME_VALUE")"
+        printf 'pretty_hostname: %s\n' "$(render_ai_context_value "$MODE" pretty_hostname "$PRETTY_HOSTNAME")"
+        printf 'transient_hostname: %s\n' "$(render_ai_context_value "$MODE" transient_hostname "$TRANSIENT_HOSTNAME")"
+        printf 'kernel: %s\n' "$KERNEL_VALUE"
+        printf 'session_type: %s\n' "$SESSION_TYPE_VALUE"
+        printf '\n[network]\n'
+        printf 'default_route: %s\n' "$(render_ai_context_value "$MODE" default_route "$DEFAULT_ROUTE")"
+        printf 'default_gateway: %s\n' "$(render_ai_context_value "$MODE" default_gateway "$DEFAULT_GATEWAY")"
+        printf 'default_interface: %s\n' "$DEFAULT_INTERFACE"
+        printf 'dns_servers: %s\n' "$(render_ai_context_value "$MODE" dns_servers "$DNS_JOINED")"
+        printf 'current_ssid: %s\n' "$(render_ai_context_value "$MODE" current_ssid "$CURRENT_SSID")"
+        printf 'saved_wifi_profiles: %s\n' "$(render_ai_context_value "$MODE" saved_wifi_profiles "$WIFI_PROFILES_JOINED")"
+        printf '\n[services]\n'
+        printf 'docker_service: %s\n' "$DOCKER_SERVICE_STATE"
+        printf 'syncthing_user_service: %s\n' "$SYNCTHING_SERVICE_STATE"
+        printf 'talk2ai_user_service: %s\n' "$TALK2AI_SERVICE_STATE"
+        printf 'codexbar_tray_user_service: %s\n' "$CODEXBAR_TRAY_SERVICE_STATE"
+        printf '\n[packages]\n'
+        printf 'markdownpart: %s\n' "$(collect_package_state markdownpart)"
+        printf 'filezilla: %s\n' "$(collect_package_state filezilla)"
+        printf 'handy_bin: %s\n' "$(collect_package_state handy-bin)"
+        printf '\n[config_files]\n'
+        printf 'networkmanager_wifi_backend_conf: %s\n' "$IWD_BACKEND_CONF"
+        printf 'wireless_regdom_conf: %s\n' "$WIRELESS_REGDOM_CONF"
+        printf 'brave_flags_conf: %s\n' "$BRAVE_FLAGS"
+        printf 'vaapi_conf: %s\n' "$VAAPI_CONF"
+    } > "$OUTPUT_PATH"
+}
+
+export_postinstall_ai_context() {
+    local RAW_FILE=""
+    local REDACTED_FILE=""
+
+    RAW_FILE="$(get_ai_context_raw_file)"
+    REDACTED_FILE="$(get_ai_context_redacted_file)"
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] exportar contexto IA post-instalacion en:${NC}"
+        log "${YELLOW}[DRY-RUN] - $RAW_FILE${NC}"
+        log "${YELLOW}[DRY-RUN] - $REDACTED_FILE${NC}"
+        return 0
+    fi
+
+    write_postinstall_ai_context_file "$RAW_FILE" raw
+    write_postinstall_ai_context_file "$REDACTED_FILE" redacted
+
+    log_success "Contexto IA post-instalacion exportado."
+    log " - Completo: $RAW_FILE"
+    log " - Saneado:  $REDACTED_FILE"
 }
 
 post_bootstrap_checks() {
@@ -2335,6 +2638,8 @@ post_bootstrap_checks() {
     else
         log_warn "iw no disponible para validar pais/región Wi-Fi"
     fi
+
+    export_postinstall_ai_context
 
     log ""
     log "${YELLOW}Pendiente manual${NC}"

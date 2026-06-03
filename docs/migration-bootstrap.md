@@ -31,7 +31,7 @@ Incluye herramientas de alta confianza probadas por CachyOS/Arch:
 - **Utilidades:** jq, yq, ripgrep, curl, wget, zip/unzip.
 - **Docker:** Motor de contenedores y docker-compose.
 - **Internet y Multimedia:** Firefox, LibreOffice (en español), FFmpeg, yt-dlp.
-- **Aplicaciones extra seleccionables:** Obsidian como bloque opcional desde repositorio oficial.
+- **Aplicaciones extra seleccionables:** Restic, FileZilla, MarkdownPart, LibreOffice ES y Obsidian como bloques opcionales.
 - **Utilidades SSH opcionales:** `sshpass` como bloque opcional desde repositorio oficial.
 
 ### 6. Aplicaciones KDE Plasma
@@ -40,13 +40,14 @@ Herramientas nativas del escritorio KDE:
 - **Spectacle:** Capturas de pantalla.
 - **Ark:** Compresor/Descompresor.
 - **Gwenview:** Visor de imágenes.
+- **Kate:** editor para documentación y texto.
 
 ### 7. Paquetes de la Comunidad (AUR)
 Software que no está en repositorios oficiales por licencias o naturaleza:
 - **Navegadores y Editores:** Brave Browser, Visual Studio Code.
-- **Redes y Utilidades:** Angry IP Scanner, Webapp-manager.
+- **Redes y Utilidades:** Webapp-manager.
 - **Tienda Visual:** Pamac (interfaz gráfica para instalar paquetes).
-- **Apps propias:** `talk2ai` como bloque opcional descargado desde GitHub, instalando `handy-bin` como dependencia; `codexBar Tray` como bloque opcional desde repo local detectado/restaurado.
+- **Apps propias y extras:** `talk2ai` como bloque opcional descargado desde GitHub, instalando `handy-bin` como dependencia; `codexBar Tray` como bloque opcional desde repo local detectado/restaurado; Angry IP Scanner como bloque opcional independiente.
 
 ### 8. Herramientas de IA (CLI)
 Instalación de interfaces de línea de comandos para asistentes de IA:
