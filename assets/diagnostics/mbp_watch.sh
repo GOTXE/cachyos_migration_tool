@@ -333,7 +333,19 @@ capture_driver_health() {
                         WIFI_F="Posible ruido transitorio tras reanudar; revisa firmware solo si vuelve a fallar en frio"
                     else
                         WIFI_D="${WIFI_D}; link is up"
-                        WIFI_F=""
+                        local FW_BLOB_ONLY=false
+                        if printf '%s\n' "$FW_WARN" | grep -qE 'txcap_blob|clm_blob|Apple Inc\.-MacBookPro'; then
+                            if ! dmesg 2>/dev/null \
+                                | grep -iE 'brcmfmac.*(fail|error|no such|unable)' \
+                                | grep -qvE 'txcap_blob|clm_blob|Apple Inc\.-MacBookPro'; then
+                                FW_BLOB_ONLY=true
+                            fi
+                        fi
+                        if [ "$FW_BLOB_ONLY" = true ]; then
+                            WIFI_F="Optional calibration blobs unavailable for BCM43602 (txcap_blob, clm_blob, device .bin) — not required for operation"
+                        else
+                            WIFI_F="Firmware warning present but wifi is connected; monitor for disconnections. Check: dmesg | grep brcmfmac"
+                        fi
                     fi
                 else
                     WIFI_S="WARN"
