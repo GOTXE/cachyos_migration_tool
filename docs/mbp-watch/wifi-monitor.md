@@ -1,6 +1,33 @@
-# Wi-Fi Analysis En MBP Watch
+# Wi-Fi y Red En MBP Watch
 
 La parte de analisis Wi-Fi ya no se sirve en un puerto separado. Queda integrada en la web principal de `mbp_watch` y se abre como modal dentro de `http://localhost:7070/report.html`.
+
+## Contadores De Red
+
+`mbp_watch` separa los eventos de red en tres contadores independientes:
+
+| Counter | Que detecta | Umbral CRITICAL |
+|---------|-------------|-----------------|
+| `wifi` | Errores del driver brcmfmac, wpa_supplicant, iwlwifi | ≥ 3 |
+| `connectivity` | Fallos de activacion/DHCP en interfaces WiFi (wlan*) | ≥ 3 |
+| `eth` | Fallos de activacion/DHCP/carrier en interfaces ethernet (en*) | ≥ 10 |
+
+Esta separacion evita que un adaptador ethernet con DHCP fallido sature el contador de WiFi y genere alertas CRITICAL permanentes.
+
+## Falsos Positivos Filtrados (NOISY_EVENT_REGEX)
+
+Los siguientes mensajes son conocidos como no criticos y se excluyen del log:
+
+- **Blobs opcionales BCM43602**: `brcmfmac43602-pcie.txcap_blob`, `clm_blob` y el `.bin` especifico de Apple no existen en `linux-firmware` para este chip. El driver los busca en cada carga pero opera sin ellos.
+- **iwd-manager transitorio**: `if_nametoindex failed (ENODEV)` e `IWD device named wlan0 is not a Wifi device` ocurren durante suspend/resume mientras brcmfmac reinicializa. NetworkManager usa iwd como backend (`wifi.backend=iwd`) y reconecta automaticamente.
+
+## Diagnostico WiFi En driver_health
+
+El campo `fix` del driver wifi ahora distingue tres casos:
+
+- **Solo blobs opcionales faltantes + WiFi conectado**: `status=OK`, fix informa que los blobs no son necesarios para la operacion.
+- **Warning de firmware desconocido + WiFi conectado**: `status=OK`, fix sugiere monitorizar y revisar dmesg.
+- **Warning de firmware + WiFi desconectado**: `status=WARN`, fix sugiere verificar `linux-firmware`.
 
 ## Requisitos
 

@@ -29,7 +29,7 @@ function normalizeSeverity(rawSeverity) {
 
 function normalizeCounters(rawCounters) {
     var counters = rawCounters || {};
-    var keys = ["wifi", "connectivity", "gpu", "bluetooth", "thermal", "pm", "audio", "throttle", "total"];
+    var keys = ["wifi", "connectivity", "eth", "gpu", "bluetooth", "thermal", "pm", "audio", "throttle", "total"];
     var normalized = {};
 
     for (var i = 0; i < keys.length; i += 1) {
