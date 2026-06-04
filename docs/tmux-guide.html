@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Visual de tmux - De Principiante a Experto</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #89b4fa;
+            --primary-light: #a6c4ff;
+            --success: #a6e3a1;
+            --warning: #f9e2af;
+            --danger: #f38ba8;
+            --bg: #1e1e2e;
+            --surface: #313244;
+            --surface-light: #45475a;
+            --text: #cdd6f4;
+            --text-muted: #a6adc8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #0f0e1d 100%);
+            color: var(--text);
+            line-height: 1.8;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, rgba(137, 180, 250, 0.1), rgba(166, 227, 161, 0.1));
+            border-radius: 15px;
+            border: 1px solid var(--primary);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 20px 15px;
+                margin-bottom: 30px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header {
+                padding: 15px 10px;
+                margin-bottom: 20px;
+            }
+
+            h1 {
+                font-size: 1.4em;
+            }
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .level {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            background: var(--surface);
+            border: 2px solid var(--text-muted);
+        }
+
+        .level.active {
+            background: var(--primary);
+            color: var(--bg);
+            border-color: var(--primary);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (max-width: 1400px) {
+            .container {
+                max-width: 100%;
+            }
+        }
+
+        .section {
+            margin-bottom: 50px;
+            scroll-margin-top: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--surface);
+            border-radius: 10px;
+            border-left: 5px solid var(--primary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            flex-wrap: wrap;
+        }
+
+        .section-icon {
+            font-size: 2em;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .difficulty {
+            margin-left: auto;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .section-header {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .section-title {
+                font-size: 1.3em;
+                min-width: auto;
+            }
+
+            .section-icon {
+                font-size: 1.5em;
+            }
+
+            .difficulty {
+                padding: 6px 12px;
+                font-size: 0.75em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .section-icon {
+                font-size: 1.5em;
+            }
+
+            .section-title {
+                font-size: 1.1em;
+            }
+
+            .difficulty {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+
+        .difficulty.easy {
+            background: rgba(166, 227, 161, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .difficulty.medium {
+            background: rgba(249, 226, 175, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .difficulty.hard {
+            background: rgba(243, 139, 168, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid var(--surface-light);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(137, 180, 250, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                padding: 18px;
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 15px;
+                margin-bottom: 12px;
+            }
+        }
+
+        .card-title {
+            font-size: 1.3em;
+            margin-bottom: 12px;
+            color: var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-description {
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .code-block {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            border-left: 4px solid var(--primary);
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .code-block code {
+            color: var(--success);
+        }
+
+        @media (max-width: 768px) {
+            .code-block {
+                padding: 12px;
+                font-size: 0.85em;
+                margin: 12px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .code-block {
+                padding: 10px;
+                font-size: 0.75em;
+            }
+        }
+
+        .command {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            margin: 0 4px;
+        }
+
+        .keybind {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface-light);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-weight: 600;
+            border: 1px solid var(--text-muted);
+            color: var(--primary);
+            margin: 4px;
+        }
+
+        .keybind-plus {
+            color: var(--text-muted);
+            margin: 0 2px;
+        }
+
+        .diagram {
+            background: linear-gradient(135deg, rgba(137, 180, 250, 0.05), rgba(166, 227, 161, 0.05));
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            border: 1px dashed var(--primary);
+            color: var(--primary);
+            overflow-x: auto;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .diagram {
+                padding: 15px;
+                font-size: 0.85em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .diagram {
+                padding: 12px;
+                font-size: 0.75em;
+            }
+        }
+
+        table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+            background: var(--surface-light);
+            border-radius: 8px;
+            overflow: hidden;
+            display: block;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--primary);
+            color: var(--bg);
+            font-weight: 600;
+        }
+
+        tr {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        tr:nth-child(even) {
+            background: rgba(137, 180, 250, 0.05);
+        }
+
+        tr:hover {
+            background: rgba(137, 180, 250, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 10px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            table {
+                font-size: 0.85em;
+                overflow-x: auto;
+                display: block;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(137, 180, 250, 0.1), rgba(137, 180, 250, 0.05));
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, rgba(166, 227, 161, 0.1), rgba(166, 227, 161, 0.05));
+            border-left: 4px solid var(--success);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(249, 226, 175, 0.1), rgba(249, 226, 175, 0.05));
+            border-left: 4px solid var(--warning);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .steps {
+            background: var(--surface-light);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .step {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border-bottom: 1px solid var(--surface);
+        }
+
+        .step:last-child {
+            border-bottom: none;
+        }
+
+        .step-number {
+            min-width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .step {
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .step-number {
+                min-width: 40px;
+                height: 40px;
+                font-size: 0.95em;
+            }
+
+            .step-content h4 {
+                font-size: 1em;
+            }
+
+            .step-content p {
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .step {
+                gap: 12px;
+                padding: 12px;
+                flex-direction: column;
+            }
+
+            .step-number {
+                min-width: 35px;
+                height: 35px;
+                font-size: 0.85em;
+            }
+
+            .step-content h4 {
+                font-size: 0.95em;
+                margin-bottom: 6px;
+            }
+
+            .step-content p {
+                font-size: 0.85em;
+            }
+        }
+
+        .step-content h4 {
+            color: var(--primary-light);
+            margin-bottom: 8px;
+        }
+
+        .step-content p {
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .visual-keyboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .key {
+            background: var(--surface-light);
+            border: 2px solid var(--text-muted);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-family: monospace;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .key:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(137, 180, 250, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .key-label {
+            color: var(--text-muted);
+            font-size: 0.8em;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .visual-keyboard {
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+                gap: 8px;
+            }
+
+            .key {
+                padding: 12px 8px;
+                font-size: 0.9em;
+            }
+
+            .key-label {
+                font-size: 0.7em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .visual-keyboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .key {
+                padding: 10px 6px;
+                font-size: 0.8em;
+            }
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .comparison-item {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--surface-light);
+        }
+
+        .comparison-item h4 {
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .comparison-item {
+                padding: 15px;
+            }
+        }
+
+        nav {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid var(--surface-light);
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+            border-left-color: var(--primary);
+            background: rgba(137, 180, 250, 0.1);
+        }
+
+        @media (max-width: 1400px) {
+            nav {
+                position: static;
+                flex-direction: row;
+                transform: none;
+                top: auto;
+                left: auto;
+                width: 100%;
+                margin-bottom: 30px;
+                max-height: none;
+                padding: 20px;
+                background: var(--surface);
+                border: 1px solid var(--surface-light);
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav a {
+                flex: 0 1 auto;
+                text-align: center;
+                padding: 12px 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px;
+                gap: 8px;
+            }
+
+            nav a {
+                flex: 1;
+                min-width: 120px;
+                padding: 10px 12px;
+                font-size: 0.85em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            nav {
+                gap: 5px;
+                padding: 12px;
+            }
+
+            nav a {
+                flex: 1;
+                padding: 8px 10px;
+                font-size: 0.75em;
+            }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            border-top: 1px solid var(--surface-light);
+            color: var(--text-muted);
+        }
+
+        footer p {
+            margin: 10px 0;
+        }
+
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            footer {
+                margin-top: 40px;
+                padding: 20px;
+            }
+
+            footer p {
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            footer {
+                margin-top: 30px;
+                padding: 15px;
+            }
+
+            footer p {
+                font-size: 0.8em;
+                margin: 8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="#inicio">🎯 Inicio</a>
+        <a href="#basico">📦 Básico</a>
+        <a href="#intermedio">⚙️ Intermedio</a>
+        <a href="#avanzado">🚀 Avanzado</a>
+        <a href="#troubleshooting">🔧 Problemas</a>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>🎓 Guía Visual de tmux</h1>
+            <p class="subtitle">Desde principiante hasta experto</p>
+            <div class="progress-bar">
+                <div class="level">📦 Básico</div>
+                <div class="level">⚙️ Intermedio</div>
+                <div class="level">🚀 Avanzado</div>
+            </div>
+        </header>
+
+        <!-- SECCIÓN INICIO -->
+        <div id="inicio" class="section">
+            <div class="section-header">
+                <span class="section-icon">❓</span>
+                <span class="section-title">¿Qué es tmux?</span>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">💡</span>
+                    La Idea Simple
+                </div>
+                <div class="card-description">
+                    Imagina que tienes un escritorio dentro de tu terminal. Con tmux puedes:
+                </div>
+                <ul style="margin-left: 30px; margin-bottom: 15px;">
+                    <li>✅ <strong>Dividir la pantalla</strong> en múltiples ventanas (como arrancar varias aplicaciones a la vez)</li>
+                    <li>✅ <strong>Desconectarte sin cerrar nada</strong> (tus programas siguen corriendo en background)</li>
+                    <li>✅ <strong>Reconectarte cuando vuelvas</strong> (todo sigue donde lo dejaste)</li>
+                    <li>✅ <strong>Usar el ratón</strong> para cambiar entre ventanas automáticamente</li>
+                </ul>
+            </div>
+
+            <div class="comparison">
+                <div class="comparison-item">
+                    <h4>❌ Sin tmux</h4>
+                    <p>Tienes una sola ventana. Si la cierras, todo se muere.</p>
+                </div>
+                <div class="comparison-item">
+                    <h4>✅ Con tmux</h4>
+                    <p>Puedes cerrar la ventana y todo sigue corriendo. Al volver, está exactamente igual.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN BÁSICO -->
+        <div id="basico" class="section">
+            <div class="section-header">
+                <span class="section-icon">📦</span>
+                <span class="section-title">Nivel Básico</span>
+                <span class="difficulty easy">Fácil</span>
+            </div>
+
+            <!-- 1. Instalar -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">⬇️</span>
+                    Paso 1: Instalar tmux
+                </div>
+                <div class="card-description">
+                    Solo necesitas ejecutar esto una vez. Si ya está instalado, ¡salta al siguiente paso!
+                </div>
+
+                <div class="code-block">
+                    <code>bash src/modules/tmux_setup.sh</code>
+                </div>
+
+                <div class="success-box">
+                    ✅ <strong>¿Listo?</strong> El script hace todo automáticamente. Configura tmux, instala plugins, lo deja bonito y listo para usar.
+                </div>
+            </div>
+
+            <!-- 2. Crear sesión -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🚀</span>
+                    Paso 2: Crear tu primera sesión
+                </div>
+                <div class="card-description">
+                    Una sesión es como un escritorio dentro de tu terminal. Aquí crearemos uno con 3 divisiones.
+                </div>
+
+                <div class="code-block">
+                    <code>bash assets/scripts/init-tmux-sessions.sh create ai-agents</code>
+                </div>
+
+                <p style="margin-top: 15px; color: var(--text-muted);">
+                    Acabas de crear una sesión llamada <span class="command">ai-agents</span> con 3 panes (ventanas divididas):
+                </p>
+
+                <div class="diagram">
+┌─────────────────────┬─────────────────────┐
+│                     │                     │
+│  Pane 1 (arriba iz) │  Pane 2 (arriba der)│
+│                     │                     │
+├─────────────────────┼─────────────────────┤
+│                     │
+│  Pane 3 (abajo, ancho)                   │
+│                     │
+└─────────────────────┴─────────────────────┘
+                </div>
+            </div>
+
+            <!-- 3. Conectar -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🔌</span>
+                    Paso 3: Conectarte a tu sesión
+                </div>
+                <div class="card-description">
+                    Ahora entramos dentro de esa sesión para empezar a usar los 3 panes.
+                </div>
+
+                <div class="code-block">
+                    <code>tmux a -t ai-agents</code>
+                </div>
+
+                <div class="info-box">
+                    💡 <strong>Atajo:</strong> <span class="command">tmux a</span> es corto para <span class="command">attach</span>. El <span class="command">-t ai-agents</span> dice "conéctate a la sesión llamada ai-agents"
+                </div>
+            </div>
+
+            <!-- 4. Navegar dentro -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🖱️</span>
+                    Paso 4: Navegar entre ventanas
+                </div>
+                <div class="card-description">
+                    Ahora estás adentro. ¿Cómo cambias entre los 3 panes? Dos opciones:
+                </div>
+
+                <h4 style="color: var(--success); margin-top: 15px; margin-bottom: 10px;">Opción A: Con el ratón (más fácil) 🖱️</h4>
+                <p style="color: var(--text-muted); margin-bottom: 15px;">
+                    Solo <strong>mueve el ratón</strong> al pane que quieras. El borde se pone azul y el foco cambia automáticamente. Puedes escribir sin hacer clic.
+                </p>
+
+                <h4 style="color: var(--warning); margin-top: 15px; margin-bottom: 10px;">Opción B: Con el teclado 🎹</h4>
+                <div class="visual-keyboard">
+                    <div class="key">
+                        <strong>Ctrl+H</strong>
+                        <div class="key-label">Izquierda</div>
+                    </div>
+                    <div class="key">
+                        <strong>Ctrl+L</strong>
+                        <div class="key-label">Derecha</div>
+                    </div>
+                    <div class="key">
+                        <strong>Ctrl+K</strong>
+                        <div class="key-label">Arriba</div>
+                    </div>
+                    <div class="key">
+                        <strong>Ctrl+J</strong>
+                        <div class="key-label">Abajo</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Ejecutar comandos -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">▶️</span>
+                    Paso 5: Ejecutar comandos en cada pane
+                </div>
+                <div class="card-description">
+                    Ahora que sabes navegar, puedes ejecutar lo que quieras en cada pane de forma independiente.
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Haz Ctrl+H para ir al Pane 1 (izquierda)</h4>
+                            <p>Espera a ver el borde azul. Luego escribe:</p>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>watch -n 1 'date'</code>
+                            </div>
+                            <p style="font-size: 0.9em;">Verás la hora actualizar cada segundo.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Haz Ctrl+L para ir al Pane 2 (derecha)</h4>
+                            <p>Escribe algo diferente:</p>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>while true; do echo "Hola $(date)"; sleep 2; done</code>
+                            </div>
+                            <p style="font-size: 0.9em;">Verás un saludo cada 2 segundos.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Haz Ctrl+J para ir al Pane 3 (abajo)</h4>
+                            <p>Ahora vuelve a una consola normal:</p>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>pwd</code>
+                            </div>
+                            <p style="font-size: 0.9em;">Ves que cada pane es totalmente independiente. El comando de arriba sigue corriendo mientras usas este.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="success-box" style="margin-top: 20px;">
+                    🎉 <strong>¡Lo has hecho!</strong> Ahora tienes 3 "terminales" corriendo al mismo tiempo sin pisarse.
+                </div>
+            </div>
+
+            <!-- 6. Desconectar -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🔌</span>
+                    Paso 6: Desconectarte (sin cerrar nada)
+                </div>
+                <div class="card-description">
+                    <strong>Esto es lo chulo:</strong> Puedes cerrar tmux o incluso apagar el ordenador. Los procesos siguen corriendo.
+                </div>
+
+                <p style="margin-bottom: 15px;">Presiona estas teclas juntas (dentro de tmux):</p>
+                <div class="code-block">
+                    <code>Ctrl+B, D</code>
+                </div>
+
+                <p style="color: var(--text-muted); margin-top: 15px; margin-bottom: 15px;">
+                    "Ctrl+B" es el prefijo de tmux (le dice "esto es un comando de tmux"), luego "D" de "Detach" (desconectarse).
+                </p>
+
+                <div class="success-box">
+                    ✅ <strong>Resultado:</strong> Te sales de tmux, pero los procesos en los 3 panes siguen corriendo en background.
+                </div>
+            </div>
+
+            <!-- 7. Reconectar -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🔄</span>
+                    Paso 7: Reconectarte y encontrar todo igual
+                </div>
+                <div class="card-description">
+                    Horas después, días después... ejecutas:
+                </div>
+
+                <div class="code-block">
+                    <code>tmux a -t ai-agents</code>
+                </div>
+
+                <div class="success-box">
+                    ✅ <strong>¡Magia!</strong> Todo está exactamente igual. Los procesos siguen corriendo. El historial se preserva. Es como si nunca te hubieras ido.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN INTERMEDIO -->
+        <div id="intermedio" class="section">
+            <div class="section-header">
+                <span class="section-icon">⚙️</span>
+                <span class="section-title">Nivel Intermedio</span>
+                <span class="difficulty medium">Medio</span>
+            </div>
+
+            <!-- Listar sesiones -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">📋</span>
+                    Ver todas tus sesiones
+                </div>
+                <div class="card-description">
+                    Si tienes múltiples sesiones (múltiples "escritorios"), puedes listarlas:
+                </div>
+
+                <div class="code-block">
+                    <code>tmux list-sessions</code>
+                </div>
+
+                <p style="margin-top: 15px; color: var(--text-muted);">Verás algo como:</p>
+                <div class="code-block">
+                    <code>ai-agents: 1 windows (created Thu Jun 04 10:30:00 2026)<br/>
+trabajo: 2 windows (created Thu Jun 04 08:15:00 2026)</code>
+                </div>
+
+                <div class="info-box">
+                    💡 Cada sesión es independiente. Puedes tener una para trabajo, otra para estudio, otra para proyectos personales.
+                </div>
+            </div>
+
+            <!-- Múltiples sesiones -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">📦</span>
+                    Crear múltiples sesiones
+                </div>
+                <div class="card-description">
+                    Puedes crear varias sesiones y saltar entre ellas fácilmente:
+                </div>
+
+                <div class="code-block">
+                    <code>tmux new-session -s trabajo<br/>
+tmux new-session -s estudio<br/>
+tmux new-session -s personales</code>
+                </div>
+
+                <p style="margin-top: 15px; color: var(--text-muted);">Para conectarte a cualquiera:</p>
+                <div class="code-block">
+                    <code>tmux a -t trabajo     # conecta a trabajo<br/>
+tmux a -t estudio    # conecta a estudio</code>
+                </div>
+            </div>
+
+            <!-- Atajos útiles -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">⌨️</span>
+                    Atajos útiles dentro de tmux
+                </div>
+                <div class="card-description">
+                    Cuando estés dentro de tmux (en tu sesión), puedes hacer más cosas:
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Atajo</th>
+                            <th>Qué hace</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> c</span></td>
+                            <td>Crear una nueva ventana (window) dentro de la sesión</td>
+                        </tr>
+                        <tr>
+                            <td><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> n</span></td>
+                            <td>Ir a la siguiente ventana</td>
+                        </tr>
+                        <tr>
+                            <td><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> p</span></td>
+                            <td>Ir a la ventana anterior</td>
+                        </tr>
+                        <tr>
+                            <td><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> v</span></td>
+                            <td>Dividir el pane verticalmente</td>
+                        </tr>
+                        <tr>
+                            <td><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> s</span></td>
+                            <td>Dividir el pane horizontalmente</td>
+                        </tr>
+                        <tr>
+                            <td><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> [</span></td>
+                            <td>Entrar en modo lectura (scroll por historial)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> ]</span></td>
+                            <td>Salir del modo lectura</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Crear alias -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🎯</span>
+                    Crear atajos en tu shell para conectarse rápido
+                </div>
+                <div class="card-description">
+                    En lugar de escribir <span class="command">tmux a -t ai-agents</span> cada vez, puedes crear un alias corto.
+                </div>
+
+                <p style="margin-bottom: 15px;">Abre tu archivo <span class="command">~/.bashrc</span> o <span class="command">~/.zshrc</span> y añade:</p>
+
+                <div class="code-block">
+                    <code>alias tma="tmux a -t ai-agents"<br/>
+alias tmls="tmux list-sessions"<br/>
+alias tmkill="tmux kill-session -t ai-agents"</code>
+                </div>
+
+                <p style="margin-top: 15px; color: var(--text-muted);">Guarda, cierra la terminal y reabre. Ahora:</p>
+                <div class="code-block">
+                    <code>tma        # Conecta a ai-agents<br/>
+tmls       # Lista todas las sesiones<br/>
+tmkill     # Cierra la sesión ai-agents</code>
+                </div>
+            </div>
+
+            <!-- Persistencia -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">💾</span>
+                    Cómo funciona la persistencia automática
+                </div>
+                <div class="card-description">
+                    Tenemos 2 plugins que trabajan juntos para guardar y restaurar todo:
+                </div>
+
+                <div class="comparison">
+                    <div class="comparison-item">
+                        <h4>📸 tmux-resurrect</h4>
+                        <p>Guarda una "foto" del estado: qué panes tienes, qué comandos estaban ejecutándose, el historial.</p>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>⏰ tmux-continuum</h4>
+                        <p>Automáticamente toma una foto cada 15 minutos. Si reinicia, restaura la última foto.</p>
+                    </div>
+                </div>
+
+                <div class="success-box">
+                    ✅ <strong>Resultado:</strong> Aunque apagues el ordenador, cuando lo enciendas y ejecutes <span class="command">tmux a -t ai-agents</span>, todo está como lo dejaste.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN AVANZADO -->
+        <div id="avanzado" class="section">
+            <div class="section-header">
+                <span class="section-icon">🚀</span>
+                <span class="section-title">Nivel Avanzado</span>
+                <span class="difficulty hard">Difícil</span>
+            </div>
+
+            <!-- Dividir dinámicamente -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">✂️</span>
+                    Crear divisiones personalizadas
+                </div>
+                <div class="card-description">
+                    No estás limitado a 3 panes. Puedes crear lo que quieras en cualquier momento.
+                </div>
+
+                <p style="margin-bottom: 15px;">Dentro de tmux, usa:</p>
+                <div class="code-block">
+                    <code><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> v</span> → Divide el pane actual verticalmente (lado a lado)<br/>
+<span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> s</span> → Divide el pane actual horizontalmente (arriba/abajo)</code>
+                </div>
+
+                <p style="margin-top: 15px; color: var(--text-muted);">Ejemplo: Empezar con 1 pane, dividir 3 veces:</p>
+                <div class="diagram">
+Inicial:     Paso 1:         Paso 2:         Paso 3:
+┌───┐       ┌───┬───┐       ┌───┬───┐       ┌───┬───┐
+│   │       │   │   │       │ 1 │ 2 │       │ 1 │ 2 │
+│   │  →    │   │   │   →   ├───┼───┤   →   ├───┼───┤
+│   │       ├───┼───┤       │ 3 │ 4 │       │ 3 │ 4 │
+│   │       │ 3 │   │       └───┴───┘       ├───┼───┤
+└───┘       └───┴───┘                       │ 5 │ 6 │
+                                            └───┴───┘
+                </div>
+            </div>
+
+            <!-- Renombrar y organizar -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🏷️</span>
+                    Renombrar ventanas y panes
+                </div>
+                <div class="card-description">
+                    Con muchas divisiones, es útil nombrarlas para no perder la cuenta.
+                </div>
+
+                <p style="margin-bottom: 15px;">Dentro de tmux:</p>
+                <div class="code-block">
+                    <code><span class="keybind"><span class="keybind-plus">Ctrl+B</span> <span class="keybind-plus">,</span> ,</span> → Renombra la ventana actual<br/>
+Luego escribe el nuevo nombre y presiona Enter</code>
+                </div>
+
+                <p style="margin-top: 15px; color: var(--text-muted);">Por ejemplo:</p>
+                <div class="code-block">
+                    <code>agent1    # Primera ventana<br/>
+agent2    # Segunda ventana<br/>
+monitor   # Monitor del sistema</code>
+                </div>
+            </div>
+
+            <!-- Layouts predefinidos -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🎨</span>
+                    Cambiar el layout de los panes
+                </div>
+                <div class="card-description">
+                    tmux tiene layouts predefinidos que reorganizan tus panes automáticamente:
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Atajo</th>
+                            <th>Layout</th>
+                            <th>Aspecto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="command">Ctrl+B Space</span></td>
+                            <td>Siguiente layout (ciclo)</td>
+                            <td>Cambia entre los disponibles</td>
+                        </tr>
+                        <tr>
+                            <td><span class="command">Ctrl+B !</span></td>
+                            <td>Convertir pane en ventana</td>
+                            <td>Pone el pane en su propia ventana</td>
+                        </tr>
+                        <tr>
+                            <td><span class="command">Ctrl+B M</span></td>
+                            <td>Unir con otra ventana</td>
+                            <td>Combina dos ventanas</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Enviar comandos -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">📨</span>
+                    Enviar comandos desde afuera de tmux
+                </div>
+                <div class="card-description">
+                    Puedes ejecutar comandos en una sesión de tmux sin estar conectado:
+                </div>
+
+                <div class="code-block">
+                    <code>tmux send-keys -t ai-agents:0.0 "echo 'Hola desde afuera'" Enter</code>
+                </div>
+
+                <p style="margin-top: 15px; color: var(--text-muted);">Desglose:</p>
+                <ul style="margin-left: 30px; color: var(--text-muted);">
+                    <li><span class="command">ai-agents</span> = nombre de la sesión</li>
+                    <li><span class="command">:0</span> = número de la ventana</li>
+                    <li><span class="command">.0</span> = número del pane</li>
+                    <li><span class="command">"echo..."</span> = comando a ejecutar</li>
+                    <li><span class="command">Enter</span> = presionar Enter al final</li>
+                </ul>
+
+                <div class="info-box">
+                    💡 <strong>Caso de uso:</strong> Scripts que lanzan múltiples agentes en paralelo sin escribir manualmente en cada pane.
+                </div>
+            </div>
+
+            <!-- Scripting -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🤖</span>
+                    Automatizar con scripts
+                </div>
+                <div class="card-description">
+                    Puedes crear un script que lance todo automáticamente:
+                </div>
+
+                <div class="code-block">
+                    <code>#!/bin/bash<br/>
+<br/>
+# Crear sesión<br/>
+tmux new-session -d -s ai-agents<br/>
+<br/>
+# Pane 1: Agente processor<br/>
+tmux send-keys -t ai-agents:0 "python agent-processor.py" Enter<br/>
+<br/>
+# Pane 2: Agente monitor<br/>
+tmux split-window -h<br/>
+tmux send-keys -t ai-agents:0.1 "python agent-monitor.py" Enter<br/>
+<br/>
+# Pane 3: Shell interactivo<br/>
+tmux split-window -v<br/>
+tmux send-keys -t ai-agents:0.2 "echo 'Shell listo'" Enter<br/>
+<br/>
+# Conectar<br/>
+tmux attach -t ai-agents</code>
+                </div>
+
+                <div class="success-box">
+                    ✅ Guarda esto en un archivo (p.ej. <span class="command">launch-agents.sh</span>), haz que sea ejecutable con <span class="command">chmod +x launch-agents.sh</span>, y ejecuta <span class="command">./launch-agents.sh</span>. Todo se lanza en paralelo.
+                </div>
+            </div>
+
+            <!-- Configuración personalizada -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">⚙️</span>
+                    Personalizar tmux
+                </div>
+                <div class="card-description">
+                    Edita <span class="command">~/.config/tmux/tmux.conf</span> para cambiar comportamientos:
+                </div>
+
+                <div class="code-block">
+                    <code># Cambiar tecla prefijo (defecto es Ctrl+B)<br/>
+set -g prefix C-a<br/>
+<br/>
+# Desactivar focus-follows-mouse si prefieres hacer clic<br/>
+set -g focus-follows-mouse off<br/>
+<br/>
+# Cambiar colores<br/>
+set -g status-bg "#1e1e2e"<br/>
+set -g status-fg "#cdd6f4"<br/>
+<br/>
+# Recargar después de editar:<br/>
+tmux source-file ~/.config/tmux/tmux.conf</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN TROUBLESHOOTING -->
+        <div id="troubleshooting" class="section">
+            <div class="section-header">
+                <span class="section-icon">🔧</span>
+                <span class="section-title">Troubleshooting</span>
+                <span class="difficulty medium">Medio</span>
+            </div>
+
+            <!-- Problema 1 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">❌</span>
+                    "No puedo conectarme a la sesión"
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Verifica que la sesión existe</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>tmux list-sessions</code>
+                            </div>
+                            <p>Si no ves <span class="command">ai-agents</span>, créala:</p>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>bash assets/scripts/init-tmux-sessions.sh create ai-agents</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Intenta conectarte nuevamente</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>tmux a -t ai-agents</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problema 2 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">❌</span>
+                    "Focus-follows-mouse no funciona"
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Recarga la configuración dentro de tmux</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>Ctrl+B : source-file ~/.config/tmux/tmux.conf</code>
+                            </div>
+                            <p style="font-size: 0.9em;">Presiona Ctrl+B, luego escribe el comando y presiona Enter.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Verifica que el mouse está activado</h4>
+                            <p>Dentro de tmux, en el prompt de comandos (:):</p>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>set -g mouse on</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Prueba nuevamente</h4>
+                            <p>Mueve el ratón entre panes. Si sigue sin funcionar, tu terminal quizá no soporta mouse en tmux. Usa Ctrl+H/L/K/J en su lugar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problema 3 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">❌</span>
+                    "Los procesos se mataron al cerrar la terminal"
+                </div>
+
+                <div class="warning-box">
+                    ⚠️ <strong>Probable causa:</strong> No estabas dentro de tmux. Estabas escribiendo en una terminal normal y cerraste la terminal. Los procesos murieron.
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Verifica que estás en tmux</h4>
+                            <p>En la terminal, ejecuta:</p>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>echo $TMUX</code>
+                            </div>
+                            <p>Si ve algo como <span class="command">/tmp/tmux-1000/default,1,0</span>, estás dentro. Si está vacío, no lo estás.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Para asegurar que siempre abres una terminal dentro de tmux</h4>
+                            <p>Agrega esto a <span class="command">~/.bashrc</span> o <span class="command">~/.zshrc</span>:</p>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>if command -v tmux &>/dev/null; then<br/>
+&nbsp;&nbsp;if [[ -z "${TMUX}" ]]; then<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;tmux attach -t ai-agents 2>/dev/null || tmux new-session -s ai-agents<br/>
+&nbsp;&nbsp;fi<br/>
+fi</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>De ahora en adelante</h4>
+                            <p>Cada vez que abres una terminal, automáticamente entrará en la sesión tmux. Tus procesos siempre estarán protegidos.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problema 4 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">❌</span>
+                    "Los plugins no se instalan"
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Instala manualmente dentro de tmux</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>Ctrl+B I</code>
+                            </div>
+                            <p style="font-size: 0.9em;">(Mayúscula I de "Install")</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Verifica que los plugins están instalados</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>ls ~/.config/tmux/plugins/</code>
+                            </div>
+                            <p>Deberías ver <span class="command">tpm</span>, <span class="command">tmux-resurrect</span> y <span class="command">tmux-continuum</span>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problema 5 -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">❌</span>
+                    "La persistencia no funciona (reinicio el PC y perdí las sesiones)"
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Verifica que continuum está activado</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>grep continuum ~/.config/tmux/tmux.conf</code>
+                            </div>
+                            <p>Debería mostrar algo con <span class="command">continuum</span> y <span class="command">on</span>.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Verifica que hay backups guardados</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>ls -la ~/.cache/tmux-resurrect/</code>
+                            </div>
+                            <p>Si la carpeta está vacía, el backup nunca se guardó. Espera 15 minutos o reconfigura continuum.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Restaura manualmente</h4>
+                            <div class="code-block" style="margin: 8px 0;">
+                                <code>tmux a -t ai-agents<br/>
+Ctrl+B Ctrl+R</code>
+                            </div>
+                            <p style="font-size: 0.9em;">(Restaurar sesión)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>📚 Guía interactiva de tmux • Hecha para entender desde cero</p>
+            <p style="color: var(--text-muted); margin-top: 10px; font-size: 0.9em;">
+                Para más detalles, consulta la documentación oficial:
+                <br/>
+                <span style="color: var(--primary);">github.com/tmux/tmux/wiki</span> •
+                <span style="color: var(--primary);">github.com/tmux-plugins/tpm</span>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
