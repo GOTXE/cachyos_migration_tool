@@ -8,6 +8,7 @@ Rectangle {
     id: root
 
     property bool raised: false
+    property bool showFrame: true
     property color accentColor: theme.border
 
     Theme {
@@ -16,11 +17,12 @@ Rectangle {
 
     radius: theme.radiusMd
     color: raised ? theme.panelRaised : theme.panel
-    border.width: 1
-    border.color: accentColor
+    border.width: showFrame ? 1 : 0
+    border.color: showFrame ? accentColor : "transparent"
     opacity: 0.92
 
     Rectangle {
+        visible: root.showFrame
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top

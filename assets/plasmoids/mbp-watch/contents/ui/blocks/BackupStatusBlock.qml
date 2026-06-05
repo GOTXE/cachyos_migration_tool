@@ -8,6 +8,7 @@ import "../theme"
 
 HudPanel {
     id: root
+    showFrame: false
 
     property var backup: ({
         status: "fail",
@@ -65,8 +66,6 @@ HudPanel {
     }
 
     implicitHeight: 72
-    accentColor: root.statusColor
-
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: theme.spacingSm
@@ -116,6 +115,7 @@ HudPanel {
             labelColor: root.backup.error ? theme.critical : theme.ok
             labelSize: 9
             maxLines: 1
+            horizontalAlignment: Text.AlignHCenter
             content: root.backup.error ? "ERROR: " + root.backup.error : "Last: " + (root.backup.last_snapshot_id || "n/a")
         }
 
