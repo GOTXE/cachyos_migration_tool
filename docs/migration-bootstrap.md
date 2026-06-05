@@ -30,8 +30,8 @@ Incluye herramientas de alta confianza probadas por CachyOS/Arch:
 - **Terminal:** zsh, tmux, neovim, kitty, btop, fastfetch.
 - **Utilidades:** jq, yq, ripgrep, curl, wget, zip/unzip.
 - **Docker:** Motor de contenedores y docker-compose.
-- **Internet y Multimedia:** Firefox, LibreOffice (en español), FFmpeg, yt-dlp.
-- **Aplicaciones extra seleccionables:** Restic, FileZilla, MarkdownPart, LibreOffice ES y Obsidian como bloques opcionales.
+- **Internet y Multimedia:** Firefox, LibreOffice (en español) + Java 21, FFmpeg, yt-dlp.
+- **Aplicaciones extra seleccionables:** Restic, FileZilla, MarkdownPart, LibreOffice ES + Java 21 y Obsidian como bloques opcionales.
 - **CLI de forja opcional:** `tea` como cliente de línea de comandos para Gitea desde repositorio oficial.
 - **Utilidades SSH opcionales:** `sshpass` como bloque opcional desde repositorio oficial.
 

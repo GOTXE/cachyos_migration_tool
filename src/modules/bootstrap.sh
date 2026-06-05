@@ -437,9 +437,9 @@ install_markdownpart_if_accepted() {
 }
 
 install_libreoffice_package() {
-    log "${YELLOW}Instalando LibreOffice Fresh ES desde repositorio oficial...${NC}"
-    log_package_batch_state "repo" "repo" libreoffice-fresh-es
-    run_cmd sudo pacman -S --needed --noconfirm libreoffice-fresh-es
+    log "${YELLOW}Instalando LibreOffice Fresh ES y Java 21 desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" libreoffice-fresh-es jre21-openjdk
+    run_cmd sudo pacman -S --needed --noconfirm libreoffice-fresh-es jre21-openjdk
 }
 
 install_libreoffice_if_accepted() {
