@@ -2,8 +2,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtCore
 
 import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasma5support as P5Support
 import org.kde.plasma.plasmoid
 
 import "../code/constants.js" as Constants
@@ -126,6 +128,65 @@ PlasmoidItem {
     Plasmoid.title: "MBP Watch"
     Plasmoid.icon: "utilities-system-monitor"
 
+    function backupStatusPath() {
+        var homePath = StandardPaths.writableLocation(StandardPaths.HomeLocation).toString();
+        if (homePath.indexOf("file://") === 0) {
+            homePath = homePath.replace("file://", "");
+        }
+
+        return homePath + "/.config/cachyos-migration-tool/backup-status.json";
+    }
+
+    function backupStatusCommand() {
+        return "/usr/bin/sh -c 'cat " + backupStatusPath() + "'";
+    }
+
+    function resetBackupState(errorMessage) {
+        backupState = {
+            status: "fail",
+            snapshot_count: 0,
+            total_size_gb: 0,
+            last_snapshot_time: "",
+            last_snapshot_id: "",
+            error: errorMessage,
+        };
+    }
+
+    function applyBackupStatusPayload(payload) {
+        if (!payload) {
+            resetBackupState("No data");
+            return;
+        }
+
+        try {
+            backupState = JSON.parse(payload);
+        } catch (e) {
+            resetBackupState("Invalid data");
+        }
+    }
+
+    function extractBackupPayload(data) {
+        if (!data) {
+            return "";
+        }
+
+        var candidateKeys = ["stdout", "data", "output"];
+        for (var i = 0; i < candidateKeys.length; i += 1) {
+            var key = candidateKeys[i];
+            if (typeof data[key] === "string" && data[key].length > 0) {
+                return data[key];
+            }
+        }
+
+        for (var prop in data) {
+            if (typeof data[prop] === "string" && data[prop].trim().charAt(0) === "{") {
+                return data[prop];
+            }
+        }
+
+        return "";
+    }
+
     function refreshData() {
         sourceState = DataSource.readState({
             dataUrl: Plasmoid.configuration.dataUrl || Constants.DATA_JSON_URL,
@@ -136,27 +197,8 @@ PlasmoidItem {
     }
 
     function refreshBackupData() {
-        var homedir = Qt.application.applicationDirPath.split("/.local/")[0] || Qt.application.name;
-        var statusFile = homedir + "/.config/cachyos-migration-tool/backup-status.json";
-
-        try {
-            var request = new XMLHttpRequest();
-            request.open("GET", "file://" + statusFile, false);
-            request.send();
-
-            if (request.status >= 200 && request.status < 300 && request.responseText) {
-                backupState = JSON.parse(request.responseText);
-            }
-        } catch (e) {
-            backupState = {
-                status: "fail",
-                snapshot_count: 0,
-                total_size_gb: 0,
-                last_snapshot_time: "",
-                last_snapshot_id: "",
-                error: "No data",
-            };
-        }
+        backupStatusSource.connectedSources = [];
+        backupStatusSource.connectedSources = [backupStatusCommand()];
     }
 
     function syncEvents() {
@@ -208,6 +250,19 @@ PlasmoidItem {
         running: true
         triggeredOnStart: true
         onTriggered: root.refreshData()
+    }
+
+    P5Support.DataSource {
+        id: backupStatusSource
+        engine: "executable"
+
+        onNewData: function(sourceName, data) {
+            if (sourceName !== root.backupStatusCommand()) {
+                return;
+            }
+
+            root.applyBackupStatusPayload(root.extractBackupPayload(data));
+        }
     }
 
     fullRepresentation: Item {
