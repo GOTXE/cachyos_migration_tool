@@ -47,14 +47,14 @@ top_process: claude (user)
 ```
 gpu: 00:02.0 VGA compatible controller: Intel Corporation Broadwell-U GT3 [Iris Graphics 6100] (rev 09)
 temperature: fan speed: fan1: 3693 RPM;Package id 0: +92.0°C...;Core 0: +92.0°C...;Core 1: +85.0°C...
-network: wlan0 wifi conectado TXOKLAN_5G;lo loopback connected (externally) lo;docker0 bridge...
+network: wlan0 wifi conectado EXAMPLE_WIFI_5G;lo loopback connected (externally) lo;docker0 bridge...
 ```
 
 **Ahora (5-6 líneas):**
 ```
 gpu: 00:02.0 Broadwell-U GT3 [Iris 6100]
 temperature: fan: 3693 RPM; Package: +92.0°C; Core0: +92.0°C; Core1: +85.0°C
-network: wlan0 (TXOKLAN_5G) connected
+network: wlan0 (EXAMPLE_WIFI_5G) connected
 ```
 
 ### 4. **WiFi Link más conciso**
@@ -64,7 +64,7 @@ network: wlan0 (TXOKLAN_5G) connected
 **Ahora:** Solo lo importante:
 ```
 WIFI LINK
-Connected to e0:41:36:b5:32:05 | SSID: TXOKLAN_5G | signal: -50 dBm
+Connected to 00:11:22:33:44:55 | SSID: EXAMPLE_WIFI_5G | signal: -50 dBm
 ```
 
 ---
@@ -110,11 +110,11 @@ systemd:        running
 memory:         Mem: 15Gi 6.3Gi 6.1Gi 1.3Gi 4.8Gi 9.3Gi
 temperature:    fan: 3693 RPM | Package: +92.0°C | Core0: +92.0°C | Core1: +85.0°C
 battery:        charging | 50.69% | 54.1 min to full | 26.8 Wh
-network:        wlan0 (TXOKLAN_5G) connected
+network:        wlan0 (EXAMPLE_WIFI_5G) connected
 failed_units:   none
 
 WIFI LINK
-Connected to e0:41:36:b5:32:05 | SSID: TXOKLAN_5G | signal: -50 dBm
+Connected to 00:11:22:33:44:55 | SSID: EXAMPLE_WIFI_5G | signal: -50 dBm
 
 HISTORY (daily errors — one per day)
 2026-05-08 wifi=0 net=0 gpu=0 bt=1 thermal=0 pm=0 audio=0 throttle=0 total=1

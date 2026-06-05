@@ -1,0 +1,11 @@
+[Unit]
+Description=CachyOS Backup Status Monitor Timer
+Documentation=https://github.com/GOTXE/cachyos-migration-tool
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=cachyos-backup-monitor.service
+
+[Install]
+WantedBy=timers.target

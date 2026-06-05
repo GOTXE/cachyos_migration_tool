@@ -50,7 +50,7 @@ get_last_snapshot_section 'wifi_link' | grep -oE 'Connected to|SSID:|signal:' | 
 
 # Ahora (correcto)
 get_last_snapshot_section 'wifi_link' | head -1
-# Resultado: Connected to e0:41:36:b5:32:05 (on wlan0);SSID: TXOKLAN_5G;freq: 5240.0;signal: -50 dBm...
+# Resultado: Connected to 00:11:22:33:44:55 (on wlan0);SSID: EXAMPLE_WIFI_5G;freq: 5240.0;signal: -50 dBm...
 ```
 
 ---
