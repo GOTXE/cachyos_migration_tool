@@ -106,7 +106,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `restic` | Installs `restic` and is enabled by default for backup/restore workflows |
 | `filezilla` | Installs FileZilla as a graphical SFTP/FTP client |
 | `markdownpart` | Adds Markdown preview support in Kate |
-| `libreoffice` | Installs LibreOffice Fresh ES |
+| `libreoffice` | Installs LibreOffice Fresh ES + Java 21 |
 | `ipscan` | Installs Angry IP Scanner from AUR |
 | `tea` | Installs `tea` as an optional CLI for Gitea |
 | `obsidian` | Obsidian from the official repository |

@@ -106,7 +106,7 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 | `restic` | Instala `restic` y queda marcado por defecto para backups/restores |
 | `filezilla` | Instala FileZilla como cliente gráfico SFTP/FTP |
 | `markdownpart` | Añade vista previa Markdown en Kate |
-| `libreoffice` | Instala LibreOffice Fresh ES |
+| `libreoffice` | Instala LibreOffice Fresh ES + Java 21 |
 | `ipscan` | Instala Angry IP Scanner desde AUR |
 | `tea` | Instala `tea` como CLI opcional para Gitea |
 | `obsidian` | Obsidian desde repositorio oficial |
