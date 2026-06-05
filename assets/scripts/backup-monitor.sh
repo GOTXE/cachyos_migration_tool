@@ -26,7 +26,7 @@ build_status_json() {
     local error="$6"
 
     local formatted_size=""
-    formatted_size="$(printf "%.1f" "$size" 2>/dev/null || echo "0")"
+    formatted_size="$(LC_NUMERIC=C printf "%.1f" "$size" 2>/dev/null || echo "0")"
     cat <<EOF
 {"status":"$status","snapshot_count":$count,"total_size_gb":$formatted_size,"last_snapshot_time":"$time","last_snapshot_id":"$id","error":"$error"}
 EOF
@@ -35,11 +35,14 @@ EOF
 try_repo() {
     local repo_host="$1"
     local repo_path="$2"
-    local timeout="${BACKUP_CONNECT_TIMEOUT:-8}"
+    [ -n "$repo_host" ] || return 1
 
     export RESTIC_REPOSITORY="sftp:${repo_host}:${repo_path}"
 
-    if ! timeout "$timeout" ssh -o BatchMode=yes "$repo_host" 'echo ok' >/dev/null 2>&1; then
+    # Match the backup runner: prefer validating the SFTP endpoint instead of a
+    # generic SSH command, because some hosts allow the repository transport but
+    # reject ad hoc shell commands.
+    if ! printf 'pwd\nbye\n' | sftp -o BatchMode=yes -o ConnectTimeout="${BACKUP_CONNECT_TIMEOUT:-8}" "$repo_host" >/dev/null 2>&1; then
         return 1
     fi
 
@@ -116,7 +119,10 @@ main() {
 
     status="ok"
     error=""
-    if check_stale "$last_time"; then
+    if [ "$count" -eq 0 ]; then
+        status="pending"
+        error="No snapshots yet"
+    elif check_stale "$last_time"; then
         status="stale"
         error="No recent backup"
     fi

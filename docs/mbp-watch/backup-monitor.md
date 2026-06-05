@@ -15,7 +15,7 @@ Backup | ✓ OK | 4 snapshots | 37.1 GiB | Última: 21:09:52
 - 🟢 **Verde (OK)**: Backups completos y operacionales
 - 🟡 **Amarillo (STALE)**: Sin backup reciente (>24h sin actualización)
 - 🔴 **Rojo (FAIL)**: Error en el repositorio o conectividad perdida
-- ⚪ **Gris (PENDING)**: Backup en progreso
+- ⚪ **Gris (PENDING)**: Backup en progreso o repositorio inicializado sin snapshots
 
 ## Instalación
 
@@ -107,7 +107,7 @@ El archivo `~/.config/cachyos-migration-tool/backup-status.json` tiene la estruc
 
 - `"ok"`: Backups completados correctamente
 - `"stale"`: Último backup fue hace más de 24 horas
-- `"pending"`: Backup en ejecución
+- `"pending"`: Backup en ejecución o repositorio todavía sin snapshots
 - `"fail"`: Error en acceso a repositorio
 
 ## Requisitos
