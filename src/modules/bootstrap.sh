@@ -484,6 +484,20 @@ install_ipscan_if_accepted() {
     fi
 }
 
+install_tea_package() {
+    log "${YELLOW}Instalando tea para Gitea desde repositorio oficial...${NC}"
+    log_package_batch_state "repo" "repo" tea
+    run_cmd sudo pacman -S --needed --noconfirm tea
+}
+
+install_tea_if_accepted() {
+    if confirm_action "¿Instalar tea como CLI opcional para Gitea?"; then
+        install_tea_package
+    else
+        log_info "Instalacion de tea omitida por decision del usuario."
+    fi
+}
+
 install_filezilla_if_accepted() {
     if confirm_action "¿Instalar FileZilla como cliente SFTP/FTP opcional?"; then
         install_filezilla_package
@@ -2330,6 +2344,7 @@ bootstrap_cachyos() {
     install_markdownpart_if_accepted
     install_libreoffice_if_accepted
     install_ipscan_if_accepted
+    install_tea_if_accepted
     install_talk2ai_if_accepted || true
     install_codexbar_tray_if_accepted || true
     install_mbp_watch_diagnostics

@@ -108,6 +108,7 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 | `markdownpart` | Añade vista previa Markdown en Kate |
 | `libreoffice` | Instala LibreOffice Fresh ES |
 | `ipscan` | Instala Angry IP Scanner desde AUR |
+| `tea` | Instala `tea` como CLI opcional para Gitea |
 | `obsidian` | Obsidian desde repositorio oficial |
 | `sshpass` | `sshpass` para SSH con contraseña no interactiva |
 | `codexbar_tray` | Instala `codexBar Tray` desde un repo local restaurado/detectado |
