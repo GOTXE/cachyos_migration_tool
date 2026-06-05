@@ -108,6 +108,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `markdownpart` | Adds Markdown preview support in Kate |
 | `libreoffice` | Installs LibreOffice Fresh ES |
 | `ipscan` | Installs Angry IP Scanner from AUR |
+| `tea` | Installs `tea` as an optional CLI for Gitea |
 | `obsidian` | Obsidian from the official repository |
 | `sshpass` | `sshpass` for non-interactive password-based SSH |
 | `codexbar_tray` | Installs `codexBar Tray` from a restored/detected local repo |

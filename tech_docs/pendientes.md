@@ -15,6 +15,10 @@ Estado:
 - `[x]` Añadir bloque seleccionable para `talk2ai` en el bootstrap y hacer que instale `handy-bin` como dependencia.
 - `[x]` Añadir bloque seleccionable para `codexBar Tray` en el bootstrap y exponerlo en ambas TUI.
 
+## Bootstrap: extras opcionales
+
+- `[x]` Añadir bloque seleccionable para `tea` como CLI opcional de Gitea en el bootstrap y exponerlo en ambas TUI.
+
 Comandos de referencia para validar la implementación:
 
 ```bash

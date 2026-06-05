@@ -891,6 +891,7 @@ Durante `Bootstrap CachyOS` el script ahora puede ofrecer tambien:
 - Instalar o actualizar `talk2ai` descargándolo desde GitHub en un checkout local gestionado por el script, con `./migration.sh install-talk2ai`; el flujo instala también `handy-bin` como dependencia.
 - Instalar `codexBar Tray` desde un repo local restaurado o detectado en las raíces de repositorio configuradas, con `./migration.sh install-codexbar-tray`.
 - Gestionar backups permanentes por SFTP/SSH con `./migration.sh restic-backup`, incluyendo `init`, `run`, `status`, `snapshots`, `install-timer` y `disable-timer`.
+- Instalar `tea` como cliente de línea de comandos opcional para instancias Gitea.
 
 Notas:
 
