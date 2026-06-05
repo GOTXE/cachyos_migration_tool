@@ -171,7 +171,7 @@ systemd:        running
 memory:         Mem:            15Gi       6,6Gi       5,9Gi       1,5Gi       5,0Gi       9,0Gi
 temperature:    fan speed: fan1: 3192 RPM;Package id 0:  +87.0°C  (high = +105.0°C, crit = +105.0°C);Core 0:        +87.0°C...
 battery:            state:               charging;    energy:              24,8042 Wh;    time to full:        59,9 minutes;    percentage:          46,8912%
-network:        wlan0    wifi      conectado               TXOKLAN_5G ;lo       loopback  connected (externally)  lo         ;docker0  bridge    connected (externally)  docker0
+network:        wlan0    wifi      conectado               EXAMPLE_WIFI_5G ;lo       loopback  connected (externally)  lo         ;docker0  bridge    connected (externally)  docker0
 rfkill:         0: hci0: Bluetooth;    Soft blocked: no;    Hard blocked: no;3: phy2: Wireless LAN
 failed_units:   none
 ```
@@ -191,7 +191,7 @@ systemd:        running
 memory:         Mem: 15Gi 6.6Gi 5.9Gi 1.5Gi 5.0Gi 9.0Gi
 temperature:    fan: 3192 RPM; Package: +87.0°C; Core 0: +87.0°C; Core 1: +85.0°C
 battery:        charging; 46.89%; 59.9 min; 24.8 Wh
-network:        wlan0 (TXOKLAN_5G)
+network:        wlan0 (EXAMPLE_WIFI_5G)
 failed_units:   none
 ```
 

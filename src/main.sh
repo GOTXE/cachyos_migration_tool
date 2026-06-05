@@ -19,6 +19,9 @@ source "$APP_DIR/modules/restore.sh"
 # shellcheck source=modules/bootstrap.sh
 source "$APP_DIR/modules/bootstrap.sh"
 # shellcheck disable=SC1091
+# shellcheck source=modules/restic_backup.sh
+source "$APP_DIR/modules/restic_backup.sh"
+# shellcheck disable=SC1091
 # shellcheck source=lib/tui.sh
 source "$APP_DIR/lib/tui.sh"
 
@@ -134,6 +137,9 @@ COMANDOS PRINCIPALES:
                              Opciones: [--target RUTA] [--dry-run]
   restore                    Restaura una copia de seguridad previa
                              Opciones: [--source RUTA] [--force] [--dry-run]
+  restic-backup              Gestiona backup permanente Restic por SFTP/SSH
+                             Subcomandos: init [--smoke-test] | run | status | snapshots |
+                                          install-timer | disable-timer
   postcheck                  Verifica el estado del sistema tras el reinicio post-bootstrap
                              y genera contexto local para analisis con IA
   test                       Ejecuta pruebas locales y reportes de preflight
@@ -288,6 +294,10 @@ main() {
             shift
             parse_restore_args "$@"
             restore_system
+            ;;
+        restic-backup)
+            shift
+            restic_backup_cli "$@"
             ;;
         bootstrap)
             shift

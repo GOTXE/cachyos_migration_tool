@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.6.0"
+VERSION="1.7.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -1044,6 +1044,7 @@ filezilla|FileZilla (cliente SFTP/FTP gráfico)|OFF
 markdownpart|MarkdownPart para vista previa Markdown en Kate|OFF
 libreoffice|LibreOffice Fresh ES|OFF
 ipscan|Angry IP Scanner (AUR)|OFF
+tea|tea CLI para Gitea|OFF
 obsidian|Obsidian (Markdown knowledge base)|OFF
 sshpass|sshpass para contraseñas SSH no interactivas|OFF
 codexbar_tray|codexBar Tray KDE (instala desde repo local restaurado)|OFF

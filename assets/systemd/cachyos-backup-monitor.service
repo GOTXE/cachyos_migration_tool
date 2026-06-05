@@ -1,0 +1,15 @@
+[Unit]
+Description=CachyOS Backup Status Monitor
+Documentation=https://github.com/GOTXE/cachyos-migration-tool
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=%u
+ExecStart=%h/.local/share/cachyos-migration-tool/backup-monitor.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

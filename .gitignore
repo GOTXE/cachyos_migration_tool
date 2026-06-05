@@ -7,3 +7,6 @@ __pycache__/
 .agents/
 .codex/
 AGENTS.md
+
+# Temporal: tmux guide en desarrollo
+docs/tmux-guide.html

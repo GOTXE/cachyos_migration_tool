@@ -15,6 +15,7 @@ import "../code/openDashboard.js" as OpenDashboard
 import "../code/stateAdapter.js" as StateAdapter
 import "popups"
 import "theme"
+import "blocks"
 
 PlasmoidItem {
     id: root
@@ -31,6 +32,14 @@ PlasmoidItem {
         events: [],
         indicators: [],
         newEvents: [],
+    })
+    property var backupState: ({
+        status: "fail",
+        snapshot_count: 0,
+        total_size_gb: 0,
+        last_snapshot_time: "",
+        last_snapshot_id: "",
+        error: "",
     })
     property var selectedEvent: null
     property real contentHeightHint: 720
@@ -123,6 +132,31 @@ PlasmoidItem {
         }, sourceState);
         adaptedState = StateAdapter.adapt(sourceState.data);
         syncEvents();
+        refreshBackupData();
+    }
+
+    function refreshBackupData() {
+        var homedir = Qt.application.applicationDirPath.split("/.local/")[0] || Qt.application.name;
+        var statusFile = homedir + "/.config/cachyos-migration-tool/backup-status.json";
+
+        try {
+            var request = new XMLHttpRequest();
+            request.open("GET", "file://" + statusFile, false);
+            request.send();
+
+            if (request.status >= 200 && request.status < 300 && request.responseText) {
+                backupState = JSON.parse(request.responseText);
+            }
+        } catch (e) {
+            backupState = {
+                status: "fail",
+                snapshot_count: 0,
+                total_size_gb: 0,
+                last_snapshot_time: "",
+                last_snapshot_id: "",
+                error: "No data",
+            };
+        }
     }
 
     function syncEvents() {
@@ -437,6 +471,14 @@ PlasmoidItem {
                     color: theme.text
                     Layout.fillWidth: true
                 }
+            }
+
+            HudSep {}
+
+            // ── BACKUP ───────────────────────────────────────────────
+            BackupStatusBlock {
+                Layout.fillWidth: true
+                backup: root.backupState
             }
 
             HudSep {}

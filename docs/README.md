@@ -13,6 +13,7 @@
 - [backup-sftp-restic.md](backup-sftp-restic.md) — Preparación de un destino SFTP/SSH para backups Restic
 - [backup-synology-sftp.md](backup-synology-sftp.md) — Preparación de Synology DSM como destino SFTP para Restic
 - [backup-restic.env.example](backup-restic.env.example) — Plantilla de variables para backup Restic con fallback LAN/remoto
+- [mbp-watch/backup-monitor.md](mbp-watch/backup-monitor.md) — Monitor de estado de backup Restic para el plasmoid MBP Watch
 
 ## Firmware Wi-Fi
 

@@ -20,6 +20,7 @@ Includes model-aware support for **Intel MacBook Pro** profiles, with an initial
 | **Backup** | Exports configurations, Git repos, user data and metadata (SSH, VSCode, ZSH, AI tooling) |
 | **Bootstrap** | Installs and configures a CachyOS workstation from scratch: KDE Plasma, dev tooling, Docker, Syncthing |
 | **Restore** | Restores the backup on the new installation, adapting UID/GID and permissions |
+| **Restic backup** | Prepares and runs continuous backup over SFTP/SSH with LAN/remote fallback and a user timer |
 | **Post-check** | Validates system state after the first reboot post-bootstrap |
 | **MBP Watch** | systemd hardware monitoring daemon + web dashboard + KDE plasmoid |
 | **Extras** | Optional Hyprland, YouTube Force H264, VA-API Brave/Chromium based on the detected Intel profile, BTRFS snapshots |
@@ -66,6 +67,7 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 ./migration.sh bootstrap [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
 ./migration.sh postcheck
 ./migration.sh restore   [--source PATH] [--force] [--dry-run]
+./migration.sh restic-backup [init [--smoke-test] | run | status | snapshots | install-timer | disable-timer]
 
 ./migration.sh export-ai-context         [--dry-run]
 ./migration.sh install-youtube-force-h264  [--dry-run]
@@ -207,6 +209,7 @@ Distributed under the [GNU General Public License v3.0](LICENSE). No warranty of
 - [Full usage guide](docs/migration.md)
 - [TUI system](docs/tui.md)
 - [Restic backup over SFTP/SSH](docs/backup-sftp-restic.md)
+- [Backup monitor for the MBP Watch plasmoid](docs/mbp-watch/backup-monitor.md)
 - [BCM43602 Wi-Fi firmware](docs/firmware-bcm43602.md)
 - [Diagnostics scripts and MBP Watch](docs/diagnostics.md)
 - [KDE MBP Watch plasmoid](docs/plasmoid-mbp-watch.md)

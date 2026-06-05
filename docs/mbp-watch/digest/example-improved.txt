@@ -43,20 +43,20 @@ systemd:        running
 memory:         Mem:            15Gi       7,8Gi       4,2Gi       1,5Gi       5,5Gi       8,2Gi
 temperature:    fan speed: fan1: 3850 RPM;Package id 0:  +78.0°C  (high = +105.0°C, crit = +105.0°C);Core 0:        +78.0°C  (high = +105.0°C, crit = +105.0°C);Core 1:        +72.0°C
 battery:            state:               charging;    energy:              20,1234 Wh;    time to full:        0,5 hours;    percentage:          65,5555%
-network:        wlan0    wifi      conectado               TXOKLAN_5G
+network:        wlan0    wifi      conectado               EXAMPLE_WIFI_5G
 rfkill:         0: hci0: Bluetooth;    Soft blocked: no;    Hard blocked: no;3: phy2: Wireless LAN
 failed_units:   none
 
 WIFI LINK (last snapshot)
-Connected to e0:41:36:b5:32:05 (on wlan0);SSID: TXOKLAN_5G;freq: 5240.0;signal: -48 dBm;rx bitrate: 585.0 MBit/s;tx bitrate: 585.0 MBit/s;connected time: 4521 seconds;power_save: on
+Connected to 00:11:22:33:44:55 (on wlan0);SSID: EXAMPLE_WIFI_5G;freq: 5240.0;signal: -48 dBm;rx bitrate: 585.0 MBit/s;tx bitrate: 585.0 MBit/s;connected time: 4521 seconds;power_save: on
 
 HISTORY (daily_errors.log — one line per day, never truncated)
 2026-05-08 wifi=0 net=0 gpu=0 bt=1 thermal=0 pm=0 audio=0 throttle=0 total=1
 2026-05-09 wifi=1 net=1 gpu=0 bt=0 thermal=0 pm=0 audio=0 throttle=0 total=2
 
 ERRORS_DEDUPED (max 20 unique lines, last 200 window)
-2026-05-09T17:14:52+02:00 MBP-CachyOS NetworkManager[692]: <info>  [1778339692.1437] device (wlan0): state change: activated -> failed (reason 'supplicant-disconnect', managed-type: 'full')
-2026-05-09T17:49:17+02:00 MBP-CachyOS kernel: brcmfmac 0000:03:00.0: Direct firmware load for brcm/brcmfmac43602-pcie.Apple Inc.-MacBookPro12,1.bin failed with error -2
+2026-05-09T17:14:52+02:00 workstation-linux NetworkManager[692]: <info>  [1778339692.1437] device (wlan0): state change: activated -> failed (reason 'supplicant-disconnect', managed-type: 'full')
+2026-05-09T17:49:17+02:00 workstation-linux kernel: brcmfmac 0000:03:00.0: Direct firmware load for brcm/brcmfmac43602-pcie.Apple Inc.-MacBookPro12,1.bin failed with error -2
 
 PERFORMANCE_ANALYSIS (for Python/web dev + music)
 METRICS SNAPSHOT:

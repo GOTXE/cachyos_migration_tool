@@ -414,7 +414,7 @@ syncthing
 Tiene sentido usarlo para sincronizar entre:
 
 - MBP
-- NAS Synology
+- NAS o servidor de archivos
 - PC de escritorio Linux
 
 ### Sincronizar
@@ -479,4 +479,3 @@ La instalación debe priorizar:
 - buen control térmico
 - WiFi estable mediante iwd
 - terminal bonito pero eficiente
-

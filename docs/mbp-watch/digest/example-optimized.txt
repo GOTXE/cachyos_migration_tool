@@ -40,11 +40,11 @@ systemd:        running
 memory:         Mem: 15Gi 6.6Gi 5.9Gi 1.5Gi 5.0Gi 9.0Gi
 temperature:    fan: 3192 RPM; Package: +87.0°C; Core 0: +87.0°C; Core 1: +85.0°C
 battery:        charging; 46.89%; 59.9 min to full; 24.8 Wh
-network:        wlan0 (TXOKLAN_5G)
+network:        wlan0 (EXAMPLE_WIFI_5G)
 failed_units:   none
 
 WIFI LINK
-Connected to e0:41:36:b5:32:05; SSID: TXOKLAN_5G; signal: -53 dBm; rx: 450 MBit/s; tx: 400 MBit/s
+Connected to 00:11:22:33:44:55; SSID: EXAMPLE_WIFI_5G; signal: -53 dBm; rx: 450 MBit/s; tx: 400 MBit/s
 
 HISTORY (daily errors — one per day)
 2026-05-08 wifi=0 net=0 gpu=0 bt=1 thermal=0 pm=0 audio=0 throttle=0 total=1

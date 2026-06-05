@@ -1,0 +1,43 @@
+/home/*/.cache
+/home/*/.local/share/Trash
+/home/*/Descargas
+/home/*/.npm/_cacache
+/home/*/.npm/_logs
+/home/*/.cache/yay
+/home/*/.cache/paru
+/home/*/.nvm/.cache
+/home/*/.nvm/versions
+
+/home/*/.config/BraveSoftware/*/Default/Cache
+/home/*/.config/BraveSoftware/*/Default/Code Cache
+/home/*/.config/BraveSoftware/*/Default/GPUCache
+/home/*/.config/BraveSoftware/*/Default/Service Worker/CacheStorage
+/home/*/.config/chromium/*/Cache
+/home/*/.config/chromium/*/Code Cache
+/home/*/.config/chromium/*/GPUCache
+/home/*/.config/chromium/*/Service Worker/CacheStorage
+/home/*/.config/Code/Cache
+/home/*/.config/Code/CachedData
+/home/*/.config/Code/CachedExtensionVSIXs
+/home/*/.config/Code/Code Cache
+/home/*/.config/Code/GPUCache
+/home/*/.config/Code/logs
+/home/*/.vscode/extensions
+
+**/node_modules
+**/.pnpm-store
+**/.venv
+**/venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/dist
+**/build
+**/target
+**/.next
+**/.turbo
+**/coverage
+**/*.tmp
+**/*.swp
+**/*.log
