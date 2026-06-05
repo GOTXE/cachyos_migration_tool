@@ -135,18 +135,38 @@ src/
 └── modules/
     ├── backup.sh
     ├── bootstrap.sh
+    ├── restic_backup.sh
     └── restore.sh
 src/tools/
 └── extract_bcm43602_bundle.sh  # extracts Wi-Fi firmware from current system
 assets/
-├── diagnostics/                # mbp_watch daemon, systemd service, plasmoid scripts
+├── diagnostics/                # mbp_watch daemon, deployment scripts and local dashboard
 │   └── web/                    # local dashboard HTML/JS/CSS frontend
-└── plasmoids/
-    └── mbp-watch/              # KDE Plasma 6 package (kpackagetool6)
+├── plasmoids/
+│   └── mbp-watch/              # KDE Plasma 6 package (kpackagetool6)
+├── scripts/
+│   └── backup-monitor.sh       # generates backup-status.json for the plasmoid
+├── systemd/
+│   ├── cachyos-backup-monitor.*# plasmoid backup monitor service/timer
+│   └── user/restic-backup.*    # user Restic backup service/timer
+└── templates/
+    ├── backup-restic.env.example
+    └── restic-excludes.txt
 firmware/
 └── brcm/                       # BCM43602 bundle to avoid Wi-Fi dependency post-install
 docs/                           # full documentation
 ```
+
+---
+
+## Restic + MBP Watch plasmoid
+
+The permanent backup flow and its Plasma visualization are split into two pieces:
+
+- `./migration.sh restic-backup ...` manages the Restic repository and the user backup timer
+- `assets/scripts/backup-monitor.sh` + `assets/systemd/cachyos-backup-monitor.*` update `~/.config/cachyos-migration-tool/backup-status.json` so the MBP Watch plasmoid can display backup state
+
+The operational guide for this second piece is in [`docs/mbp-watch/backup-monitor.md`](docs/mbp-watch/backup-monitor.md).
 
 ---
 

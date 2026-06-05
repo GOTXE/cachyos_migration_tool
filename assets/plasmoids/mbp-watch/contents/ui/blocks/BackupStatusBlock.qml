@@ -65,7 +65,7 @@ HudPanel {
         }
     }
 
-    implicitHeight: 72
+    implicitHeight: 92
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: theme.spacingSm
@@ -81,42 +81,53 @@ HudPanel {
             Layout.fillWidth: true
             spacing: theme.spacingSm
 
-            MonoLabel {
-                labelColor: root.statusColor
-                labelSize: 11
-                content: root.statusIcon + " " + root.statusText
-                Layout.preferredWidth: 48
+            ColumnLayout {
+                Layout.preferredWidth: 64
+                Layout.alignment: Qt.AlignTop
+                spacing: 2
+
+                MonoLabel {
+                    labelColor: root.statusColor
+                    labelSize: 12
+                    content: root.statusIcon + " " + root.statusText
+                }
+
+                MonoLabel {
+                    labelColor: theme.textDim
+                    labelSize: 11
+                    content: root.backup.last_snapshot_time ? root.backup.last_snapshot_time.split("T")[1].slice(0, 5) : "n/a"
+                }
             }
 
             MonoLabel {
-                labelColor: theme.textDim
-                labelSize: 11
-                content: root.backup.snapshot_count + " snapshots"
-                Layout.preferredWidth: 88
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                labelColor: root.backup.error ? theme.critical : theme.ok
+                labelSize: 9
+                maxLines: 1
+                horizontalAlignment: Text.AlignHCenter
+                content: root.backup.error ? "ERROR: " + root.backup.error : "Last: " + (root.backup.last_snapshot_id || "n/a")
             }
 
-            MonoLabel {
-                labelColor: theme.textDim
-                labelSize: 11
-                content: root.backup.total_size_gb.toFixed(1) + " GiB"
-                Layout.preferredWidth: 60
-            }
+            ColumnLayout {
+                Layout.preferredWidth: 92
+                Layout.alignment: Qt.AlignTop
+                spacing: 2
 
-            MonoLabel {
-                labelColor: theme.textDim
-                labelSize: 11
-                content: root.backup.last_snapshot_time ? root.backup.last_snapshot_time.split("T")[1].slice(0, 5) : "n/a"
-                Layout.preferredWidth: 42
-            }
-        }
+                MonoLabel {
+                    labelColor: theme.textDim
+                    labelSize: 12
+                    horizontalAlignment: Text.AlignRight
+                    content: root.backup.snapshot_count + " snapshots"
+                }
 
-        MonoLabel {
-            Layout.fillWidth: true
-            labelColor: root.backup.error ? theme.critical : theme.ok
-            labelSize: 9
-            maxLines: 1
-            horizontalAlignment: Text.AlignHCenter
-            content: root.backup.error ? "ERROR: " + root.backup.error : "Last: " + (root.backup.last_snapshot_id || "n/a")
+                MonoLabel {
+                    labelColor: theme.textDim
+                    labelSize: 11
+                    horizontalAlignment: Text.AlignRight
+                    content: root.backup.total_size_gb.toFixed(1) + " GiB"
+                }
+            }
         }
 
         ThinBar {
