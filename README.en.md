@@ -96,6 +96,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `base` | KDE Plasma, zsh, kitty, tmux, neovim, ripgrep, fd, bat, eza, docker, syncthing… |
 | `zsh` | Oh My Zsh + Powerlevel10k |
 | `node` | nvm, Node LTS, pnpm, bun |
+| `playwright` | Playwright for web testing with MCP and IA agents support |
 | `ai` | Codex CLI, Claude Code |
 | `mbpwatch` | MBP Watch daemon (systemd) |
 | `plasmoid` | KDE MBP Watch plasmoid |

@@ -713,6 +713,30 @@ install_opencode_cli() {
     fi
 }
 
+install_playwright_package() {
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck disable=SC1090,SC1091
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+    log "${YELLOW}Instalando/Actualizando Playwright...${NC}"
+    log_npm_tool_status "Playwright" "playwright" "playwright"
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] npm install -g @playwright/test${NC}"
+    else
+        npm install -g @playwright/test 2>&1 | tee -a "$LOGFILE"
+    fi
+    link_npm_global_binaries
+}
+
+install_playwright_if_accepted() {
+    if confirm_action "¿Instalar Playwright para testing web con soporte MCP e integración con agentes IA?"; then
+        install_playwright_package
+    else
+        log_info "Instalacion de Playwright omitida por decision del usuario."
+    fi
+}
+
 install_ai_tools() {
     install_codex_cli
     install_claude_cli
@@ -2339,6 +2363,7 @@ bootstrap_cachyos() {
     install_powerlevel10k
     install_node_stack
     install_ai_tools
+    install_playwright_if_accepted
     install_restic_if_accepted
     install_filezilla_if_accepted
     install_markdownpart_if_accepted
