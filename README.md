@@ -96,6 +96,7 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 | `base` | KDE Plasma, zsh, kitty, tmux, neovim, ripgrep, fd, bat, eza, docker, syncthing… |
 | `zsh` | Oh My Zsh + Powerlevel10k |
 | `node` | nvm, Node LTS, pnpm, bun |
+| `playwright` | Playwright para testing web con soporte MCP e integración con agentes IA |
 | `ai` | Codex CLI, Claude Code |
 | `mbpwatch` | Daemon MBP Watch (systemd) |
 | `plasmoid` | Plasmoid KDE MBP Watch |
