@@ -515,6 +515,20 @@ install_restic_if_accepted() {
     fi
 }
 
+install_appimage_support_package() {
+    log "${YELLOW}Instalando soporte AppImage (fuse2 + webkit2gtk-4.1)...${NC}"
+    log_package_batch_state "repo" "repo" fuse2 webkit2gtk-4.1
+    run_cmd sudo pacman -S --needed --noconfirm fuse2 webkit2gtk-4.1
+}
+
+install_appimage_support_if_accepted() {
+    if confirm_action "¿Instalar soporte para AppImages en CachyOS (fuse2 + webkit2gtk-4.1)?"; then
+        install_appimage_support_package
+    else
+        log_info "Instalacion de soporte AppImage omitida por decision del usuario."
+    fi
+}
+
 install_codexbar_tray_dependencies() {
     log "${YELLOW}Preparando dependencias de codexBar Tray...${NC}"
     log_package_batch_state "repo" "repo" python-pyqt6
@@ -2365,6 +2379,7 @@ bootstrap_cachyos() {
     install_ai_tools
     install_playwright_if_accepted
     install_restic_if_accepted
+    install_appimage_support_if_accepted
     install_filezilla_if_accepted
     install_markdownpart_if_accepted
     install_libreoffice_if_accepted
