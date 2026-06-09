@@ -30,7 +30,7 @@ TUI_BACKEND=auto      ./migration.sh   # comportamiento por defecto
 - Solo stdlib — sin `pip install` ni paquetes externos.
 - Widgets implementados: `menu`, `checklist`, `radiolist`, `inputbox`, `yesno`, `msgbox`.
 - Navegación: flechas o `j`/`k`, `SPACE` para marcar en checklist, `ENTER` para confirmar, `Q`/`ESC` para cancelar.
-- El bootstrap muestra un checklist con los 16 bloques disponibles; las preguntas adicionales (país Wi-Fi, navegador para HW accel) se recogen antes de lanzar el proceso.
+- El bootstrap muestra un checklist con los bloques disponibles; las preguntas adicionales (país Wi-Fi, navegador para HW accel) se recogen antes de lanzar el proceso.
 - Al ejecutar una operación, suspende curses, muestra el output en terminal crudo con cabecera ANSI y espera `ENTER` al terminar.
 
 ## Whiptail (`src/lib/tui.sh`)

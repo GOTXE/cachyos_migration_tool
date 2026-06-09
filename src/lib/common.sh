@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.8.3"
+VERSION="1.8.6"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -1053,6 +1053,7 @@ docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON
 ai_codex|Codex CLI (@openai/codex)|OFF
+ai_engram|Engram memoria persistente para Codex|OFF
 ai_claude|Claude Code CLI (nativo)|OFF
 ai_gemini|Gemini CLI (@google/gemini-cli)|OFF
 ai_opencode|OpenCode CLI|OFF
