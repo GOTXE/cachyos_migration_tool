@@ -1053,6 +1053,7 @@ docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON
 ai_codex|Codex CLI (@openai/codex)|OFF
+ai_engram|Engram memoria persistente para Codex|OFF
 ai_claude|Claude Code CLI (nativo)|OFF
 ai_gemini|Gemini CLI (@google/gemini-cli)|OFF
 ai_opencode|OpenCode CLI|OFF

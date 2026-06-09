@@ -1847,7 +1847,7 @@ def flow_bootstrap(stdscr):
         return
 
     env_extra = {}
-    ai_selected = {"ai_codex", "ai_claude", "ai_gemini", "ai_opencode"} & set(selected)
+    ai_selected = {"ai_codex", "ai_claude", "ai_gemini", "ai_opencode", "ai_engram"} & set(selected)
     
     if "wifi" in selected:
         stdscr.clear()

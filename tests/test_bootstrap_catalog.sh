@@ -56,6 +56,7 @@ assert_contains "$CATALOG_2015" "tea|tea CLI para Gitea|OFF" "catalog 12,1 tea"
 assert_contains "$CATALOG_2015" "obsidian|Obsidian (Markdown knowledge base)|OFF" "catalog 12,1 obsidian"
 assert_contains "$CATALOG_2015" "sshpass|sshpass para contraseñas SSH no interactivas|OFF" "catalog 12,1 sshpass"
 assert_contains "$CATALOG_2015" "codexbar_tray|codexBar Tray KDE (instala desde repo local restaurado)|OFF" "catalog 12,1 codexbar tray"
+assert_contains "$CATALOG_2015" "ai_engram|Engram memoria persistente para Codex|OFF" "catalog 12,1 engram"
 assert_not_contains "$CATALOG_2015" "hwaccel|Aceleración HW Chromium/Brave|OFF" "catalog 12,1 hwaccel hidden"
 
 MACBOOK_MODEL="MacBookPro8,1"
@@ -80,5 +81,6 @@ assert_contains "$CATALOG_GENERIC" "tea|tea CLI para Gitea|OFF" "catalog generic
 assert_contains "$CATALOG_GENERIC" "obsidian|Obsidian (Markdown knowledge base)|OFF" "catalog generic obsidian"
 assert_contains "$CATALOG_GENERIC" "sshpass|sshpass para contraseñas SSH no interactivas|OFF" "catalog generic sshpass"
 assert_contains "$CATALOG_GENERIC" "codexbar_tray|codexBar Tray KDE (instala desde repo local restaurado)|OFF" "catalog generic codexbar tray"
+assert_contains "$CATALOG_GENERIC" "ai_engram|Engram memoria persistente para Codex|OFF" "catalog generic engram"
 
 printf 'OK bootstrap catalog\n'

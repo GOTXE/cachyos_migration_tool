@@ -881,11 +881,12 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"zsh"'* ]]         && { install_ohmyzsh; install_powerlevel10k; }
     [[ "$SELECTED" == *'"node"'* ]]        && install_node_stack
     [[ "$SELECTED" == *'"ai_codex"'* ]]    && install_codex_cli
+    [[ "$SELECTED" == *'"ai_engram"'* ]]   && install_engram_for_codex
     [[ "$SELECTED" == *'"ai_claude"'* ]]   && install_claude_cli
     [[ "$SELECTED" == *'"ai_gemini"'* ]]   && install_gemini_cli
     [[ "$SELECTED" == *'"ai_opencode"'* ]] && install_opencode_cli
 
-    if [[ "$SELECTED" == *'"ai_codex"'* || "$SELECTED" == *'"ai_claude"'* || "$SELECTED" == *'"ai_gemini"'* || "$SELECTED" == *'"ai_opencode"'* ]]; then
+    if [[ "$SELECTED" == *'"ai_codex"'* || "$SELECTED" == *'"ai_engram"'* || "$SELECTED" == *'"ai_claude"'* || "$SELECTED" == *'"ai_gemini"'* || "$SELECTED" == *'"ai_opencode"'* ]]; then
         configure_shell_paths
         verify_ai_tools
     fi

@@ -670,6 +670,14 @@ log_opencode_tool_status() {
     fi
 }
 
+log_engram_tool_status() {
+    if command -v engram >/dev/null 2>&1; then
+        log_success "Engram: instalado"
+    else
+        log_info "Engram: pendiente de instalar"
+    fi
+}
+
 install_codex_cli() {
     export NVM_DIR="$HOME/.nvm"
     # shellcheck disable=SC1090,SC1091
@@ -699,6 +707,31 @@ install_claude_cli() {
     else
         run_shell "curl -fsSL https://claude.ai/install.sh | bash"
     fi
+}
+
+install_engram_for_codex() {
+    export GOBIN="${GOBIN:-$HOME/go/bin}"
+    export PATH="$GOBIN:$PATH"
+
+    log "${YELLOW}Instalando/Configurando Engram para Codex...${NC}"
+    log_engram_tool_status
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] go install github.com/Gentleman-Programming/engram/cmd/engram@latest${NC}"
+        log "${YELLOW}[DRY-RUN] engram setup codex${NC}"
+        return 0
+    fi
+
+    if ! command -v engram >/dev/null 2>&1; then
+        run_cmd go install github.com/Gentleman-Programming/engram/cmd/engram@latest
+    fi
+
+    command -v engram >/dev/null 2>&1 || {
+        log "${RED}Engram sigue sin estar disponible tras la instalación.${NC}"
+        return 1
+    }
+
+    run_cmd engram setup codex
 }
 
 install_gemini_cli() {
@@ -756,6 +789,7 @@ install_ai_tools() {
     install_claude_cli
     install_gemini_cli
     install_opencode_cli
+    install_engram_for_codex
     
     configure_shell_paths
     verify_ai_tools

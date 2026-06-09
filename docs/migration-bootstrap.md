@@ -54,6 +54,7 @@ Software que no está en repositorios oficiales por licencias o naturaleza:
 ### 8. Herramientas de IA (CLI)
 Instalación de interfaces de línea de comandos para asistentes de IA:
 - **Codex:** `@openai/codex` vía npm.
+- **Engram:** `engram` vía `go install`, con `engram setup codex` para registrar MCP e instrucciones de memoria.
 - **Claude:** `claude` (nativo de Anthropic).
 - **Gemini:** `@google/gemini-cli` vía npm.
 - **OpenCode:** Integración con OpenCode CLI.

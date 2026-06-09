@@ -97,7 +97,7 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 | `zsh` | Oh My Zsh + Powerlevel10k |
 | `node` | nvm, Node LTS, pnpm, bun |
 | `playwright` | Playwright para testing web con soporte MCP e integración con agentes IA |
-| `ai` | Codex CLI, Claude Code |
+| `ai` | Codex CLI, Engram, Claude Code |
 | `mbpwatch` | Daemon MBP Watch (systemd) |
 | `plasmoid` | Plasmoid KDE MBP Watch |
 | `youtube` | Extensión YouTube Force H264 |
@@ -113,6 +113,7 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 | `obsidian` | Obsidian desde repositorio oficial |
 | `sshpass` | `sshpass` para SSH con contraseña no interactiva |
 | `codexbar_tray` | Instala `codexBar Tray` desde un repo local restaurado/detectado |
+| `ai_engram` | Instala Engram y lo configura para Codex CLI |
 | `iwd` | iwd backend para NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim, mako |
 | `wifi` | wireless-regdb + dominio regulatorio por país |
