@@ -1040,6 +1040,7 @@ kde|Aplicaciones base KDE Plasma|ON
 aur|Paquetes adicionales desde AUR|ON
 talk2ai|talk2ai (descarga/actualiza desde GitHub)|OFF
 restic|Restic para backup/restore por repositorio|ON
+appimage|Soporte AppImages (fuse2 + webkit2gtk-4.1)|OFF
 filezilla|FileZilla (cliente SFTP/FTP gráfico)|OFF
 markdownpart|MarkdownPart para vista previa Markdown en Kate|OFF
 libreoffice|LibreOffice Fresh ES + Java 21|OFF

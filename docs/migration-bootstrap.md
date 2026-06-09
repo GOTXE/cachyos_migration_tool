@@ -29,6 +29,7 @@ compatibilidad sin mantener una lista fija de opciones para un solo MacBook.
 Incluye herramientas de alta confianza probadas por CachyOS/Arch:
 - **Terminal:** zsh, tmux, neovim, kitty, btop, fastfetch.
 - **Utilidades:** jq, yq, ripgrep, curl, wget, zip/unzip.
+- **AppImages:** bloque opcional que instala `fuse2` para compatibilidad con AppImages clásicas y `webkit2gtk-4.1` para las que dependen de WebKitGTK.
 - **Docker:** Motor de contenedores y docker-compose.
 - **Internet y Multimedia:** Firefox, LibreOffice (en español) + Java 21, FFmpeg, yt-dlp.
 - **Aplicaciones extra seleccionables:** Restic, FileZilla, MarkdownPart, LibreOffice ES + Java 21 y Obsidian como bloques opcionales.
