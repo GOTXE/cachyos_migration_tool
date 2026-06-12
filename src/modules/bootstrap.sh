@@ -472,8 +472,8 @@ install_ipscan_package() {
     log "${YELLOW}Instalando Angry IP Scanner desde AUR...${NC}"
     install_base_devel
     install_yay
-    log_package_batch_state "AUR" "aur" angryipscanner
-    run_cmd yay -S --needed --noconfirm angryipscanner
+    log_package_batch_state "AUR" "aur" ipscan
+    run_cmd yay -S --needed --noconfirm ipscan
 }
 
 install_ipscan_if_accepted() {
