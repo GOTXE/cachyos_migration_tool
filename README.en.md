@@ -97,7 +97,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `zsh` | Oh My Zsh + Powerlevel10k |
 | `node` | nvm, Node LTS, pnpm, bun |
 | `playwright` | Playwright for web testing with MCP and IA agents support |
-| `ai` | Codex CLI, Claude Code |
+| `ai` | Codex CLI, Engram, Claude Code |
 | `mbpwatch` | MBP Watch daemon (systemd) |
 | `plasmoid` | KDE MBP Watch plasmoid |
 | `youtube` | YouTube Force H264 extension |
@@ -113,6 +113,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `obsidian` | Obsidian from the official repository |
 | `sshpass` | `sshpass` for non-interactive password-based SSH |
 | `codexbar_tray` | Installs `codexBar Tray` from a restored/detected local repo |
+| `ai_engram` | Installs Engram and configures it for Codex CLI |
 | `iwd` | iwd backend for NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim, mako |
 | `wifi` | wireless-regdb + country regulatory domain |
