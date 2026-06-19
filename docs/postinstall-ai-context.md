@@ -37,6 +37,14 @@ Ficheros:
   - `~/.config/brave-flags.conf`
   - `~/.config/environment.d/vaapi.conf`
 
+## Observaciones útiles para esta migración
+
+- `handy-bin` valida la parte de transcripción local, pero no siempre implica un icono propio en la bandeja.
+- `talk2ai-tray` puede quedarse en rojo aunque el daemon funcione si faltan dependencias locales como `espeak-ng` o acceso `input` para los atajos.
+- El icono visible esperado para el flujo de voz es `talk2ai-tray`; `codexBar Tray` es un tray independiente y puede aparecer aunque `Handy` no lo haga.
+- Si `talk2ai-tray` está activo pero no aparece en Plasma, conviene revisar sesión/autostart y hacer logout/login antes de asumir que la instalación está mal.
+- Si `codexBar Tray` aparece duplicado, revisa primero si quedó un `~/.config/autostart/codexbar-tray.desktop` restaurado además del servicio `systemd --user`.
+
 ## Privacidad
 
 El fichero completo contiene identificadores locales reales como hostname, DNS, gateway y SSIDs.
