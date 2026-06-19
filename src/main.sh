@@ -142,6 +142,8 @@ COMANDOS PRINCIPALES:
                                           install-timer | disable-timer
   postcheck                  Verifica el estado del sistema tras el reinicio post-bootstrap
                              y genera contexto local para analisis con IA
+  post-restore-fixups        Normaliza un HOME restaurado en una máquina nueva
+                             (CLI npm/NVM, talk2ai deps, codexBar autostart, locks de Brave, etc.)
   test                       Ejecuta pruebas locales y reportes de preflight
                              Opciones: [profiles|catalog|syntax|all]
 
@@ -398,6 +400,16 @@ main() {
         postcheck)
             shift
             post_bootstrap_checks
+            ;;
+        post-restore-fixups)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            post_restore_fixups
             ;;
         add-mbp-plasmoid)
             shift

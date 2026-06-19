@@ -49,8 +49,16 @@ Software que no está en repositorios oficiales por licencias o naturaleza:
 - **Navegadores y Editores:** Brave Browser, Visual Studio Code.
 - **Redes y Utilidades:** Webapp-manager.
 - **Tienda Visual:** Pamac (interfaz gráfica para instalar paquetes).
-- **Apps propias y extras:** `talk2ai` como bloque opcional descargado desde GitHub, instalando `handy-bin` como dependencia; `codexBar Tray` como bloque opcional desde repo local detectado/restaurado; Angry IP Scanner como bloque opcional independiente; `tea` como CLI opcional para Gitea.
+- **Apps propias y extras:** `talk2ai` como bloque opcional descargado desde GitHub, instalando `handy-bin` más soporte local (`espeak-ng`, `ydotool` y grupo `input`); `codexBar Tray` como bloque opcional desde repo local detectado/restaurado; Angry IP Scanner como bloque opcional independiente; `tea` como CLI opcional para Gitea.
 - **Android Studio:** bloque opcional que instala `android-studio` desde AUR junto con `jdk21-openjdk` desde repositorio oficial.
+
+Nota práctica:
+
+- `handy-bin` valida la parte de transcripción local, pero no debe interpretarse como un tray independiente.
+- `talk2ai-tray` puede quedarse en rojo si faltan dependencias locales como `espeak-ng`, aunque el servicio esté activo.
+- La pieza visible esperable del flujo de voz es `talk2ai-tray`; `codexBar Tray` es un tray aparte y puede aparecer aunque Handy no muestre icono.
+- Si tras el bootstrap solo aparece `codexBar Tray`, no significa por sí solo que la instalación esté rota: revisa `systemctl --user status talk2ai.service` y, si hace falta, cierra sesión y vuelve a entrar para refrescar el autostart de Plasma.
+- `codexBar Tray` debe arrancar por `systemd --user` por defecto; si existe un `~/.config/autostart/codexbar-tray.desktop` heredado de una restauración anterior, conviene eliminarlo para evitar doble icono.
 
 ### 8. Herramientas de IA (CLI)
 Instalación de interfaces de línea de comandos para asistentes de IA:
@@ -59,6 +67,7 @@ Instalación de interfaces de línea de comandos para asistentes de IA:
 - **Claude:** `claude` (nativo de Anthropic).
 - **Gemini:** `@google/gemini-cli` vía npm.
 - **OpenCode:** Integración con OpenCode CLI.
+- Si `~/.local/bin/codex`, `gemini` o `pnpm` apuntan a una versión vieja de NVM restaurada desde otra máquina, el bootstrap debe reinstalar Node LTS antes de volver a enlazar los binarios globales.
 
 ## Perfiles de hardware contemplados
 

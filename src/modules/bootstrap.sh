@@ -312,6 +312,106 @@ install_handy_package() {
     run_cmd yay -S --needed --noconfirm handy-bin
 }
 
+install_talk2ai_support_packages() {
+    log "${YELLOW}Preparando dependencias locales de talk2ai...${NC}"
+    log_package_batch_state "repo" "repo" espeak-ng ydotool
+    run_cmd sudo pacman -S --needed --noconfirm espeak-ng ydotool
+
+    if id -nG "$USER" 2>/dev/null | tr ' ' '\n' | grep -qx 'input'; then
+        log_success "El usuario $USER ya pertenece al grupo input."
+    else
+        log_info "Añadiendo $USER al grupo input para acceso a teclados/evdev de talk2ai."
+        run_cmd sudo usermod -aG input "$USER"
+        log_warn "Se añadió $USER al grupo input. Cierra sesión y vuelve a entrar si los atajos de talk2ai no aparecen aún."
+    fi
+}
+
+cleanup_codexbar_tray_autostart_duplicate() {
+    local AUTOSTART_FILE="$HOME/.config/autostart/codexbar-tray.desktop"
+
+    if [ ! -f "$AUTOSTART_FILE" ]; then
+        log_info "No se detectó autostart heredado de codexBar Tray."
+        return 0
+    fi
+
+    log_warn "Se detectó un autostart heredado de codexBar Tray en $AUTOSTART_FILE; se eliminará para evitar icono duplicado frente al servicio systemd --user."
+    run_cmd rm -f "$AUTOSTART_FILE"
+    run_cmd systemctl --user daemon-reload || true
+    run_cmd systemctl --user stop 'app-codexbar\x2dtray@autostart.service' || true
+}
+
+cleanup_brave_profile_locks() {
+    local BRAVE_PROFILE_DIR="$HOME/.config/BraveSoftware/Brave-Browser"
+    local LOCK_PATHS=()
+    local LOCK_PATH=""
+
+    [ -d "$BRAVE_PROFILE_DIR" ] || return 0
+
+    if pgrep -af '/opt/brave-bin/brave|/usr/bin/brave' >/dev/null 2>&1; then
+        log_warn "Brave está en ejecución; se omite la limpieza de locks restaurados."
+        return 0
+    fi
+
+    LOCK_PATHS=(
+        "$BRAVE_PROFILE_DIR/SingletonLock"
+        "$BRAVE_PROFILE_DIR/SingletonSocket"
+        "$BRAVE_PROFILE_DIR/SingletonCookie"
+        "$BRAVE_PROFILE_DIR/Default/LOCK"
+    )
+
+    for LOCK_PATH in "${LOCK_PATHS[@]}"; do
+        [ -e "$LOCK_PATH" ] || continue
+        run_cmd rm -f "$LOCK_PATH"
+    done
+
+    run_shell "find \"$BRAVE_PROFILE_DIR\" -maxdepth 2 \\( -type s -o -type f \\) \\( -name 'Singleton*' -o -name 'LOCK' \\) -delete 2>/dev/null || true"
+    log_success "Locks/singletons heredados de Brave limpiados (si existían)."
+}
+
+repair_antigravity_ide_dependencies() {
+    local APP_DIR="$HOME/.local/share/antigravity-ide/resources/app"
+
+    [ -d "$APP_DIR" ] || return 0
+    if [ -d "$APP_DIR/node_modules/google-auth-library" ]; then
+        log_success "Dependencia google-auth-library ya presente en Antigravity IDE."
+        return 0
+    fi
+
+    ensure_nvm_node_lts
+
+    log_warn "Antigravity IDE no tiene google-auth-library en su bundle restaurado; se intentará reparar."
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] cd \"$APP_DIR\" && npm install --no-save --legacy-peer-deps google-auth-library${NC}"
+        return 0
+    fi
+
+    run_shell "cd \"$APP_DIR\" && npm install --no-save --legacy-peer-deps google-auth-library"
+}
+
+normalize_restored_nvm_cli_state() {
+    local BIN_NAME=""
+    local BROKEN_LINK_FOUND=false
+
+    ensure_nvm_node_lts
+
+    for BIN_NAME in codex gemini pnpm bun; do
+        if [ -L "$HOME/.local/bin/$BIN_NAME" ] && [ ! -e "$HOME/.local/bin/$BIN_NAME" ]; then
+            log_warn "Symlink roto detectado para $BIN_NAME en ~/.local/bin; se reinstalará el CLI correspondiente."
+            BROKEN_LINK_FOUND=true
+        fi
+    done
+
+    if [ "$BROKEN_LINK_FOUND" = true ] || ! command -v codex >/dev/null 2>&1; then
+        install_codex_cli
+    fi
+
+    if [ "$BROKEN_LINK_FOUND" = true ] || ! command -v gemini >/dev/null 2>&1; then
+        install_gemini_cli
+    fi
+
+    link_npm_global_binaries
+}
+
 find_repo_dir_by_name() {
     local OVERRIDE_DIR="$1"
     local SEARCH_PATTERN="$2"
@@ -393,6 +493,7 @@ install_talk2ai_from_github() {
     local REPO_DIR=""
 
     install_handy_package
+    install_talk2ai_support_packages
 
     REPO_DIR="$(sync_talk2ai_repo)"
 
@@ -581,9 +682,10 @@ install_codexbar_tray_from_local_repo() {
 
     install_codexbar_tray_dependencies
 
+    cleanup_codexbar_tray_autostart_duplicate
+
     log "${YELLOW}Instalando codexBar Tray desde repo local detectado...${NC}"
     log_info "Repo detectado: $(basename "$REPO_DIR")"
-    run_shell "cd \"$REPO_DIR\" && bash ./scripts/install_desktop_entry.sh --autostart"
     run_shell "cd \"$REPO_DIR\" && bash ./scripts/install_systemd_user_service.sh"
 }
 
@@ -676,6 +778,34 @@ install_node_stack() {
     run_shell "curl -fsSL https://bun.sh/install | bash"
 }
 
+ensure_nvm_node_lts() {
+    export NVM_DIR="$HOME/.nvm"
+
+    if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+        log_warn "NVM no está disponible aún en $NVM_DIR. Se instalará el stack Node primero."
+        install_node_stack
+        return 0
+    fi
+
+    # shellcheck disable=SC1090,SC1091
+    . "$NVM_DIR/nvm.sh"
+
+    if ! command -v npm >/dev/null 2>&1; then
+        log_info "Node/npm no están disponibles en NVM; instalando Node LTS."
+        if [ "$DRY_MODE" = true ]; then
+            log "${YELLOW}[DRY-RUN] nvm install --lts${NC}"
+        else
+            nvm install --lts
+        fi
+    fi
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] nvm use --lts${NC}"
+    else
+        nvm use --lts >/dev/null
+    fi
+}
+
 log_gemini_tool_status() {
     log_npm_tool_status "Gemini CLI" "@google/gemini-cli" "gemini"
 }
@@ -697,9 +827,7 @@ log_engram_tool_status() {
 }
 
 install_codex_cli() {
-    export NVM_DIR="$HOME/.nvm"
-    # shellcheck disable=SC1090,SC1091
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    ensure_nvm_node_lts
 
     log "${YELLOW}Instalando/Actualizando Codex CLI...${NC}"
     log_npm_tool_status "Codex CLI" "@openai/codex" "codex"
@@ -753,9 +881,7 @@ install_engram_for_codex() {
 }
 
 install_gemini_cli() {
-    export NVM_DIR="$HOME/.nvm"
-    # shellcheck disable=SC1090,SC1091
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    ensure_nvm_node_lts
 
     log "${YELLOW}Instalando/Actualizando Gemini CLI...${NC}"
     log_gemini_tool_status
@@ -811,6 +937,22 @@ install_ai_tools() {
     
     configure_shell_paths
     verify_ai_tools
+}
+
+post_restore_fixups() {
+    log "${YELLOW}Aplicando normalización post-restore para mover el HOME a otra máquina...${NC}"
+
+    install_talk2ai_support_packages
+    normalize_restored_nvm_cli_state
+    cleanup_codexbar_tray_autostart_duplicate
+    cleanup_brave_profile_locks
+    repair_antigravity_ide_dependencies
+
+    log_success "Post-restore fixups completado."
+    log "Sugerencias:"
+    log " - Si Brave o Antigravity estaban abiertos, ciérralos y vuelve a lanzarlos."
+    log " - Si talk2ai seguía sin detectar teclados antes, relanza sesión tras el cambio de grupo input."
+    log " - Revisa codexBar para confirmar que Codex/Gemini muestran datos y reloguea Claude/Antigravity si falta autenticación."
 }
 
 link_npm_global_binaries() {
@@ -1565,6 +1707,52 @@ move_mbp_watch_plasmoid() {
     fi
 
     run_cmd bash "$MOVE_SCRIPT" "${COMMAND_ARGS[@]}"
+}
+
+reload_mbp_watch_plasmoid() {
+    local RELOAD_SCRIPT="$PROJECT_ROOT/assets/diagnostics/reload_mbp_plasmoid.sh"
+    local TARGET_USER=""
+    local COMMAND_ARGS=()
+    local MODE="${1:-soft}"
+
+    if [ ! -f "$RELOAD_SCRIPT" ]; then
+        log_warn "No se encontro el recargador del plasmoid: $RELOAD_SCRIPT"
+        return 0
+    fi
+
+    TARGET_USER="$(resolve_desktop_target_user 2>/dev/null || true)"
+    if [ -z "$TARGET_USER" ]; then
+        log_warn "No se pudo resolver un usuario KDE objetivo para el plasmoid."
+        return 0
+    fi
+
+    log "${YELLOW}Se va a recargar el plasmoid KDE MBP Watch para el usuario: $TARGET_USER${NC}"
+    log " - Modo: $MODE"
+    log " - Se actualizara el paquete Plasma desde el repo actual."
+    if [ "$MODE" = "hard" ]; then
+        log " - Ademas se reiniciara plasmashell si es posible."
+    else
+        log " - No se reiniciara plasmashell; se intentara una recarga suave."
+    fi
+    log ""
+
+    if ! confirm_action "¿Continuar con la recarga del plasmoid KDE MBP Watch?"; then
+        log_info "Recarga del plasmoid cancelada por el usuario."
+        return 0
+    fi
+
+    COMMAND_ARGS=(--user "$TARGET_USER" --soft)
+    if [ "$MODE" = "hard" ]; then
+        COMMAND_ARGS=(--user "$TARGET_USER" --hard)
+    fi
+
+    if [ "$DRY_MODE" = true ]; then
+        COMMAND_ARGS+=(--dry-run)
+        bash "$RELOAD_SCRIPT" "${COMMAND_ARGS[@]}" 2>&1 | tee -a "$LOGFILE"
+        return "${PIPESTATUS[0]}"
+    fi
+
+    run_cmd bash "$RELOAD_SCRIPT" "${COMMAND_ARGS[@]}"
 }
 
 install_mbp_plasmoid_if_accepted() {
@@ -2720,6 +2908,31 @@ post_bootstrap_checks() {
         log_success "Syncthing user service: habilitado"
     else
         log_warn "Syncthing user service: no habilitado. Ejecuta: systemctl --user enable --now syncthing.service"
+    fi
+
+    if command -v handy >/dev/null 2>&1; then
+        log_success "Handy detectado en PATH: $(command -v handy)"
+        log_info "Nota: Handy es la app STT; el tray visible esperado del flujo de voz es talk2ai-tray."
+    else
+        log_warn "Handy no detectado en PATH"
+    fi
+
+    if systemctl --user is-active talk2ai.service >/dev/null 2>&1; then
+        log_success "talk2ai user service: activo"
+    else
+        log_warn "talk2ai user service: inactivo. Revisa autostart/sesión si el tray de voz no aparece."
+    fi
+
+    if pgrep -f talk2ai-tray >/dev/null 2>&1; then
+        log_success "talk2ai-tray: proceso detectado"
+    else
+        log_warn "talk2ai-tray: no detectado. Si el flujo de voz no sale en el tray, reinicia sesión KDE."
+    fi
+
+    if systemctl --user is-active codexbar-tray.service >/dev/null 2>&1; then
+        log_success "codexBar Tray: activo"
+    else
+        log_warn "codexBar Tray: inactivo"
     fi
 
     if command -v codex >/dev/null 2>&1; then
