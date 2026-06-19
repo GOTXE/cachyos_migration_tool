@@ -450,6 +450,24 @@ install_libreoffice_if_accepted() {
     fi
 }
 
+install_android_studio_package() {
+    log "${YELLOW}Instalando Android Studio con JDK 21...${NC}"
+    install_base_devel
+    install_yay
+    log_package_batch_state "repo" "repo" jdk21-openjdk
+    run_cmd sudo pacman -S --needed --noconfirm jdk21-openjdk
+    log_package_batch_state "AUR" "aur" android-studio
+    run_cmd yay -S --needed --noconfirm android-studio
+}
+
+install_android_studio_if_accepted() {
+    if confirm_action "¿Instalar Android Studio con JDK 21?"; then
+        install_android_studio_package
+    else
+        log_info "Instalacion de Android Studio omitida por decision del usuario."
+    fi
+}
+
 install_filezilla_package() {
     log "${YELLOW}Instalando FileZilla desde repositorio oficial...${NC}"
     log_package_batch_state "repo" "repo" filezilla
@@ -2417,6 +2435,7 @@ bootstrap_cachyos() {
     install_filezilla_if_accepted
     install_markdownpart_if_accepted
     install_libreoffice_if_accepted
+    install_android_studio_if_accepted
     install_ipscan_if_accepted
     install_tea_if_accepted
     install_talk2ai_if_accepted || true

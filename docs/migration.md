@@ -889,8 +889,10 @@ Durante `Bootstrap CachyOS` el script ahora puede ofrecer tambien:
 - Preparar la extension local `YouTube Force H264` en `~/extensions/youtube-force-h264/` para cargarla como `Load unpacked` desde `brave://extensions` o `chrome://extensions`.
 - Instalar solo esa extension con `./migration.sh install-youtube-force-h264` sin ejecutar todo `Bootstrap CachyOS`.
 - Instalar o actualizar `talk2ai` descargándolo desde GitHub en un checkout local gestionado por el script, con `./migration.sh install-talk2ai`; el flujo instala también `handy-bin` como dependencia.
+- Instalar `Android Studio` junto con `jdk21-openjdk` como bloque opcional dentro de `Bootstrap CachyOS`.
 - Instalar `codexBar Tray` desde un repo local restaurado o detectado en las raíces de repositorio configuradas, con `./migration.sh install-codexbar-tray`.
 - Gestionar backups permanentes por SFTP/SSH con `./migration.sh restic-backup`, incluyendo `init`, `run`, `status`, `snapshots`, `install-timer` y `disable-timer`.
+- El timer de Restic intenta ejecutarse cada 30 minutos, pero por defecto solo lanza la copia automática dentro de la ventana `08:00` -> `22:00`. Puedes cambiarlo en `~/.config/cachyos-migration-tool/backup.env` con `BACKUP_ALLOWED_START_HOUR`, `BACKUP_ALLOWED_END_HOUR` y `BACKUP_ENFORCE_SCHEDULE`.
 - Instalar `tea` como cliente de línea de comandos opcional para instancias Gitea.
 
 Notas:
