@@ -48,6 +48,7 @@ Incluye soporte específico para perfiles **MacBook Pro Intel** detectados por m
 # → reiniciar
 ./migration.sh postcheck
 ./migration.sh restore --source /ruta/del/backup
+./migration.sh post-restore-fixups
 
 # Comprobaciones rápidas
 ./migration.sh test profiles
@@ -67,6 +68,7 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 ./migration.sh bootstrap [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
 ./migration.sh postcheck
 ./migration.sh restore   [--source RUTA] [--force] [--dry-run]
+./migration.sh post-restore-fixups [--dry-run]
 ./migration.sh restic-backup [init [--smoke-test] | run | status | snapshots | install-timer | disable-timer]
 
 ./migration.sh export-ai-context         [--dry-run]
@@ -86,6 +88,8 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 El timer de `restic-backup` sigue comprobando cada 30 minutos, pero por defecto solo ejecuta copias entre `08:00` y `22:00`. Ese horario se ajusta en `~/.config/cachyos-migration-tool/backup.env` con `BACKUP_ALLOWED_START_HOUR`, `BACKUP_ALLOWED_END_HOUR` y `BACKUP_ENFORCE_SCHEDULE`.
 
 `install-youtube-force-h264` y `configure-vaapi-brave` siguen disponibles por CLI, pero en la interfaz interactiva normal viven dentro de `bootstrap`, no como opciones sueltas del menú principal.
+
+`post-restore-fixups` sirve para normalizar un `$HOME` restaurado en otra máquina: recompone CLIs npm/NVM (`codex`, `gemini`, `pnpm`), instala dependencias locales de `talk2ai`, elimina autostarts heredados de `codexBar Tray`, limpia locks de Brave y repara la dependencia `google-auth-library` de Antigravity IDE si falta.
 
 ---
 

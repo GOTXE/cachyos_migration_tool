@@ -326,6 +326,92 @@ install_talk2ai_support_packages() {
     fi
 }
 
+cleanup_codexbar_tray_autostart_duplicate() {
+    local AUTOSTART_FILE="$HOME/.config/autostart/codexbar-tray.desktop"
+
+    if [ ! -f "$AUTOSTART_FILE" ]; then
+        log_info "No se detectó autostart heredado de codexBar Tray."
+        return 0
+    fi
+
+    log_warn "Se detectó un autostart heredado de codexBar Tray en $AUTOSTART_FILE; se eliminará para evitar icono duplicado frente al servicio systemd --user."
+    run_cmd rm -f "$AUTOSTART_FILE"
+    run_cmd systemctl --user daemon-reload || true
+    run_cmd systemctl --user stop 'app-codexbar\x2dtray@autostart.service' || true
+}
+
+cleanup_brave_profile_locks() {
+    local BRAVE_PROFILE_DIR="$HOME/.config/BraveSoftware/Brave-Browser"
+    local LOCK_PATHS=()
+    local LOCK_PATH=""
+
+    [ -d "$BRAVE_PROFILE_DIR" ] || return 0
+
+    if pgrep -af '/opt/brave-bin/brave|/usr/bin/brave' >/dev/null 2>&1; then
+        log_warn "Brave está en ejecución; se omite la limpieza de locks restaurados."
+        return 0
+    fi
+
+    LOCK_PATHS=(
+        "$BRAVE_PROFILE_DIR/SingletonLock"
+        "$BRAVE_PROFILE_DIR/SingletonSocket"
+        "$BRAVE_PROFILE_DIR/SingletonCookie"
+        "$BRAVE_PROFILE_DIR/Default/LOCK"
+    )
+
+    for LOCK_PATH in "${LOCK_PATHS[@]}"; do
+        [ -e "$LOCK_PATH" ] || continue
+        run_cmd rm -f "$LOCK_PATH"
+    done
+
+    run_shell "find \"$BRAVE_PROFILE_DIR\" -maxdepth 2 \\( -type s -o -type f \\) \\( -name 'Singleton*' -o -name 'LOCK' \\) -delete 2>/dev/null || true"
+    log_success "Locks/singletons heredados de Brave limpiados (si existían)."
+}
+
+repair_antigravity_ide_dependencies() {
+    local APP_DIR="$HOME/.local/share/antigravity-ide/resources/app"
+
+    [ -d "$APP_DIR" ] || return 0
+    if [ -d "$APP_DIR/node_modules/google-auth-library" ]; then
+        log_success "Dependencia google-auth-library ya presente en Antigravity IDE."
+        return 0
+    fi
+
+    ensure_nvm_node_lts
+
+    log_warn "Antigravity IDE no tiene google-auth-library en su bundle restaurado; se intentará reparar."
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] cd \"$APP_DIR\" && npm install --no-save --legacy-peer-deps google-auth-library${NC}"
+        return 0
+    fi
+
+    run_shell "cd \"$APP_DIR\" && npm install --no-save --legacy-peer-deps google-auth-library"
+}
+
+normalize_restored_nvm_cli_state() {
+    local BIN_NAME=""
+    local BROKEN_LINK_FOUND=false
+
+    ensure_nvm_node_lts
+
+    for BIN_NAME in codex gemini pnpm bun; do
+        if [ -L "$HOME/.local/bin/$BIN_NAME" ] && [ ! -e "$HOME/.local/bin/$BIN_NAME" ]; then
+            log_warn "Symlink roto detectado para $BIN_NAME en ~/.local/bin; se reinstalará el CLI correspondiente."
+            BROKEN_LINK_FOUND=true
+        fi
+    done
+
+    if [ "$BROKEN_LINK_FOUND" = true ] || ! command -v codex >/dev/null 2>&1; then
+        install_codex_cli
+    fi
+
+    if [ "$BROKEN_LINK_FOUND" = true ] || ! command -v gemini >/dev/null 2>&1; then
+        install_gemini_cli
+    fi
+
+    link_npm_global_binaries
+}
+
 find_repo_dir_by_name() {
     local OVERRIDE_DIR="$1"
     local SEARCH_PATTERN="$2"
@@ -581,7 +667,6 @@ install_codexbar_tray_dependencies() {
 
 install_codexbar_tray_from_local_repo() {
     local REPO_DIR=""
-    local AUTOSTART_FILE="$HOME/.config/autostart/codexbar-tray.desktop"
 
     REPO_DIR="$(find_codexbar_tray_repo_dir 2>/dev/null || true)"
     if [ -z "$REPO_DIR" ]; then
@@ -597,12 +682,7 @@ install_codexbar_tray_from_local_repo() {
 
     install_codexbar_tray_dependencies
 
-    if [ -f "$AUTOSTART_FILE" ]; then
-        log_warn "Se detectó un autostart previo de codexBar Tray en $AUTOSTART_FILE; se eliminará para evitar icono duplicado frente al servicio systemd --user."
-        run_cmd rm -f "$AUTOSTART_FILE"
-        run_cmd systemctl --user daemon-reload || true
-        run_cmd systemctl --user stop 'app-codexbar\x2dtray@autostart.service' || true
-    fi
+    cleanup_codexbar_tray_autostart_duplicate
 
     log "${YELLOW}Instalando codexBar Tray desde repo local detectado...${NC}"
     log_info "Repo detectado: $(basename "$REPO_DIR")"
@@ -857,6 +937,22 @@ install_ai_tools() {
     
     configure_shell_paths
     verify_ai_tools
+}
+
+post_restore_fixups() {
+    log "${YELLOW}Aplicando normalización post-restore para mover el HOME a otra máquina...${NC}"
+
+    install_talk2ai_support_packages
+    normalize_restored_nvm_cli_state
+    cleanup_codexbar_tray_autostart_duplicate
+    cleanup_brave_profile_locks
+    repair_antigravity_ide_dependencies
+
+    log_success "Post-restore fixups completado."
+    log "Sugerencias:"
+    log " - Si Brave o Antigravity estaban abiertos, ciérralos y vuelve a lanzarlos."
+    log " - Si talk2ai seguía sin detectar teclados antes, relanza sesión tras el cambio de grupo input."
+    log " - Revisa codexBar para confirmar que Codex/Gemini muestran datos y reloguea Claude/Antigravity si falta autenticación."
 }
 
 link_npm_global_binaries() {
