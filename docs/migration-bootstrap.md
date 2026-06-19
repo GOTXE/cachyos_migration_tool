@@ -32,7 +32,7 @@ Incluye herramientas de alta confianza probadas por CachyOS/Arch:
 - **AppImages:** bloque opcional que instala `fuse2` para compatibilidad con AppImages clásicas y `webkit2gtk-4.1` para las que dependen de WebKitGTK.
 - **Docker:** Motor de contenedores y docker-compose.
 - **Internet y Multimedia:** Firefox, LibreOffice (en español) + Java 21, FFmpeg, yt-dlp.
-- **Aplicaciones extra seleccionables:** Restic, FileZilla, MarkdownPart, LibreOffice ES + Java 21 y Obsidian como bloques opcionales.
+- **Aplicaciones extra seleccionables:** Restic, FileZilla, MarkdownPart, LibreOffice ES + Java 21, Android Studio + JDK 21 y Obsidian como bloques opcionales.
 - **CLI de forja opcional:** `tea` como cliente de línea de comandos para Gitea desde repositorio oficial.
 - **Utilidades SSH opcionales:** `sshpass` como bloque opcional desde repositorio oficial.
 
@@ -50,6 +50,7 @@ Software que no está en repositorios oficiales por licencias o naturaleza:
 - **Redes y Utilidades:** Webapp-manager.
 - **Tienda Visual:** Pamac (interfaz gráfica para instalar paquetes).
 - **Apps propias y extras:** `talk2ai` como bloque opcional descargado desde GitHub, instalando `handy-bin` como dependencia; `codexBar Tray` como bloque opcional desde repo local detectado/restaurado; Angry IP Scanner como bloque opcional independiente; `tea` como CLI opcional para Gitea.
+- **Android Studio:** bloque opcional que instala `android-studio` desde AUR junto con `jdk21-openjdk` desde repositorio oficial.
 
 ### 8. Herramientas de IA (CLI)
 Instalación de interfaces de línea de comandos para asistentes de IA:

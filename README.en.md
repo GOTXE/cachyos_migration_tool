@@ -83,6 +83,8 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 ./migration.sh uninstall-mbp-watch         [--dry-run]
 ```
 
+The `restic-backup` timer still checks every 30 minutes, but by default it only runs backups between `08:00` and `22:00`. You can tune that window in `~/.config/cachyos-migration-tool/backup.env` with `BACKUP_ALLOWED_START_HOUR`, `BACKUP_ALLOWED_END_HOUR`, and `BACKUP_ENFORCE_SCHEDULE`.
+
 `install-youtube-force-h264` and `configure-vaapi-brave` remain available through the CLI, but in the normal interactive UI they live inside `bootstrap`, not as standalone main-menu actions.
 
 ---
@@ -108,6 +110,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `filezilla` | Installs FileZilla as a graphical SFTP/FTP client |
 | `markdownpart` | Adds Markdown preview support in Kate |
 | `libreoffice` | Installs LibreOffice Fresh ES + Java 21 |
+| `androidstudio` | Installs Android Studio + JDK 21 |
 | `ipscan` | Installs Angry IP Scanner from AUR |
 | `tea` | Installs `tea` as an optional CLI for Gitea |
 | `obsidian` | Obsidian from the official repository |
@@ -165,7 +168,7 @@ docs/                           # full documentation
 
 The permanent backup flow and its Plasma visualization are split into two pieces:
 
-- `./migration.sh restic-backup ...` manages the Restic repository and the user backup timer
+- `./migration.sh restic-backup ...` manages the Restic repository and the user backup timer, with a configurable schedule window
 - `assets/scripts/backup-monitor.sh` + `assets/systemd/cachyos-backup-monitor.*` update `~/.config/cachyos-migration-tool/backup-status.json` so the MBP Watch plasmoid can display backup state
 
 The operational guide for this second piece is in [`docs/mbp-watch/backup-monitor.md`](docs/mbp-watch/backup-monitor.md).

@@ -872,6 +872,7 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"filezilla"'* ]]   && install_filezilla_package
     [[ "$SELECTED" == *'"markdownpart"'* ]] && install_markdownpart_package
     [[ "$SELECTED" == *'"libreoffice"'* ]] && install_libreoffice_package
+    [[ "$SELECTED" == *'"androidstudio"'* ]] && install_android_studio_package
     [[ "$SELECTED" == *'"ipscan"'* ]]      && install_ipscan_package
     [[ "$SELECTED" == *'"tea"'* ]]         && install_tea_package
     [[ "$SELECTED" == *'"obsidian"'* ]]    && install_obsidian_package

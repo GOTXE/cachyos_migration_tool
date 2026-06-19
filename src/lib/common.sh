@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.8.8"
+VERSION="1.9.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -1044,6 +1044,7 @@ appimage|Soporte AppImages (fuse2 + webkit2gtk-4.1)|OFF
 filezilla|FileZilla (cliente SFTP/FTP gráfico)|OFF
 markdownpart|MarkdownPart para vista previa Markdown en Kate|OFF
 libreoffice|LibreOffice Fresh ES + Java 21|OFF
+androidstudio|Android Studio + JDK 21|OFF
 ipscan|Angry IP Scanner (AUR)|OFF
 tea|tea CLI para Gitea|OFF
 obsidian|Obsidian (Markdown knowledge base)|OFF
