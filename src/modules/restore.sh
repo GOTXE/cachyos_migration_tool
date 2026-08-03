@@ -17,7 +17,19 @@ verify_rsync_restored_tree() {
     fi
 
     TMP_DIFF="$(mktemp)"
-    rsync -a --dry-run --checksum --itemize-changes "$SOURCE_DIR/" "$TARGET_DIR/" > "$TMP_DIFF" || true
+    # Restoration normalizes ownership and SSH permissions, while Codex keeps
+    # changing its history, SQLite journals and caches during an active session.
+    # Do not report those expected runtime differences as restore failures.
+    rsync -r --dry-run --checksum --itemize-changes \
+        --no-perms --no-owner --no-group --omit-dir-times \
+        --exclude='.codex/history.jsonl' \
+        --exclude='.codex/logs_*.sqlite*' \
+        --exclude='.codex/state_*.sqlite*' \
+        --exclude='.codex/*-journal' \
+        --exclude='.codex/cache/' \
+        --exclude='.codex/plugins/cache/' \
+        --exclude='.codex/models_cache.json' \
+        "$SOURCE_DIR/" "$TARGET_DIR/" > "$TMP_DIFF" || true
     CHANGE_COUNT="$(grep -vc '^\.d' "$TMP_DIFF" 2>/dev/null || true)"
 
     if [ "${CHANGE_COUNT:-0}" -eq 0 ]; then
@@ -42,6 +54,7 @@ restore_system() {
     local TOTAL_DATA_DIRS=0
     local TOTAL_BLOCKS=5
 
+    ensure_sudo_session || exit 1
     log_section "Restauracion de backup"
     show_log_location
 

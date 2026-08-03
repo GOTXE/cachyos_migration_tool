@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.9.1"
+VERSION="1.9.2"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -17,6 +17,7 @@ AUTO_CONFIRM=false
 [ "${AUTO_CONFIRM_ENV:-}" = "1" ] && AUTO_CONFIRM=true
 MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
 CODEXBAR_TRAY_REPO_DIR="${CODEXBAR_TRAY_REPO_DIR:-}"
+SUDO_KEEPALIVE_PID=""
 
 # Identificación de Hardware
 MACBOOK_MODEL="unknown"
@@ -174,7 +175,7 @@ log_success() {
 }
 
 tty_available() {
-    [ -r /dev/tty ] && [ -w /dev/tty ]
+    [ -r /dev/tty ] && [ -w /dev/tty ] && { : </dev/tty; } 2>/dev/null
 }
 
 tty_log() {
@@ -193,6 +194,11 @@ prompt_read() {
     local PROMPT_TEXT="$1"
     local __RESULTVAR="$2"
     local INPUT_VALUE=""
+
+    if [ "$AUTO_CONFIRM" = true ] && ! tty_available; then
+        printf -v "$__RESULTVAR" '%s' ""
+        return 0
+    fi
 
     if tty_available; then
         printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}" > /dev/tty
@@ -231,6 +237,40 @@ require_command() {
         log "${RED}[ERROR] Comando no encontrado: $1${NC}"
         exit 1
     }
+}
+
+cleanup_sudo_session() {
+    if [ -n "${SUDO_KEEPALIVE_PID:-}" ]; then
+        kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+        wait "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+        SUDO_KEEPALIVE_PID=""
+    fi
+}
+
+ensure_sudo_session() {
+    [ "$DRY_MODE" = true ] && return 0
+
+    if tty_available; then
+        sudo -v || {
+            log "${RED}[ERROR] No se pudo validar sudo. Operación cancelada.${NC}"
+            return 1
+        }
+    else
+        sudo -S -v || {
+            log "${RED}[ERROR] No se pudo validar sudo. Operación cancelada.${NC}"
+            return 1
+        }
+    fi
+    if [ -z "${SUDO_KEEPALIVE_PID:-}" ]; then
+        (
+            while sleep 60; do
+                sudo -n -v >/dev/null 2>&1 || exit 0
+            done
+        ) &
+        SUDO_KEEPALIVE_PID=$!
+        trap cleanup_sudo_session EXIT INT TERM
+        log "${GREEN}Sudo autorizado; se reutilizará durante toda la operación.${NC}"
+    fi
 }
 
 run_cmd() {
@@ -1058,6 +1098,7 @@ ai_engram|Engram memoria persistente para Codex|OFF
 ai_claude|Claude Code CLI (nativo)|OFF
 ai_gemini|Gemini CLI (@google/gemini-cli)|OFF
 ai_opencode|OpenCode CLI|OFF
+ai_antigravity|Antigravity (agy: CLI + SDK + escritorio)|OFF
 youtube|YouTube Force H264|OFF
 iwd|iwd backend para NetworkManager|OFF
 hyprland|Hyprland|OFF

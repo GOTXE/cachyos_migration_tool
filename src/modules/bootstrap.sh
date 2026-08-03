@@ -103,6 +103,11 @@ get_npm_global_status() {
     local OUTDATED_JSON=""
     local LATEST_VERSION=""
 
+    if [ "$DRY_MODE" = true ]; then
+        printf 'pendiente||\n'
+        return 0
+    fi
+
     if ! command -v "$PACKAGE_BIN" >/dev/null 2>&1; then
         printf 'pendiente||\n'
         return 0
@@ -539,8 +544,14 @@ install_markdownpart_if_accepted() {
 
 install_libreoffice_package() {
     log "${YELLOW}Instalando LibreOffice Fresh ES y Java 21 desde repositorio oficial...${NC}"
-    log_package_batch_state "repo" "repo" libreoffice-fresh-es jre21-openjdk
-    run_cmd sudo pacman -S --needed --noconfirm libreoffice-fresh-es jre21-openjdk
+    local JAVA_PACKAGE="jre21-openjdk"
+    # Android Studio requiere el JDK completo; jre21-openjdk entra en conflicto
+    # con él, aunque LibreOffice puede usar el runtime que ya proporciona el JDK.
+    if pacman -Qi jdk21-openjdk >/dev/null 2>&1; then
+        JAVA_PACKAGE="jdk21-openjdk"
+    fi
+    log_package_batch_state "repo" "repo" libreoffice-fresh-es "$JAVA_PACKAGE"
+    run_cmd sudo pacman -S --needed --noconfirm libreoffice-fresh-es "$JAVA_PACKAGE"
 }
 
 install_libreoffice_if_accepted() {
@@ -555,6 +566,11 @@ install_android_studio_package() {
     log "${YELLOW}Instalando Android Studio con JDK 21...${NC}"
     install_base_devel
     install_yay
+    if pacman -Q jre21-openjdk >/dev/null 2>&1 && ! pacman -Q jdk21-openjdk >/dev/null 2>&1; then
+        log_warn "jre21-openjdk está instalado y entra en conflicto con jdk21-openjdk."
+        log "Se sustituirá JRE 21 por JDK 21, que también proporciona el runtime necesario."
+        run_cmd sudo pacman -Rns --noconfirm jre21-openjdk
+    fi
     log_package_batch_state "repo" "repo" jdk21-openjdk
     run_cmd sudo pacman -S --needed --noconfirm jdk21-openjdk
     log_package_batch_state "AUR" "aur" android-studio
@@ -729,7 +745,7 @@ install_ohmyzsh() {
     fi
 
     log "${YELLOW}Instalando Oh My Zsh...${NC}"
-    run_shell "RUNZSH=no CHSH=no sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+    run_shell "KEEP_ZSHRC=yes OVERWRITE_CONFIRMATION=no RUNZSH=no CHSH=no sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
 }
 
 install_powerlevel10k() {
@@ -752,12 +768,23 @@ install_node_stack() {
     if [ ! -d "$HOME/.nvm" ]; then
         log "${YELLOW}Instalando NVM...${NC}"
         run_shell "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash"
+        if [ "$DRY_MODE" = true ]; then
+            log "${YELLOW}[DRY-RUN] cargar NVM, instalar Node LTS, npm, pnpm y bun${NC}"
+            return 0
+        fi
     fi
 
     export NVM_DIR="$HOME/.nvm"
 
     # shellcheck disable=SC1090,SC1091
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+        set +u
+        # shellcheck disable=SC1090,SC1091
+        . "$NVM_DIR/nvm.sh"
+    else
+        log "${RED}No se pudo cargar NVM desde $NVM_DIR/nvm.sh${NC}"
+        return 1
+    fi
 
     log "${YELLOW}Instalando Node LTS...${NC}"
 
@@ -766,6 +793,7 @@ install_node_stack() {
     else
         nvm install --lts
     fi
+    set -u
 
     log "${YELLOW}Instalando pnpm y bun...${NC}"
 
@@ -776,6 +804,12 @@ install_node_stack() {
     fi
 
     run_shell "curl -fsSL https://bun.sh/install | bash"
+
+    if [ "$DRY_MODE" != true ]; then
+        command -v node >/dev/null 2>&1 || { log "${RED}Node LTS no quedó disponible.${NC}"; return 1; }
+        command -v npm >/dev/null 2>&1 || { log "${RED}npm no quedó disponible.${NC}"; return 1; }
+        log_success "Node $(node --version), npm $(npm --version) disponibles."
+    fi
 }
 
 ensure_nvm_node_lts() {
@@ -787,6 +821,7 @@ ensure_nvm_node_lts() {
         return 0
     fi
 
+    set +u
     # shellcheck disable=SC1090,SC1091
     . "$NVM_DIR/nvm.sh"
 
@@ -804,6 +839,7 @@ ensure_nvm_node_lts() {
     else
         nvm use --lts >/dev/null
     fi
+    set -u
 }
 
 log_gemini_tool_status() {
@@ -904,6 +940,76 @@ install_opencode_cli() {
     fi
 }
 
+install_antigravity() {
+    local SDK_DIR="$HOME/.local/share/antigravity-sdk"
+    local SDK_VENV="$SDK_DIR/venv"
+    local DESKTOP_DIR="$HOME/.local/opt/antigravity"
+    local DESKTOP_TARBALL="/tmp/antigravity-desktop.tar.gz"
+    local IDE_DIR="$HOME/.local/opt/antigravity-ide"
+    local IDE_TARBALL="/tmp/antigravity-ide.tar.gz"
+    local IDE_URL="https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/2.1.1-6123990880747520/linux-x64/Antigravity%20IDE.tar.gz"
+    local DESKTOP_URL="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.4.3-4510119262814208/linux-x64/Antigravity.tar.gz"
+    local SDK_URL="git+https://github.com/google-antigravity/antigravity-sdk-python.git"
+
+    log "${YELLOW}Instalando Antigravity (agy)...${NC}"
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] instalar CLI, SDK Python y escritorio Antigravity${NC}"
+        return 0
+    fi
+
+    run_shell 'curl -fsSL https://antigravity.google/cli/install.sh | bash'
+    if command -v agy >/dev/null 2>&1; then
+        log_success "Antigravity CLI detectado: $(command -v agy)"
+    else
+        log_warn "El instalador terminó, pero agy no aparece todavía en PATH."
+    fi
+
+    if command -v python3 >/dev/null 2>&1; then
+        run_cmd mkdir -p "$SDK_DIR"
+        [ -x "$SDK_VENV/bin/python" ] || run_cmd python3 -m venv "$SDK_VENV"
+        run_cmd "$SDK_VENV/bin/python" -m pip install --upgrade pip
+        run_cmd "$SDK_VENV/bin/python" -m pip install --upgrade "$SDK_URL"
+        log_success "SDK Python instalado en $SDK_VENV"
+    else
+        log_warn "Python 3 no está disponible; se omite el SDK Python."
+    fi
+
+    if [ ! -x "$DESKTOP_DIR/antigravity" ]; then
+        run_cmd mkdir -p "$DESKTOP_DIR/staging"
+        run_shell "curl -fL --retry 3 '$DESKTOP_URL' -o '$DESKTOP_TARBALL'"
+        run_cmd tar -xzf "$DESKTOP_TARBALL" -C "$DESKTOP_DIR/staging"
+        run_shell "DESKTOP_BIN=\$(find '$DESKTOP_DIR/staging' -type f \( -name Antigravity -o -name antigravity \) -perm -u+x | head -n 1); test -n \"\$DESKTOP_BIN\"; ln -sfn \"\$DESKTOP_BIN\" '$DESKTOP_DIR/antigravity'"
+        run_cmd rm -f "$DESKTOP_TARBALL"
+    else
+        log_success "Antigravity Desktop ya está instalado; se omite la descarga."
+    fi
+    if [ -x "$DESKTOP_DIR/antigravity" ]; then
+        run_cmd mkdir -p "$HOME/.local/share/applications"
+        run_shell "printf '%s\\n' '[Desktop Entry]' 'Name=Antigravity' 'Comment=Antigravity IDE' 'Exec=$DESKTOP_DIR/antigravity %U' 'Terminal=false' 'Type=Application' 'Categories=Development;IDE;' > '$HOME/.local/share/applications/antigravity.desktop'"
+        log_success "Antigravity IDE instalado en $DESKTOP_DIR"
+    else
+        log_warn "No se encontró el ejecutable Antigravity dentro del tarball."
+        return 1
+    fi
+
+    if [ -L "$IDE_DIR/antigravity-ide" ] && [ -e "$IDE_DIR/antigravity-ide" ]; then
+        log_success "Antigravity IDE ya está instalado; se omite la descarga."
+        return 0
+    fi
+
+    log "Descargando Antigravity IDE..."
+    run_cmd mkdir -p "$IDE_DIR/staging"
+    run_shell "curl -fL --retry 3 '$IDE_URL' -o '$IDE_TARBALL'"
+    run_cmd tar -xzf "$IDE_TARBALL" -C "$IDE_DIR/staging"
+    run_shell "IDE_BIN=\$(find '$IDE_DIR/staging' -type f \( -name 'Antigravity IDE' -o -name antigravity-ide -o -name antigravity \) -perm -u+x | head -n 1); test -n \"\$IDE_BIN\"; ln -sfn \"\$IDE_BIN\" '$IDE_DIR/antigravity-ide'"
+    run_cmd rm -f "$IDE_TARBALL"
+    if [ -x "$IDE_DIR/antigravity-ide" ]; then
+        log_success "Antigravity IDE instalado en $IDE_DIR"
+    else
+        log_warn "No se encontró el ejecutable Antigravity IDE dentro del tarball."
+    fi
+}
+
 install_playwright_package() {
     export NVM_DIR="$HOME/.nvm"
     # shellcheck disable=SC1090,SC1091
@@ -934,6 +1040,7 @@ install_ai_tools() {
     install_gemini_cli
     install_opencode_cli
     install_engram_for_codex
+    install_antigravity
     
     configure_shell_paths
     verify_ai_tools
@@ -1012,13 +1119,27 @@ EOF_SH
         fi
     done
 
+    if command -v fish >/dev/null 2>&1 || [ -d "$HOME/.config/fish" ]; then
+        mkdir -p "$FISH_DIR"
+        cat > "$FISH_DIR/linux-migration-tool-paths.fish" <<'EOF_FISH'
+# linux-migration-tool PATH
+fish_add_path -m "$HOME/.local/bin"
+fish_add_path -m "$HOME/.bun/bin"
+for node_bin in "$HOME"/.nvm/versions/node/*/bin
+    if test -d "$node_bin"
+        fish_add_path -m "$node_bin"
+    end
+end
+EOF_FISH
+    fi
+
     log "PATH configurado. Abre una terminal nueva o ejecuta: source ~/.config/fish/conf.d/linux-migration-tool-paths.fish"
 }
 
 verify_ai_tools() {
     log "${YELLOW}Verificando herramientas IA...${NC}"
 
-    for TOOL in codex claude gemini opencode; do
+    for TOOL in codex claude gemini opencode agy; do
         if command -v "$TOOL" >/dev/null 2>&1; then
             log "$TOOL detectado en: $(command -v "$TOOL")"
             "$TOOL" --version 2>&1 | head -n 1 | tee -a "$LOGFILE" || true
@@ -1115,6 +1236,11 @@ install_apple_laptop_extras() {
         run_cmd sudo systemctl enable thermald
         run_cmd sudo systemctl start thermald
     fi
+
+    # El workaround Wi-Fi es independiente de que los paquetes Apple extra ya
+    # estén instalados: debe ejecutarse también en instalaciones idempotentes.
+    configure_apple_broadcom_wifi
+    configure_broadcom_suspend_workaround
 }
 
 install_mbp_watch_diagnostics() {
@@ -2249,14 +2375,77 @@ configure_apple_broadcom_wifi() {
         return
     fi
 
-    run_shell "printf '%s\n' 'options brcmfmac feature_disable=0x82000' | sudo tee \"$TARGET_CONF\" >/dev/null"
-    run_cmd sudo modprobe -r brcmfmac
-    run_cmd sudo modprobe brcmfmac
+    run_shell "printf '%s\\n' 'options brcmfmac feature_disable=0x82000' | sudo tee \"$TARGET_CONF\" >/dev/null"
+    configure_limine_brcmfmac_cmdline
 
     log "Workaround aplicado en $TARGET_CONF"
     log "Firmware local esperado en: $TARGET_FW_DIR"
-    log "Verifica Wi-Fi y revisa logs con: dmesg | grep -i brcmfmac"
+    log_warn "No se recarga brcmfmac en caliente para no romper el escaneo activo; reinicia para aplicar el parámetro."
+    log "Verifica Wi-Fi tras reiniciar y revisa logs con: dmesg | grep -i brcmfmac"
     log "Si aparece 'backplane type 15 is not supported', revisa manualmente PCI runtime power management."
+}
+
+configure_broadcom_suspend_workaround() {
+    local HOOK="/usr/lib/systemd/system-sleep/brcmfmac-apple"
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] instalar hook de suspensión para descargar/recargar brcmfmac${NC}"
+        return 0
+    fi
+
+    if ! is_apple_laptop || [ "$(detect_broadcom_wifi_profile)" != "apple-bcm43602" ]; then
+        return 0
+    fi
+
+    log "${YELLOW}Instalando workaround de suspensión para Broadcom BCM43602...${NC}"
+    run_shell "sudo mkdir -p /usr/lib/systemd/system-sleep"
+    run_shell "sudo tee '$HOOK' >/dev/null <<'EOF'
+#!/bin/sh
+set -eu
+
+case \"\${1:-}\" in
+  pre)
+    command -v nmcli >/dev/null 2>&1 && nmcli radio wifi off || true
+    ip link set wlan0 down 2>/dev/null || true
+    modprobe -r brcmfmac_wcc brcmfmac 2>/dev/null || true
+    ;;
+  post)
+    modprobe brcmfmac 2>/dev/null || true
+    command -v nmcli >/dev/null 2>&1 && nmcli radio wifi on || true
+    ;;
+esac
+EOF
+sudo chmod 0755 '$HOOK'"
+    log_warn "El hook evita que brcmfmac falle al entrar en suspensión; validar con una suspensión manual."
+}
+
+configure_limine_brcmfmac_cmdline() {
+    local LIMINE_CONF="/boot/limine.conf"
+    local PARAM="brcmfmac.feature_disable=0x82000"
+
+    if ! sudo test -f "$LIMINE_CONF"; then
+        log_info "No se encontró $LIMINE_CONF; se mantiene solo la configuración de modprobe."
+        return 0
+    fi
+
+    if sudo grep -Eq "(^|[[:space:]])${PARAM//./\\.}([[:space:]]|$)" "$LIMINE_CONF"; then
+        log_success "Limine ya contiene $PARAM."
+        return 0
+    fi
+
+    log "${YELLOW}Añadiendo $PARAM a las entradas cmdline de Limine...${NC}"
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] actualizar $LIMINE_CONF${NC}"
+        return 0
+    fi
+
+    run_shell "sudo cp -a \"$LIMINE_CONF\" \"$LIMINE_CONF.bak.$(date +%Y%m%d%H%M%S)\""
+    run_shell "sudo sed -i -E '/^[[:space:]]*cmdline:/ { /${PARAM//./\\.}/! s/[[:space:]]*$/ $PARAM/; }' \"$LIMINE_CONF\""
+    if ! sudo grep -Eq "(^|[[:space:]])${PARAM//./\\.}([[:space:]]|$)" "$LIMINE_CONF"; then
+        log_warn "No se pudo confirmar la modificación de $LIMINE_CONF; revisa su sintaxis manualmente."
+        return 1
+    fi
+    log_success "Limine actualizado con $PARAM."
 }
 
 configure_wifi_regulatory_domain() {
@@ -2303,7 +2492,7 @@ configure_wifi_regulatory_domain() {
 }
 
 configure_networkmanager_iwd_backend() {
-    if ! systemctl list-unit-files --type=service 2>/dev/null | grep -q '^NetworkManager\.service'; then
+    if ! command -v nmcli >/dev/null 2>&1; then
         return 0
     fi
 
@@ -2326,15 +2515,12 @@ configure_networkmanager_iwd_backend() {
         log "${YELLOW}[DRY-RUN] escribir /etc/NetworkManager/conf.d/wifi_backend.conf${NC}"
     else
         run_cmd sudo mkdir -p /etc/NetworkManager/conf.d
-        run_shell "sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null <<'EOF'
-[device]
-wifi.backend=iwd
-EOF"
+        run_shell "printf '%s\\n' '[device]' 'wifi.backend=iwd' | sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf >/dev/null"
     fi
 
     run_cmd sudo systemctl restart NetworkManager
     run_cmd sleep 2
-    run_cmd sudo systemctl restart iwd
+    run_cmd sudo systemctl start iwd
     log_warn "Backend iwd aplicado. Validacion posterior: iw dev, iw reg get, nmcli device wifi list."
 }
 
@@ -2603,6 +2789,7 @@ configure_facetimehd_camera() {
 }
 
 bootstrap_cachyos() {
+    ensure_sudo_session || exit 1
     log_section "Bootstrap CachyOS"
     show_log_location
     bootstrap_context_report

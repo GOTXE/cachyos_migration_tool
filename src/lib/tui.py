@@ -859,12 +859,16 @@ def run_op(stdscr, title, mig_args, env_extra=None):
     print(f"\033[1;36m  {title}\033[0m")
     print(f"\033[1;36m{sep}\033[0m\n")
     env = {**os.environ, "AUTO_CONFIRM_ENV": "1", **(env_extra or {})}
+    rc = 1
     try:
-        subprocess.run(["bash", MIG] + mig_args, env=env)
+        rc = subprocess.run(["bash", MIG] + mig_args, env=env, check=False).returncode
     except Exception as e:
         print(f"\033[1;31mError: {e}\033[0m")
     print(f"\n\033[1;36m{sep}\033[0m")
-    print("\033[1;32m  Operación completada. Pulsa ENTER para volver al menú.\033[0m")
+    if rc == 0:
+        print("\033[1;32m  Operación completada correctamente. Pulsa ENTER para volver al menú.\033[0m")
+    else:
+        print(f"\033[1;31m  Operación fallida (código {rc}). Revisa el log. Pulsa ENTER para volver.\033[0m")
     print(f"\033[1;36m{sep}\033[0m")
     try:
         input()
@@ -1847,7 +1851,7 @@ def flow_bootstrap(stdscr):
         return
 
     env_extra = {}
-    ai_selected = {"ai_codex", "ai_claude", "ai_gemini", "ai_opencode", "ai_engram"} & set(selected)
+    ai_selected = {"ai_codex", "ai_claude", "ai_gemini", "ai_opencode", "ai_engram", "ai_antigravity"} & set(selected)
     
     if "wifi" in selected:
         stdscr.clear()

@@ -77,10 +77,15 @@ _tui_run_with_output() {
     printf '\033[1;36m  %s\033[0m\n' "$TITLE"
     printf '\033[1;36m%s\033[0m\n\n' "$LINE"
 
-    ("$@") 2>&1 || true
+    local RC=0
+    ("$@") 2>&1 || RC=$?
 
     printf '\n\033[1;36m%s\033[0m\n' "$LINE"
-    printf '\033[1;32m  Operación completada. Pulsa ENTER para volver al menú.\033[0m\n'
+    if [ "$RC" -eq 0 ]; then
+        printf '\033[1;32m  Operación completada correctamente. Pulsa ENTER para volver al menú.\033[0m\n'
+    else
+        printf '\033[1;31m  Operación fallida (código %s). Revisa el log. Pulsa ENTER para volver.\033[0m\n' "$RC"
+    fi
     printf '\033[1;36m%s\033[0m\n' "$LINE"
     read -r _ < /dev/tty
 }
@@ -886,8 +891,9 @@ tui_bootstrap_run() {
     [[ "$SELECTED" == *'"ai_claude"'* ]]   && install_claude_cli
     [[ "$SELECTED" == *'"ai_gemini"'* ]]   && install_gemini_cli
     [[ "$SELECTED" == *'"ai_opencode"'* ]] && install_opencode_cli
+    [[ "$SELECTED" == *'"ai_antigravity"'* ]] && install_antigravity
 
-    if [[ "$SELECTED" == *'"ai_codex"'* || "$SELECTED" == *'"ai_engram"'* || "$SELECTED" == *'"ai_claude"'* || "$SELECTED" == *'"ai_gemini"'* || "$SELECTED" == *'"ai_opencode"'* ]]; then
+    if [[ "$SELECTED" == *'"ai_codex"'* || "$SELECTED" == *'"ai_engram"'* || "$SELECTED" == *'"ai_claude"'* || "$SELECTED" == *'"ai_gemini"'* || "$SELECTED" == *'"ai_opencode"'* || "$SELECTED" == *'"ai_antigravity"'* ]]; then
         configure_shell_paths
         verify_ai_tools
     fi

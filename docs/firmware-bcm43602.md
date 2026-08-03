@@ -18,6 +18,38 @@ firmware/brcm/
 
 Los blobs `clm_blob` y `txcap_blob` no están incluidos en el repo (tamaño/licencia). Si faltan, el chip funciona con limitaciones de canales y cobertura.
 
+## Suspensión y pérdida del escaneo
+
+En el MacBookPro12,1 el BCM43602 puede fallar al suspender. La evidencia observada
+en `journalctl -k` es:
+
+```text
+brcm_pcie_pm_enter_D3 returns -5
+Failed to reserve space in commonring
+brcmf_cfg80211_scan: scan error (-12)
+```
+
+Después de este fallo, NetworkManager puede seguir mostrando `wlan0`, pero el
+driver ya no responde a escaneos ni a comandos del firmware. Un reinicio recupera
+el dispositivo porque reinicializa el chip.
+
+El bootstrap instala el hook:
+
+```text
+/usr/lib/systemd/system-sleep/brcmfmac-apple
+```
+
+Este hook apaga el Wi-Fi y descarga `brcmfmac` antes de suspender, y lo vuelve a
+cargar al reanudar. La corrección debe validarse suspendiendo y reanudando, y
+después ejecutando:
+
+```bash
+nmcli device wifi list --rescan yes
+```
+
+No se debe recargar `brcmfmac` mientras NetworkManager está gestionando `wlan0`
+fuera de este flujo, porque puede producir el mismo estado bloqueado.
+
 ## Cómo se actualiza el bundle
 
 ```bash

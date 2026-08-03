@@ -44,6 +44,7 @@ backup_system() {
     local TOTAL_BLOCKS=4
     local BACKUP_WARNING_COUNT=0
 
+    ensure_sudo_session || exit 1
     require_command rsync
     extract_broadcom_bundle_silent
 
