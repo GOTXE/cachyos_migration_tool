@@ -73,7 +73,10 @@ CachyOS
 - `hyprpaper`
 - `grim`
 - `slurp`
-- `mako`
+
+El bootstrap no instala Mako. Si ya está instalado cuando se ejecuta el
+bloque de Hyprland, lo elimina para que los avisos sigan gestionados por el
+entorno de escritorio proporcionado por CachyOS.
 
 ### 4. Apple MBP 2015 opcional
 
@@ -1042,7 +1045,6 @@ rofi-wayland
 hyprpaper
 grim
 slurp
-mako
 ```
 
 ---

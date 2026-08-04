@@ -1036,7 +1036,6 @@ install_hyprland() {
         hyprpaper
         grim
         slurp
-        mako
     )
 
     if [ "$HYPRLAND_MODE" = "ask" ]; then
@@ -1049,6 +1048,11 @@ install_hyprland() {
 
     if [ "$HYPRLAND_MODE" = "yes" ]; then
         run_cmd sudo pacman -S --needed --noconfirm "${HYPRLAND_PACKAGES[@]}"
+
+        if pacman -Q mako >/dev/null 2>&1; then
+            log "${YELLOW}Mako está instalado, pero no se usará como gestor de avisos.${NC}"
+            run_cmd sudo pacman -Rns --noconfirm mako
+        fi
     fi
 }
 
