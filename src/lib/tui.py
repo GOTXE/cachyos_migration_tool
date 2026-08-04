@@ -1898,6 +1898,7 @@ def flow_watch_plasmoid_menu(stdscr):
         ("sep-plasmoid",       "──────── Plasmoid MBP Watch ────────"),
         ("add-plasmoid",       "Añadir widget al escritorio"),
         ("move-plasmoid",      "Widget en pantalla..."),
+        ("reload-plasmoid",    "Recargar widget MBP Watch"),
         ("reinstall-plasmoid", "Reinstalar widget MBP Watch"),
         ("uninstall-plasmoid", "Quitar widget MBP Watch"),
         ("back",               "Atrás"),
@@ -1918,6 +1919,15 @@ def flow_watch_plasmoid_menu(stdscr):
             flow_plasmoid_op(stdscr, label, "add-mbp-plasmoid")
         elif tag == "move-plasmoid":
             flow_plasmoid_op(stdscr, label, "move-mbp-plasmoid")
+        elif tag == "reload-plasmoid":
+            mode = inputbox(stdscr, label, "Modo de recarga [soft|hard]:", "soft")
+            if mode is None:
+                continue
+            mode = mode.strip() or "soft"
+            if mode not in {"soft", "hard"}:
+                info(stdscr, label, "Modo no valido. Usa soft o hard.")
+                continue
+            run_op(stdscr, label, ["reload-mbp-plasmoid", "--mode", mode])
         elif tag == "reinstall-plasmoid":
             flow_plasmoid_op(stdscr, label, "reinstall-mbp-plasmoid")
         elif tag == "uninstall-plasmoid":

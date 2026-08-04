@@ -42,6 +42,8 @@ PlasmoidItem {
         last_snapshot_time: "",
         last_snapshot_id: "",
         error: "",
+        server: "",
+        server_status: "fail",
     })
     property var selectedEvent: null
     property real contentHeightHint: 720
@@ -149,7 +151,33 @@ PlasmoidItem {
             last_snapshot_time: "",
             last_snapshot_id: "",
             error: errorMessage,
+            server: "",
+            server_status: "fail",
         };
+    }
+
+    function readCachedJson(configKey) {
+        var cached = Plasmoid.configuration[configKey] || "";
+        if (!cached) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(cached);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function cacheJson(configKey, payload) {
+        if (!payload) {
+            return;
+        }
+
+        try {
+            Plasmoid.configuration[configKey] = JSON.stringify(payload);
+        } catch (e) {
+        }
     }
 
     function applyBackupStatusPayload(payload) {
@@ -160,6 +188,7 @@ PlasmoidItem {
 
         try {
             backupState = JSON.parse(payload);
+            cacheJson("cachedBackupJson", backupState);
         } catch (e) {
             resetBackupState("Invalid data");
         }
@@ -191,7 +220,12 @@ PlasmoidItem {
         sourceState = DataSource.readState({
             dataUrl: Plasmoid.configuration.dataUrl || Constants.DATA_JSON_URL,
         }, sourceState);
-        adaptedState = StateAdapter.adapt(sourceState.data);
+        if (sourceState.data) {
+            adaptedState = StateAdapter.adapt(sourceState.data);
+            cacheJson("cachedDataJson", sourceState.data);
+        } else if (sourceState.lastValidData) {
+            adaptedState = StateAdapter.adapt(sourceState.lastValidData);
+        }
         syncEvents();
         refreshBackupData();
     }
@@ -263,6 +297,20 @@ PlasmoidItem {
 
             root.applyBackupStatusPayload(root.extractBackupPayload(data));
         }
+    }
+
+    Component.onCompleted: {
+        var cachedData = readCachedJson("cachedDataJson");
+        if (cachedData) {
+            adaptedState = StateAdapter.adapt(cachedData);
+        }
+
+        var cachedBackup = readCachedJson("cachedBackupJson");
+        if (cachedBackup) {
+            backupState = cachedBackup;
+        }
+
+        root.refreshData();
     }
 
     fullRepresentation: Item {

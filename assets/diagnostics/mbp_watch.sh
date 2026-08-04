@@ -141,9 +141,32 @@ is_running_pid() {
     [ -f "$PID_FILE" ] || return 1
 
     local PID
+    local CMDLINE
     PID="$(< "$PID_FILE")"
 
-    [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null
+    [ -n "$PID" ] || return 1
+    kill -0 "$PID" 2>/dev/null || return 1
+    CMDLINE="$(ps -p "$PID" -o args= 2>/dev/null || true)"
+    [ -n "$CMDLINE" ] || return 1
+
+    case "$PID_FILE" in
+        "$SERVE_PID_FILE")
+            printf '%s\n' "$CMDLINE" | grep -Eq 'python3 .*http\.server|mbp_watch\.sh _serve_loop' || return 1
+            ;;
+        *)
+            printf '%s\n' "$CMDLINE" | grep -q 'mbp_watch\.sh' || return 1
+            ;;
+    esac
+
+    return 0
+}
+
+cleanup_stale_pid_file() {
+    local PID_FILE="$1"
+
+    if [ -f "$PID_FILE" ] && ! is_running_pid "$PID_FILE"; then
+        rm -f "$PID_FILE"
+    fi
 }
 
 # Captures static hardware inventory once at startup.
@@ -870,6 +893,9 @@ watch_children_alive() {
 }
 
 any_watch_child_running() {
+    cleanup_stale_pid_file "$JOURNAL_PID_FILE"
+    cleanup_stale_pid_file "$SNAPSHOT_PID_FILE"
+    cleanup_stale_pid_file "$SERVE_PID_FILE"
     is_running_pid "$JOURNAL_PID_FILE" || \
     is_running_pid "$SNAPSHOT_PID_FILE" || \
     is_running_pid "$SERVE_PID_FILE"

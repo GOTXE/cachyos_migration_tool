@@ -24,11 +24,13 @@ build_status_json() {
     local time="$4"
     local id="$5"
     local error="$6"
+    local server="$7"
+    local server_status="$8"
 
     local formatted_size=""
     formatted_size="$(LC_NUMERIC=C printf "%.1f" "$size" 2>/dev/null || echo "0")"
     cat <<EOF
-{"status":"$status","snapshot_count":$count,"total_size_gb":$formatted_size,"last_snapshot_time":"$time","last_snapshot_id":"$id","error":"$error"}
+{"status":"$status","snapshot_count":$count,"total_size_gb":$formatted_size,"last_snapshot_time":"$time","last_snapshot_id":"$id","error":"$error","server":"$server","server_status":"$server_status"}
 EOF
 }
 
@@ -76,19 +78,25 @@ main() {
     local last_id=""
     local status="fail"
     local error=""
+    local server=""
+    local server_status="fail"
     local snapshots_json
 
     if try_repo "$BACKUP_SFTP_HOST_LAN" "$BACKUP_SFTP_REPOSITORY_PATH" 2>/dev/null; then
+        server="LAN"
+        server_status="ok"
         :
     elif try_repo "$BACKUP_SFTP_HOST_REMOTE" "$BACKUP_SFTP_REPOSITORY_PATH" 2>/dev/null; then
+        server="Internet"
+        server_status="ok"
         :
     else
-        build_status_json "fail" 0 0 "" "" "Repository not accessible" > "$STATUS_FILE"
+        build_status_json "fail" 0 0 "" "" "Repository not accessible" "" "fail" > "$STATUS_FILE"
         return 1
     fi
 
     if ! snapshots_json=$(restic snapshots --json 2>/dev/null); then
-        build_status_json "fail" 0 0 "" "" "Failed to read snapshots" > "$STATUS_FILE"
+        build_status_json "fail" 0 0 "" "" "Failed to read snapshots" "$server" "$server_status" > "$STATUS_FILE"
         return 1
     fi
 
@@ -107,7 +115,7 @@ main() {
     fi
 
     if ! stats_output=$(restic stats 2>/dev/null | grep "Total Size" || echo ""); then
-        build_status_json "fail" "$count" 0 "$last_time" "$last_id" "Failed to calculate stats" > "$STATUS_FILE"
+        build_status_json "fail" "$count" 0 "$last_time" "$last_id" "Failed to calculate stats" "$server" "$server_status" > "$STATUS_FILE"
         return 1
     fi
 
@@ -127,7 +135,7 @@ main() {
         error="No recent backup"
     fi
 
-    build_status_json "$status" "$count" "$size_gb" "$last_time" "$last_id" "$error" > "$STATUS_FILE"
+    build_status_json "$status" "$count" "$size_gb" "$last_time" "$last_id" "$error" "$server" "$server_status" > "$STATUS_FILE"
 }
 
 main "$@"

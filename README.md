@@ -80,6 +80,7 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 ./migration.sh install-mbp-watch           [--dry-run]
 ./migration.sh add-mbp-plasmoid            [--target primary|screen:N] [--dry-run]
 ./migration.sh move-mbp-plasmoid           [--target primary|screen:N] [--dry-run]
+./migration.sh reload-mbp-plasmoid         [--mode soft|hard] [--dry-run]
 ./migration.sh reinstall-mbp-plasmoid      [--target primary|screen:N] [--dry-run]
 ./migration.sh uninstall-mbp-plasmoid      [--dry-run]
 ./migration.sh uninstall-mbp-watch         [--dry-run]
