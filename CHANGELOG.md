@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.0
+
+- Restore normalizes new file and directory permissions by default instead of blindly applying backup-wide executable bits.
+- Git repositories recover executable permissions only from their tracked `100755` entries.
+- Added `--preserve-permissions` for restores that require exact backup modes.
+
 ## 1.9.2
 
 - Improved unattended bootstrap and persistent sudo handling.

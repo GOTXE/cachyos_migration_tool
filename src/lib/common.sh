@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.10.0"
+VERSION="1.11.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
@@ -13,6 +13,7 @@ APPLE_LAPTOP_MODE="ask"
 BACKUP_TARGET=""
 BACKUP_SOURCE=""
 FORCE_RESTORE=false
+RESTORE_PRESERVE_PERMISSIONS=false
 AUTO_CONFIRM=false
 [ "${AUTO_CONFIRM_ENV:-}" = "1" ] && AUTO_CONFIRM=true
 MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"

@@ -746,6 +746,19 @@ find ~/.ssh -type f -name '*.pub' -exec chmod 644 {} +
 
 ---
 
+# Política de permisos del restore
+
+Por defecto, el restore no reaplica ciegamente los permisos almacenados en el
+backup. Los ficheros nuevos se crean como `644` y los directorios como `755`.
+En repositorios Git, el script recupera el bit ejecutable sólo para archivos
+marcados como `100755` en el índice del repositorio.
+
+Si necesitas restaurar literalmente los permisos originales, usa:
+
+```bash
+./migration.sh restore --source /ruta/al/backup --preserve-permissions
+```
+
 # 3. BOOTSTRAP CACHYOS
 
 ## Objetivo
