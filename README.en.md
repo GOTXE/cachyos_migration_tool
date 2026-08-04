@@ -67,7 +67,7 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 ./migration.sh backup    [--target PATH] [--dry-run]
 ./migration.sh bootstrap [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
 ./migration.sh postcheck
-./migration.sh restore   [--source PATH] [--force] [--dry-run]
+./migration.sh restore   [--source PATH] [--force] [--preserve-permissions] [--dry-run]
 ./migration.sh post-restore-fixups [--dry-run]
 ./migration.sh restic-backup [init [--smoke-test] | run | status | snapshots | install-timer | disable-timer]
 
@@ -87,6 +87,8 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 ```
 
 The `restic-backup` timer still checks every 30 minutes, but by default it only runs backups between `08:00` and `22:00`. You can tune that window in `~/.config/cachyos-migration-tool/backup.env` with `BACKUP_ALLOWED_START_HOUR`, `BACKUP_ALLOWED_END_HOUR`, and `BACKUP_ENFORCE_SCHEDULE`.
+
+Restore normalizes permissions by default: new files use `644`, directories use `755`, and Git repositories restore executable bits only for files marked `100755` in their index. Use `--preserve-permissions` only when you need the backup modes restored literally.
 
 `install-youtube-force-h264` and `configure-vaapi-brave` remain available through the CLI, but in the normal interactive UI they live inside `bootstrap`, not as standalone main-menu actions.
 

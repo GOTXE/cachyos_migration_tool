@@ -1,5 +1,63 @@
 #!/usr/bin/env bash
 
+restore_rsync() {
+    local SOURCE_DIR="$1"
+    local TARGET_DIR="$2"
+    local LABEL="$3"
+    local RSYNC_OPTIONS=()
+
+    if [ "${RESTORE_PRESERVE_PERMISSIONS:-false}" = true ]; then
+        RSYNC_OPTIONS=(-a)
+    else
+        RSYNC_OPTIONS=(-rltD --no-perms --no-owner --no-group --chmod=F644,D755)
+    fi
+
+    log "Restaurando $LABEL con política de permisos: ${RESTORE_PRESERVE_PERMISSIONS:-false}."
+    run_cmd rsync "${RSYNC_OPTIONS[@]}" --info=progress2 \
+        "$SOURCE_DIR" \
+        "$TARGET_DIR"
+}
+
+normalize_restored_git_repository_permissions() {
+    local BACKUP_REPOS_DIR="$1"
+    local TARGET_HOME="$2"
+    local SOURCE_GIT_DIR=""
+    local RELATIVE_REPO=""
+    local TARGET_REPO=""
+    local ENTRY=""
+    local MODE=""
+    local RELATIVE_FILE=""
+    local TARGET_FILE=""
+
+    [ "${RESTORE_PRESERVE_PERMISSIONS:-false}" = true ] && return 0
+    [ -d "$BACKUP_REPOS_DIR" ] || return 0
+
+    while IFS= read -r -d '' SOURCE_GIT_DIR; do
+        RELATIVE_REPO="${SOURCE_GIT_DIR#"$BACKUP_REPOS_DIR/"}"
+        RELATIVE_REPO="${RELATIVE_REPO%/.git}"
+        TARGET_REPO="$TARGET_HOME/$RELATIVE_REPO"
+
+        [ -e "$TARGET_REPO" ] || continue
+        log "Normalizando permisos Git: $RELATIVE_REPO"
+
+        while IFS= read -r -d '' ENTRY; do
+            MODE="${ENTRY%% *}"
+            RELATIVE_FILE="${ENTRY#*$'\t'}"
+            TARGET_FILE="$TARGET_REPO/$RELATIVE_FILE"
+
+            [ -e "$TARGET_FILE" ] || [ -L "$TARGET_FILE" ] || continue
+            case "$MODE" in
+                100755)
+                    [ -L "$TARGET_FILE" ] || chmod a+x "$TARGET_FILE"
+                    ;;
+                100644)
+                    [ -L "$TARGET_FILE" ] || chmod a-x "$TARGET_FILE"
+                    ;;
+            esac
+        done < <(git -C "$TARGET_REPO" ls-files -s -z 2>/dev/null || true)
+    done < <(find "$BACKUP_REPOS_DIR" \( -type d -o -type f \) -name .git -print0 2>/dev/null)
+}
+
 verify_rsync_restored_tree() {
     local SOURCE_DIR="$1"
     local TARGET_DIR="$2"
@@ -99,9 +157,10 @@ restore_system() {
     fi
 
     if [ -d "$BACKUP_DIR/configs" ]; then
-        run_cmd rsync -a --info=progress2 \
+        restore_rsync \
             "$BACKUP_DIR/configs/" \
-            "$HOME/"
+            "$HOME/" \
+            "configuraciones"
     else
         log "${YELLOW}No existe bloque configs en el backup. Se omite.${NC}"
     fi
@@ -109,9 +168,11 @@ restore_system() {
     log_block_progress 2 "$TOTAL_BLOCKS" "Repositorios Git"
 
     if [ -d "$BACKUP_DIR/repos" ]; then
-        run_cmd rsync -a --info=progress2 \
+        restore_rsync \
             "$BACKUP_DIR/repos/" \
-            "$HOME/"
+            "$HOME/" \
+            "repositorios"
+        normalize_restored_git_repository_permissions "$BACKUP_DIR/repos" "$HOME"
     else
         log "${YELLOW}No existe bloque repos en el backup. Se omite.${NC}"
     fi
@@ -135,9 +196,10 @@ restore_system() {
 
             log_item_progress "$DATA_INDEX" "$TOTAL_DATA_DIRS" "$DATA_NAME -> $TARGET_PARENT/$DATA_NAME"
             run_cmd mkdir -p "$TARGET_PARENT"
-            run_cmd rsync -a --info=progress2 \
+            restore_rsync \
                 "$DATA_COPY/" \
-                "$TARGET_PARENT/$DATA_NAME/"
+                "$TARGET_PARENT/$DATA_NAME/" \
+                "datos/$DATA_NAME"
         done < <(find "$BACKUP_DIR/data" -mindepth 1 -maxdepth 1 -type d -print0)
     else
         log "${YELLOW}No existe bloque data en el backup. Se omite.${NC}"
