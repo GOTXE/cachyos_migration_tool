@@ -152,6 +152,14 @@ expand_path() {
     printf '%s\n' "$RAW_PATH"
 }
 
+normalize_hour() {
+    local RAW_HOUR="${1:-0}"
+
+    RAW_HOUR="${RAW_HOUR#0}"
+    [ -n "$RAW_HOUR" ] || RAW_HOUR=0
+    printf '%s\n' "$RAW_HOUR"
+}
+
 load_env() {
     [ -r "$ENV_FILE" ] || die "No se puede leer $ENV_FILE"
 
@@ -188,6 +196,34 @@ validate_requirements() {
     [ -r "$RESTIC_PASSWORD_FILE" ] || die "No se puede leer RESTIC_PASSWORD_FILE: $RESTIC_PASSWORD_FILE"
     [ -r "$BACKUP_EXCLUDES_FILE" ] || die "No se puede leer BACKUP_EXCLUDES_FILE: $BACKUP_EXCLUDES_FILE"
     [ -d "$BACKUP_SOURCE_HOME" ] || die "No existe BACKUP_SOURCE_HOME: $BACKUP_SOURCE_HOME"
+
+    case "${BACKUP_ENFORCE_SCHEDULE:-1}" in
+        0|1|true|false|yes|no)
+            ;;
+        *)
+            die "BACKUP_ENFORCE_SCHEDULE debe ser 0/1/true/false/yes/no"
+            ;;
+    esac
+
+    case "${BACKUP_ALLOWED_START_HOUR:-08}" in
+        ''|*[!0-9]*)
+            die "BACKUP_ALLOWED_START_HOUR debe ser una hora entera entre 0 y 23"
+            ;;
+    esac
+
+    case "${BACKUP_ALLOWED_END_HOUR:-22}" in
+        ''|*[!0-9]*)
+            die "BACKUP_ALLOWED_END_HOUR debe ser una hora entera entre 0 y 23"
+            ;;
+    esac
+
+    local START_HOUR=0
+    local END_HOUR=0
+    START_HOUR="$(normalize_hour "${BACKUP_ALLOWED_START_HOUR:-08}")"
+    END_HOUR="$(normalize_hour "${BACKUP_ALLOWED_END_HOUR:-22}")"
+
+    [ "$START_HOUR" -ge 0 ] && [ "$START_HOUR" -le 23 ] || die "BACKUP_ALLOWED_START_HOUR debe estar entre 0 y 23"
+    [ "$END_HOUR" -ge 0 ] && [ "$END_HOUR" -le 23 ] || die "BACKUP_ALLOWED_END_HOUR debe estar entre 0 y 23"
 }
 
 write_manifest() {
@@ -241,6 +277,49 @@ choose_repository() {
     return 1
 }
 
+schedule_is_enforced() {
+    case "${BACKUP_ENFORCE_SCHEDULE:-1}" in
+        0|false|no)
+            return 1
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+
+backup_is_within_allowed_window() {
+    local CURRENT_HOUR=0
+    local START_HOUR=0
+    local END_HOUR=0
+
+    CURRENT_HOUR="$(normalize_hour "$(date +%H)")"
+    START_HOUR="$(normalize_hour "${BACKUP_ALLOWED_START_HOUR:-08}")"
+    END_HOUR="$(normalize_hour "${BACKUP_ALLOWED_END_HOUR:-22}")"
+
+    if [ "$START_HOUR" -eq "$END_HOUR" ]; then
+        return 0
+    fi
+
+    if [ "$START_HOUR" -lt "$END_HOUR" ]; then
+        [ "$CURRENT_HOUR" -ge "$START_HOUR" ] && [ "$CURRENT_HOUR" -lt "$END_HOUR" ]
+        return
+    fi
+
+    [ "$CURRENT_HOUR" -ge "$START_HOUR" ] || [ "$CURRENT_HOUR" -lt "$END_HOUR" ]
+}
+
+log_schedule_status() {
+    local START_LABEL="${BACKUP_ALLOWED_START_HOUR:-08}:00"
+    local END_LABEL="${BACKUP_ALLOWED_END_HOUR:-22}:00"
+
+    if schedule_is_enforced; then
+        log "Ventana horaria permitida: $START_LABEL -> $END_LABEL"
+    else
+        log "Ventana horaria permitida: desactivada"
+    fi
+}
+
 show_status() {
     local REPOSITORY=""
 
@@ -250,6 +329,7 @@ show_status() {
     log "RESTIC_PASSWORD_FILE=$RESTIC_PASSWORD_FILE"
     log "LAN host=${BACKUP_SFTP_HOST_LAN:-missing}"
     log "REMOTE host=${BACKUP_SFTP_HOST_REMOTE:-missing}"
+    log_schedule_status
 
     if probe_host "${BACKUP_SFTP_HOST_LAN:-}"; then
         log "LAN probe: ok"
@@ -276,6 +356,12 @@ show_status() {
 
 run_backup() {
     local REPOSITORY=""
+
+    log_schedule_status
+    if schedule_is_enforced && ! backup_is_within_allowed_window; then
+        log "Fuera de ventana horaria. Se omite este ciclo de backup."
+        return 0
+    fi
 
     update_system_state
 

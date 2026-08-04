@@ -20,5 +20,7 @@
     </entry>
     <entry name="seenEventIds" type="StringList"/>
     <entry name="readEventIds" type="StringList"/>
+    <entry name="cachedDataJson" type="String"/>
+    <entry name="cachedBackupJson" type="String"/>
   </group>
 </kcfg>

@@ -81,9 +81,10 @@ main_menu() {
                     log "──────── Plasmoid MBP Watch ────────"
                     log "3) Añadir widget al escritorio"
                     log "4) Widget en pantalla..."
-                    log "5) Reinstalar widget MBP Watch"
-                    log "6) Quitar widget MBP Watch"
-                    log "7) Atrás"
+                    log "5) Recargar widget MBP Watch"
+                    log "6) Reinstalar widget MBP Watch"
+                    log "7) Quitar widget MBP Watch"
+                    log "8) Atrás"
                     log ""
 
                     prompt_read "Selecciona opcion: " SUBOPTION
@@ -106,12 +107,17 @@ main_menu() {
                             move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
                             ;;
                         5)
+                            prompt_read "Modo de recarga [soft|hard]: " RELOAD_MODE
+                            RELOAD_MODE="${RELOAD_MODE:-soft}"
+                            reload_mbp_watch_plasmoid "$RELOAD_MODE"
+                            ;;
+                        6)
                             prompt_read "Pantalla del widget [primary|screen:N]: " MBP_PLASMOID_TARGET
                             MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
                             reinstall_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
                             ;;
-                        6) uninstall_mbp_watch_plasmoid ;;
-                        7) break ;;
+                        7) uninstall_mbp_watch_plasmoid ;;
+                        8) break ;;
                         *) log "${RED}Opcion invalida.${NC}" ;;
                     esac
                 done
@@ -165,6 +171,7 @@ MBP WATCH (Diagnóstico y Overlay):
   install-mbp-watch          Instala o actualiza el daemon de diagnóstico y servicio systemd
   add-mbp-plasmoid           Añade el widget MBP Watch al escritorio KDE
   move-mbp-plasmoid          Mueve el widget a otra pantalla [--target primary|screen:N]
+  reload-mbp-plasmoid        Recarga el paquete del widget [--mode soft|hard]
   reinstall-mbp-plasmoid     Reinstala el paquete del widget y la instancia
   uninstall-mbp-watch        Desinstala el daemon de diagnóstico y servicio systemd
   uninstall-mbp-plasmoid     Elimina el widget del escritorio y desinstala el paquete
@@ -280,6 +287,7 @@ parse_bootstrap_args() {
 main() {
     local REQUESTED_PLASMOID_TARGET=""
     local TEST_MODE=""
+    local RELOAD_MODE="soft"
 
     if [ $# -eq 0 ]; then
         main_menu
@@ -450,6 +458,35 @@ main() {
                 esac
             done
             move_mbp_watch_plasmoid "$MBP_PLASMOID_TARGET"
+            ;;
+        reload-mbp-plasmoid)
+            shift
+            RELOAD_MODE="soft"
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    --mode)
+                        [ $# -ge 2 ] || {
+                            log "${RED}Falta valor para --mode${NC}"
+                            usage
+                            exit 1
+                        }
+                        case "$2" in
+                            soft|hard)
+                                RELOAD_MODE="$2"
+                                ;;
+                            *)
+                                log "${RED}Valor invalido para --mode: $2${NC}"
+                                usage
+                                exit 1
+                                ;;
+                        esac
+                        shift 2
+                        ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            reload_mbp_watch_plasmoid "$RELOAD_MODE"
             ;;
         install-mbp-watch)
             shift

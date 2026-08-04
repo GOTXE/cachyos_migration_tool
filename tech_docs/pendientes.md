@@ -19,6 +19,11 @@ Estado:
 
 - `[x]` Añadir bloque seleccionable para `tea` como CLI opcional de Gitea en el bootstrap y exponerlo en ambas TUI.
 
+## Restic backup: ventana horaria
+
+- `[x]` Limitar el backup automático de Restic para que no ejecute copias entre las 22:00 y las 08:00 por defecto.
+- `[x]` Hacer configurable la ventana horaria desde `~/.config/cachyos-migration-tool/backup.env`.
+
 Comandos de referencia para validar la implementación:
 
 ```bash

@@ -43,4 +43,17 @@ TUI_BACKEND=auto      ./migration.sh   # comportamiento por defecto
 
 ## Modo texto
 
-Menú numerado del 1 al 6 impreso con `log`. Todas las mismas operaciones que los modos gráficos, sin dependencias.
+Menú numerado impreso con `log`. Todas las mismas operaciones que los modos gráficos, sin dependencias.
+
+## Recarga del plasmoid MBP Watch
+
+Desde la CLI puedes actualizar el paquete del plasmoid sin reinstalar la
+instancia completa:
+
+```bash
+./migration.sh reload-mbp-plasmoid --mode soft
+./migration.sh reload-mbp-plasmoid --mode hard
+```
+
+El modo `soft` actualiza el paquete sin reiniciar Plasma. El modo `hard`
+reintenta la actualización y reinicia `plasmashell` si está disponible.

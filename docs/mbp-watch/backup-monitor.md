@@ -99,9 +99,14 @@ El archivo `~/.config/cachyos-migration-tool/backup-status.json` tiene la estruc
   "total_size_gb": 37.1,
   "last_snapshot_time": "2026-06-03T21:09:52",
   "last_snapshot_id": "12508a78",
-  "error": ""
+  "error": "",
+  "server": "LAN",
+  "server_status": "ok"
 }
 ```
+
+`server` indica qué destino respondió (`LAN` o `Internet`). Si ninguno
+responde, queda vacío y `server_status` pasa a `fail`.
 
 ### Estados
 
