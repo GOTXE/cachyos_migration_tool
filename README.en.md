@@ -122,7 +122,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `codexbar_tray` | Installs `codexBar Tray` from a restored/detected local repo |
 | `ai_engram` | Installs Engram and configures it for Codex CLI |
 | `iwd` | iwd backend for NetworkManager |
-| `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim, mako |
+| `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim; does not install Mako |
 | `wifi` | wireless-regdb + country regulatory domain |
 | `globalmenu` | KDE Global Menu for GTK and VS Code |
 | `hwaccel` | HW acceleration flags for Brave/Chrome |
