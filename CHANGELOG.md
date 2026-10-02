@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Backup folders are now named `<host>_DD_MM_AAAA-HH:mm` (`:` becomes `h` on exFAT/FAT/NTFS/SMB destinations, `_2`, `_3`... on collisions) instead of `linux_backup_YYYY-MM-DD_HH-MM-SS`. Override the host part with `BACKUP_HOST_LABEL`.
 - Added `src/lib/os.sh` (`os_release_value`, `os_family`, `os_pkg_install_cmd`, `require_commands`, `require_bash_44`) for distribution detection and portable preflight checks.
 - Added `src/lib/inventory.sh` (`inventory_write`): multi-distro package inventory (pacman, apt, dpkg, rpm, dnf, zypper, flatpak, snap) that skips missing managers and records failures in `INVENTORY_WARNINGS`.
 - **BREAKING:** `bootstrap` sin `--blocks` ejecuta solo los bloques compatibles marcados por defecto; MBP Watch ya no se instala implícitamente.

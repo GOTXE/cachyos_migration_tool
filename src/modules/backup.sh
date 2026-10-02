@@ -25,8 +25,59 @@ run_backup_rsync() {
     esac
 }
 
+# Etiqueta del equipo para el nombre de la carpeta (ADR-002 D2).
+backup_host_label() {
+    local LABEL="${BACKUP_HOST_LABEL:-}"
+
+    if [ -z "$LABEL" ]; then
+        LABEL="$(uname -n)"
+        LABEL="${LABEL%%.*}"
+    fi
+
+    LABEL="$(printf '%s' "$LABEL" | sed -E 's/[^A-Za-z0-9._-]/-/g')"
+    printf '%s\n' "${LABEL:-host}"
+}
+
+backup_timestamp_label() {
+    if [ -n "${BACKUP_NOW_EPOCH:-}" ]; then
+        date -d "@${BACKUP_NOW_EPOCH}" +%d_%m_%Y-%H:%M
+    else
+        date +%d_%m_%Y-%H:%M
+    fi
+}
+
+# Sistemas de ficheros cuyos nombres no admiten ':'.
+backup_fs_forbids_colon() {
+    case "$1" in
+        exfat|vfat|msdos|ntfs|ntfs3|fuseblk|cifs|smb3) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Uso: build_backup_name <destino>; requiere BACKUP_FS_TYPE.
+build_backup_name() {
+    local DEST="${1%/}"
+    local NAME
+    local CANDIDATE
+    local SUFFIX=2
+
+    NAME="$(backup_host_label)_$(backup_timestamp_label)"
+
+    if backup_fs_forbids_colon "${BACKUP_FS_TYPE:-}"; then
+        NAME="${NAME//:/h}"
+        log_warn "El destino es ${BACKUP_FS_TYPE} y no admite ':' en nombres; se usa 'h' en la hora." >&2
+    fi
+
+    CANDIDATE="$NAME"
+    while [ -e "${DEST}/${CANDIDATE}" ]; do
+        CANDIDATE="${NAME}_${SUFFIX}"
+        SUFFIX=$((SUFFIX + 1))
+    done
+
+    printf '%s\n' "$CANDIDATE"
+}
+
 backup_system() {
-    local DATE
     local BACKUP_NAME
     local CONFIGS=()
     local EXISTING_CONFIGS=()
@@ -46,9 +97,6 @@ backup_system() {
 
     require_command rsync
     extract_broadcom_bundle_silent
-
-    DATE="$(date +%Y-%m-%d_%H-%M-%S)"
-    BACKUP_NAME="linux_backup_${DATE}"
 
     if [ -n "$BACKUP_TARGET" ]; then
         DISK_MOUNT="$BACKUP_TARGET"
@@ -74,8 +122,9 @@ backup_system() {
         check_backup_space "$DISK_MOUNT"
     fi
 
-    BACKUP_DIR="${DISK_MOUNT%/}/${BACKUP_NAME}"
     configure_backup_rsync_mode "$DISK_MOUNT"
+    BACKUP_NAME="$(build_backup_name "$DISK_MOUNT")"
+    BACKUP_DIR="${DISK_MOUNT%/}/${BACKUP_NAME}"
     BACKUP_WARNING_LOG="$BACKUP_DIR/logs/rsync_warnings.txt"
 
     run_cmd_quiet mkdir -p \
