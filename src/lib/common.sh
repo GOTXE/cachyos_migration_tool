@@ -1051,10 +1051,14 @@ get_bootstrap_checklist_items() {
     if command -v detect_gpu_profile >/dev/null 2>&1; then
         GPU_PROFILE="$(detect_gpu_profile 2>/dev/null || true)"
         case "$GPU_PROFILE" in
-            amd|nvidia)
+            amd|amd-only|nvidia|nvidia-only)
                 HWACCEL_VISIBLE=true
                 ;;
-            intel*)
+            intel+amd|intel+nvidia)
+                VAAPI_VISIBLE=true
+                HWACCEL_VISIBLE=true
+                ;;
+            intel|intel-only)
                 VAAPI_VISIBLE=true
                 ;;
         esac
