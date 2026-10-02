@@ -62,7 +62,7 @@ backup_system() {
         BACKUP_ESTIMATED_BYTES="$(estimate_backup_bytes)"
     else
         ask_backup_data_dirs
-        select_disk
+        select_disk || exit 1
     fi
 
     if [ ! -d "$DISK_MOUNT" ]; then

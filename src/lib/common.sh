@@ -1185,6 +1185,14 @@ print_main_menu_intro() {
     log ""
 }
 
+validate_disk_selection() {
+    local SELECTION_VALUE="$1"
+    local TOTAL="$2"
+
+    [[ "$SELECTION_VALUE" =~ ^[0-9]+$ ]] || return 1
+    [ "$((10#$SELECTION_VALUE))" -ge 1 ] && [ "$((10#$SELECTION_VALUE))" -le "$TOTAL" ]
+}
+
 select_disk() {
     local REQUIRED_HUMAN
     local DISKS=()
@@ -1246,17 +1254,12 @@ select_disk() {
 
     prompt_read "Selecciona disco destino: " SELECTION
 
-    if ! [[ "$SELECTION" =~ ^[0-9]+$ ]]; then
-        log "${RED}Seleccion invalida.${NC}"
-        exit 1
+    if ! validate_disk_selection "$SELECTION" "${#DISKS[@]}"; then
+        log "${RED}[ERROR] Seleccion invalida.${NC}"
+        return 1
     fi
 
     SELECTED="${DISKS[$((SELECTION-1))]}"
-
-    if [ -z "${SELECTED:-}" ]; then
-        log "${RED}Seleccion invalida.${NC}"
-        exit 1
-    fi
 
     DISK_MOUNT="$(extract_lsblk_field "$SELECTED" "MOUNTPOINT")"
     check_backup_space "$DISK_MOUNT"

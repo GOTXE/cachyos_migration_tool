@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `select_disk` validates the selection range (`1..N`); `0` no longer picks the last disk.
 - Logs now go to `${XDG_STATE_HOME:-~/.local/state}/linux-migration-tool/logs/` instead of the current directory; the directory is created on first write.
 - `log`/`tty_log` use `printf '%s\n'` so backslashes in messages are no longer interpreted; ANSI colors are real escape bytes and are stripped from the log file.
 - Added `linux-migration-tool.conf.example` (referenced by the main menu intro).
