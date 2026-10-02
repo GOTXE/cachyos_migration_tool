@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- CI: new `roundtrip` job runs the backup/restore roundtrip and v1 restore tests as a non-root user on Arch, Debian and Fedora containers.
 - Both TUIs recognise v2 backups (`metadata/manifest.env`) as well as v1 (`metadata/user_ids.conf`), list them by their real creation date (manifest `CREATED_AT`, or `user_ids.conf` mtime for v1) instead of by folder name, and show the host in the restore picker.
 - The Python TUI backup verification uses the v2 layout (`configs/<item>`, `data/home/...`, `data/external/...`), so nested configs are no longer checked against the wrong path; `tests/run.sh` now runs the Python unit tests.
 - **BREAKING:** `restore` no longer asks for `sudo` and no longer runs `chown`; it warns about files not owned by you in `.ssh`, `.codex` and `.claude` and prints the exact `sudo chown` command. Use `--fix-ownership` to apply it.

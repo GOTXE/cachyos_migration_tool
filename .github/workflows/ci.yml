@@ -27,3 +27,38 @@ jobs:
 
       - name: ShellCheck critical errors
         run: find . -type f -name '*.sh' -print0 | xargs -0 shellcheck --severity=error
+
+  roundtrip:
+    name: roundtrip (${{ matrix.container }})
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        container: [archlinux:latest, debian:stable, fedora:latest]
+    steps:
+      - name: Install dependencies
+        run: |
+          if command -v pacman >/dev/null 2>&1; then
+            pacman -Sy --noconfirm bash rsync git python3 findutils util-linux coreutils
+          elif command -v apt-get >/dev/null 2>&1; then
+            apt-get update && apt-get install -y bash rsync git python3 findutils util-linux coreutils
+          elif command -v dnf >/dev/null 2>&1; then
+            dnf install -y bash rsync git python3 findutils util-linux coreutils
+          else
+            echo "No supported package manager found" >&2
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create unprivileged user
+        run: |
+          useradd -m ciuser
+          chmod -R a+rX "$GITHUB_WORKSPACE"
+
+      - name: Backup/restore roundtrip as non-root
+        run: |
+          runuser -u ciuser -- bash tests/test_backup_roundtrip.sh
+          runuser -u ciuser -- bash tests/test_restore_v1.sh
