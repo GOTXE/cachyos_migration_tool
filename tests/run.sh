@@ -3,6 +3,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Los tests no deben escribir logs en el HOME real.
+XDG_STATE_HOME="$(mktemp -d)"
+export XDG_STATE_HOME
+trap 'rm -rf "$XDG_STATE_HOME"' EXIT
+
 # 1. Tests de shell, en orden alfabético; el primer fallo corta la ejecución.
 for test_file in "$ROOT"/tests/test_*.sh; do
     [[ -e "$test_file" ]] || continue

@@ -57,6 +57,8 @@ Includes model-aware support for **Intel MacBook Pro** profiles, with an initial
 ./migration.sh test
 ```
 
+Logs are written to `${XDG_STATE_HOME:-~/.local/state}/linux-migration-tool/logs/` (override with `LOGFILE`). Optional user configuration is read from `~/.config/linux-migration-tool.conf`; a template is provided in `linux-migration-tool.conf.example`.
+
 The script selects the TUI engine in this order: **Python + curses** (no external dependencies) → **whiptail** → plain text menu. Can be forced with `TUI_BACKEND=python|whiptail|text`.
 
 ---

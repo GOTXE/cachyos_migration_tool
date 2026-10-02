@@ -6,7 +6,7 @@ VERSION="1.11.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
-LOGFILE="${LOGFILE:-$(pwd)/linux_migration_tool_$(date +%Y-%m-%d_%H-%M-%S).log}"
+LOGFILE="${LOGFILE:-${XDG_STATE_HOME:-$HOME/.local/state}/linux-migration-tool/logs/linux_migration_tool_$(date +%Y-%m-%d_%H-%M-%S).log}"
 DRY_MODE=false
 HYPRLAND_MODE="ask"
 APPLE_LAPTOP_MODE="ask"
@@ -145,18 +145,29 @@ BACKUP_FS_TYPE=""
 BACKUP_RSYNC_OPTIONS=()
 BACKUP_ESTIMATED_BYTES=0
 
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-WHITE_BOLD='\033[1;37m'
-NC='\033[0m'
+GREEN=$'\033[0;32m'
+RED=$'\033[0;31m'
+YELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+CYAN=$'\033[0;36m'
+MAGENTA=$'\033[0;35m'
+WHITE_BOLD=$'\033[1;37m'
+NC=$'\033[0m'
+
+ensure_log_dir() {
+    local LOG_DIR
+    LOG_DIR="$(dirname "$LOGFILE")"
+    [ -d "$LOG_DIR" ] || mkdir -p "$LOG_DIR" 2>/dev/null || true
+}
+
+log_to_file() {
+    ensure_log_dir
+    printf '%s\n' "$1" | sed -E 's/\x1b\[[0-9;]*m//g' >> "$LOGFILE" 2>/dev/null || true
+}
 
 log() {
-    echo -e "$1"
-    echo -e "$(echo -e "$1" | sed 's/\x1b\[[0-9;]*m//g')" >> "$LOGFILE" 2>/dev/null || true
+    printf '%s\n' "$1"
+    log_to_file "$1"
 }
 
 log_phase() {
@@ -183,12 +194,12 @@ tty_log() {
     local MESSAGE="$1"
 
     if tty_available; then
-        echo -e "$MESSAGE" > /dev/tty
+        printf '%s\n' "$MESSAGE" > /dev/tty
     else
-        echo -e "$MESSAGE"
+        printf '%s\n' "$MESSAGE"
     fi
 
-    echo -e "$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')" >> "$LOGFILE" 2>/dev/null || true
+    log_to_file "$MESSAGE"
 }
 
 prompt_read() {
@@ -202,10 +213,10 @@ prompt_read() {
     fi
 
     if tty_available; then
-        printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}" > /dev/tty
+        printf '%s' "${MAGENTA}${PROMPT_TEXT}${NC}" > /dev/tty
         read -r INPUT_VALUE < /dev/tty
     else
-        printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}"
+        printf '%s' "${MAGENTA}${PROMPT_TEXT}${NC}"
         read -r INPUT_VALUE
     fi
     printf -v "$__RESULTVAR" '%s' "$INPUT_VALUE"
@@ -291,6 +302,7 @@ run_cmd_quiet() {
         return 0
     fi
 
+    ensure_log_dir
     "$@" 2>&1 | tee -a "$LOGFILE"
     return "${PIPESTATUS[0]}"
 }
