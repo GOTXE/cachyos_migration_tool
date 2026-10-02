@@ -44,7 +44,6 @@ backup_system() {
     local TOTAL_BLOCKS=4
     local BACKUP_WARNING_COUNT=0
 
-    ensure_sudo_session || exit 1
     require_command rsync
     extract_broadcom_bundle_silent
 
@@ -101,6 +100,17 @@ backup_system() {
 
     log_phase "Exportando paquetes..."
 
+    if command -v pacman >/dev/null 2>&1; then
+        if [ "$DRY_MODE" = true ]; then
+            log "${YELLOW}[DRY-RUN] pacman -Qqe > $BACKUP_DIR/metadata/pacman_explicit.txt${NC}"
+            log "${YELLOW}[DRY-RUN] pacman -Qqm > $BACKUP_DIR/metadata/aur_foreign.txt${NC}"
+        else
+            pacman -Qqe > "$BACKUP_DIR/metadata/pacman_explicit.txt"
+            pacman -Qqm > "$BACKUP_DIR/metadata/aur_foreign.txt" || true
+        fi
+    fi
+
+    # Compatibilidad al crear backups desde sistemas no Arch.
     if command -v dpkg >/dev/null 2>&1; then
         if [ "$DRY_MODE" = true ]; then
             log "${YELLOW}[DRY-RUN] dpkg --get-selections > $BACKUP_DIR/metadata/dpkg_packages.txt${NC}"
