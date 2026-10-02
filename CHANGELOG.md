@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **BREAKING:** `bootstrap` sin `--blocks` ejecuta solo los bloques compatibles marcados por defecto; MBP Watch ya no se instala implícitamente.
+- Added single bootstrap block registry (`src/core/blocks.sh`) shared by the CLI and both TUIs, with `bootstrap --blocks a,b,c` and `--list-blocks`.
+- Fixed the `appimage` block, which was listed but never executed by the TUI.
+- Bootstrap blocks now run isolated with `set -e`; a failing block is reported and the run ends with `BOOTSTRAP COMPLETADO CON ERRORES: <ids>`.
 - `select_disk` validates the selection range (`1..N`); `0` no longer picks the last disk.
 - Logs now go to `${XDG_STATE_HOME:-~/.local/state}/linux-migration-tool/logs/` instead of the current directory; the directory is created on first write.
 - `log`/`tty_log` use `printf '%s\n'` so backslashes in messages are no longer interpreted; ANSI colors are real escape bytes and are stripped from the log file.

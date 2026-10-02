@@ -67,7 +67,7 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 
 ```bash
 ./migration.sh backup    [--target PATH] [--dry-run]
-./migration.sh bootstrap [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
+./migration.sh bootstrap [--dry-run] [--blocks a,b,c | --list-blocks] [--hyprland yes|no] [--apple-laptop yes|no]
 ./migration.sh postcheck
 ./migration.sh restore   [--source PATH] [--force] [--preserve-permissions] [--dry-run]
 ./migration.sh post-restore-fixups [--dry-run]
@@ -100,7 +100,7 @@ Restore normalizes permissions by default: new files use `644`, directories use 
 
 ## Bootstrap — selectable blocks
 
-Presented as a hardware-aware dynamic checklist in the TUI. Active by default in the current initial profile: `sync`, `yay`, `flatpak`, `official`, `kde`, `aur`, `zsh`, `node`, and `apple` when applicable.
+Presented as a hardware-aware dynamic checklist in the TUI. The CLI, the whiptail TUI and the Python TUI all run the same blocks through one registry (`src/core/blocks.sh`): `./migration.sh bootstrap --list-blocks` prints the compatible blocks (`id`, `ON|OFF`, label), `--blocks a,b,c` runs exactly those, and without `--blocks` only the compatible blocks marked ON by default run (MBP Watch is no longer installed implicitly). Active by default in the current initial profile: `sync`, `yay`, `flatpak`, `official`, `kde`, `aur`, `zsh`, `node`, and `apple` when applicable.
 
 | Block | What it installs |
 |---|---|
@@ -142,6 +142,8 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 migration.sh                    # entry point
 src/
 ├── main.sh                     # command logic and menu
+├── core/
+│   └── blocks.sh               # single bootstrap block registry
 ├── lib/
 │   ├── common.sh               # shared helpers
 │   ├── tui.py                  # Python/curses TUI (primary)

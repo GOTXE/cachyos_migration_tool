@@ -22,6 +22,9 @@ source "$APP_DIR/modules/bootstrap.sh"
 # shellcheck source=modules/restic_backup.sh
 source "$APP_DIR/modules/restic_backup.sh"
 # shellcheck disable=SC1091
+# shellcheck source=core/blocks.sh
+source "$APP_DIR/core/blocks.sh"
+# shellcheck disable=SC1091
 # shellcheck source=lib/tui.sh
 source "$APP_DIR/lib/tui.sh"
 
@@ -138,7 +141,8 @@ USO:
 COMANDOS PRINCIPALES:
   (sin comando)              Lanza el menú interactivo (TUI)
   bootstrap                  Configuración inicial del sistema (paquetes, AUR, IA, Apple, navegador, etc.)
-                             Opciones: [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
+                             Opciones: [--dry-run] [--blocks a,b,c] [--list-blocks] [--hyprland yes|no] [--apple-laptop yes|no]
+                             Sin --blocks ejecuta los bloques compatibles marcados por defecto
   backup                     Realiza copia de seguridad del sistema y datos
                              Opciones: [--target RUTA] [--dry-run]
   restore                    Restaura una copia de seguridad previa
@@ -247,6 +251,18 @@ parse_bootstrap_args() {
                 DRY_MODE=true
                 shift
                 ;;
+            --blocks)
+                [ $# -ge 2 ] && [ -n "$2" ] || {
+                    log "${RED}Falta valor para --blocks${NC}"
+                    exit 1
+                }
+                BOOTSTRAP_BLOCKS="$2"
+                shift 2
+                ;;
+            --list-blocks)
+                BOOTSTRAP_LIST_ONLY=true
+                shift
+                ;;
             --hyprland)
                 [ $# -ge 2 ] || {
                     log "${RED}Falta valor para --hyprland${NC}"
@@ -316,6 +332,10 @@ main() {
         bootstrap)
             shift
             parse_bootstrap_args "$@"
+            if [ "$BOOTSTRAP_LIST_ONLY" = true ]; then
+                list_bootstrap_blocks
+                return 0
+            fi
             bootstrap_cachyos
             ;;
         bootstrap-context)
@@ -557,4 +577,6 @@ main() {
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

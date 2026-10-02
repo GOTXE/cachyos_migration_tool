@@ -863,57 +863,20 @@ tui_bootstrap_run() {
         log "${YELLOW}DRY RUN ACTIVADO por flag --dry-run.${NC}"
     fi
 
-    AUTO_CONFIRM=true
+    local IDS=()
+    local TOKEN
+    local RC=0
 
-    [[ "$SELECTED" == *'"sync"'* ]]        && update_system_repos
-    [[ "$SELECTED" == *'"base_dev"'* ]]    && install_base_devel
-    [[ "$SELECTED" == *'"yay"'* ]]         && install_yay
-    [[ "$SELECTED" == *'"flatpak"'* ]]     && install_flatpak
-    [[ "$SELECTED" == *'"official"'* ]]    && install_official_packages
-    [[ "$SELECTED" == *'"kde"'* ]]         && install_kde_packages
-    [[ "$SELECTED" == *'"aur"'* ]]         && install_aur_packages
-    [[ "$SELECTED" == *'"talk2ai"'* ]]     && install_talk2ai_from_github
-    [[ "$SELECTED" == *'"restic"'* ]]      && install_restic_package
-    [[ "$SELECTED" == *'"filezilla"'* ]]   && install_filezilla_package
-    [[ "$SELECTED" == *'"markdownpart"'* ]] && install_markdownpart_package
-    [[ "$SELECTED" == *'"libreoffice"'* ]] && install_libreoffice_package
-    [[ "$SELECTED" == *'"androidstudio"'* ]] && install_android_studio_package
-    [[ "$SELECTED" == *'"ipscan"'* ]]      && install_ipscan_package
-    [[ "$SELECTED" == *'"tea"'* ]]         && install_tea_package
-    [[ "$SELECTED" == *'"obsidian"'* ]]    && install_obsidian_package
-    [[ "$SELECTED" == *'"sshpass"'* ]]     && install_sshpass_package
-    [[ "$SELECTED" == *'"codexbar_tray"'* ]] && install_codexbar_tray_from_local_repo
-    [[ "$SELECTED" == *'"docker_svc"'* ]]  && setup_docker
-    [[ "$SELECTED" == *'"zsh"'* ]]         && { install_ohmyzsh; install_powerlevel10k; }
-    [[ "$SELECTED" == *'"node"'* ]]        && install_node_stack
-    [[ "$SELECTED" == *'"ai_codex"'* ]]    && install_codex_cli
-    [[ "$SELECTED" == *'"ai_engram"'* ]]   && install_engram_for_codex
-    [[ "$SELECTED" == *'"ai_claude"'* ]]   && install_claude_cli
-    [[ "$SELECTED" == *'"ai_gemini"'* ]]   && install_gemini_cli
-    [[ "$SELECTED" == *'"ai_opencode"'* ]] && install_opencode_cli
-    [[ "$SELECTED" == *'"ai_antigravity"'* ]] && install_antigravity
+    for TOKEN in $SELECTED; do
+        TOKEN="${TOKEN//\"/}"
+        [ -n "$TOKEN" ] && IDS+=("$TOKEN")
+    done
 
-    if [[ "$SELECTED" == *'"ai_codex"'* || "$SELECTED" == *'"ai_engram"'* || "$SELECTED" == *'"ai_claude"'* || "$SELECTED" == *'"ai_gemini"'* || "$SELECTED" == *'"ai_opencode"'* || "$SELECTED" == *'"ai_antigravity"'* ]]; then
-        configure_shell_paths
-        verify_ai_tools
-    fi
+    set +e
+    run_bootstrap_blocks "${IDS[@]}"
+    RC=$?
+    set -e
 
-    [[ "$SELECTED" == *'"mbpwatch"'* ]]    && install_mbp_watch_diagnostics
-    [[ "$SELECTED" == *'"plasmoid"'* ]]    && install_mbp_plasmoid_if_accepted
-    [[ "$SELECTED" == *'"youtube"'* ]]     && install_youtube_force_h264_package
-    [[ "$SELECTED" == *'"apple"'* ]]       && install_apple_laptop_extras
-    [[ "$SELECTED" == *'"facetime"'* ]]    && configure_facetimehd_camera
-    [[ "$SELECTED" == *'"iwd"'* ]]         && configure_networkmanager_iwd_backend
-    [[ "$SELECTED" == *'"hyprland"'* ]]    && install_hyprland
-    [[ "$SELECTED" == *'"wifi"'* ]]        && configure_wifi_regulatory_domain
-    [[ "$SELECTED" == *'"globalmenu"'* ]]  && configure_global_menu_support
-    [[ "$SELECTED" == *'"hwaccel"'* ]]     && configure_chromium_hw_acceleration
-    [[ "$SELECTED" == *'"vaapi"'* ]]       && configure_vaapi_brave_broadwell
-    [[ "$SELECTED" == *'"btrfs"'* ]]       && configure_btrfs_snapshots
-
-    log ""
-    log "${GREEN}=================================${NC}"
-    log "${GREEN}BOOTSTRAP COMPLETADO${NC}"
-    log "${GREEN}=================================${NC}"
     show_log_location
+    return "$RC"
 }

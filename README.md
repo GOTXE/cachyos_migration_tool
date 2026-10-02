@@ -67,7 +67,7 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 
 ```bash
 ./migration.sh backup    [--target RUTA] [--dry-run]
-./migration.sh bootstrap [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
+./migration.sh bootstrap [--dry-run] [--blocks a,b,c | --list-blocks] [--hyprland yes|no] [--apple-laptop yes|no]
 ./migration.sh postcheck
 ./migration.sh restore   [--source RUTA] [--force] [--preserve-permissions] [--dry-run]
 ./migration.sh post-restore-fixups [--dry-run]
@@ -100,7 +100,7 @@ El restore normaliza permisos por defecto: ficheros nuevos quedan en `644`, dire
 
 ## Bootstrap — bloques seleccionables
 
-En la TUI se presentan como checklist dinámico según el hardware detectado. Activos por defecto en el perfil inicial actual: `sync`, `yay`, `flatpak`, `official`, `kde`, `aur`, `zsh`, `node` y `apple` cuando aplica.
+En la TUI se presentan como checklist dinámico según el hardware detectado. La CLI, la TUI whiptail y la TUI Python ejecutan los mismos bloques mediante un único registro (`src/core/blocks.sh`): `./migration.sh bootstrap --list-blocks` imprime los bloques compatibles (`id`, `ON|OFF`, etiqueta), `--blocks a,b,c` ejecuta exactamente esos y, sin `--blocks`, solo se ejecutan los bloques compatibles marcados por defecto (MBP Watch ya no se instala implícitamente). Activos por defecto en el perfil inicial actual: `sync`, `yay`, `flatpak`, `official`, `kde`, `aur`, `zsh`, `node` y `apple` cuando aplica.
 
 | Bloque | Qué instala |
 |---|---|
@@ -142,6 +142,8 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. Ac
 migration.sh                    # punto de entrada
 src/
 ├── main.sh                     # lógica de comandos y menú
+├── core/
+│   └── blocks.sh               # registro único de bloques de bootstrap
 ├── lib/
 │   ├── common.sh               # helpers compartidos
 │   ├── tui.py                  # TUI Python/curses (primario)

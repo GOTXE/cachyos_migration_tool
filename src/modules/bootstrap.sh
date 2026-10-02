@@ -2799,7 +2799,11 @@ configure_facetimehd_camera() {
 }
 
 bootstrap_cachyos() {
-    ensure_sudo_session || exit 1
+    local IDS=()
+    local FILTERED=()
+    local ID
+    local RC=0
+
     log_section "Bootstrap CachyOS"
     show_log_location
     bootstrap_context_report
@@ -2809,46 +2813,52 @@ bootstrap_cachyos() {
         log "${YELLOW}Dry-run actualmente informativo.${NC}"
     fi
 
-    install_packages
-    install_ohmyzsh
-    install_powerlevel10k
-    install_node_stack
-    install_ai_tools
-    install_playwright_if_accepted
-    install_restic_if_accepted
-    install_appimage_support_if_accepted
-    install_filezilla_if_accepted
-    install_markdownpart_if_accepted
-    install_libreoffice_if_accepted
-    install_android_studio_if_accepted
-    install_ipscan_if_accepted
-    install_tea_if_accepted
-    install_talk2ai_if_accepted || true
-    install_codexbar_tray_if_accepted || true
-    install_mbp_watch_diagnostics
-    install_mbp_plasmoid_if_accepted
-    install_youtube_force_h264_package
-    install_apple_laptop_extras
-    configure_facetimehd_camera
-    configure_networkmanager_iwd_backend
-    install_hyprland
-    configure_wifi_regulatory_domain
-    configure_global_menu_support
-    configure_chromium_hw_acceleration
-    configure_vaapi_intel
-    configure_btrfs_snapshots
+    if [ -n "$BOOTSTRAP_BLOCKS" ]; then
+        IFS=',' read -r -a IDS <<< "$BOOTSTRAP_BLOCKS"
+    else
+        mapfile -t IDS < <(block_catalog_default_ids)
+    fi
+
+    case "$HYPRLAND_MODE" in
+        yes) IDS+=(hyprland) ;;
+        no)
+            for ID in "${IDS[@]}"; do
+                [ "$ID" = "hyprland" ] || FILTERED+=("$ID")
+            done
+            IDS=("${FILTERED[@]}")
+            ;;
+    esac
+
+    FILTERED=()
+    case "$APPLE_LAPTOP_MODE" in
+        yes)
+            if block_is_visible apple; then
+                IDS+=(apple)
+            else
+                log_warn "El bloque apple no es compatible con este equipo; se ignora --apple-laptop yes."
+            fi
+            ;;
+        no)
+            for ID in "${IDS[@]}"; do
+                [ "$ID" = "apple" ] || FILTERED+=("$ID")
+            done
+            IDS=("${FILTERED[@]}")
+            ;;
+    esac
+
+    set +e
+    run_bootstrap_blocks "${IDS[@]}"
+    RC=$?
+    set -e
 
     log ""
-    log "${GREEN}=================================${NC}"
-    log "${GREEN}BOOTSTRAP COMPLETADO${NC}"
-    log "${GREEN}=================================${NC}"
-    log ""
-
     log "Recomendado:"
     log "- Reiniciar sistema para asegurar PATH, grupos, servicios y firmware recien aplicados."
     log "- Tras reiniciar, ejecuta: ./migration.sh postcheck"
     show_log_location
     log ""
+
+    return "$RC"
 }
 
 get_ai_context_state_dir() {
