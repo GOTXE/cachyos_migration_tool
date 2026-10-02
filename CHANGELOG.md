@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **BREAKING:** `restore` no longer asks for `sudo` and no longer runs `chown`; it warns about files not owned by you in `.ssh`, `.codex` and `.claude` and prints the exact `sudo chown` command. Use `--fix-ownership` to apply it.
+- `restore` understands backup format v2 (relative config paths, `data/home`, `data/external`) and v1 (nested configs are repaired using `logs/backup_selection.txt`); unsupported `FORMAT_VERSION` aborts without touching anything.
+- External data is restored under `~/restored-external/<original path>`; `--external-to-original` restores to the original path when its parent exists and is writable.
 - **BREAKING:** backups use the portable v2 layout: `configs/` keeps paths relative to `$HOME` (fixes nested configs such as `.config/Code`), user data goes to `data/home/<rel>` or `data/external/<abs>`, and `metadata/manifest.env` (`FORMAT_VERSION=2`) describes the backup. Restoring v2 backups needs the matching restore (next tasks).
 - Backup no longer extracts the Broadcom firmware bundle and exports a multi-distro package inventory (`metadata/packages/`) instead of `pacman -Qqe`/`dpkg`/`flatpak` dumps; it also records `os-release`, VS Code extensions and enabled user units.
 - Backup preflight checks Bash >= 4.4 and the required commands with distro-specific install hints; repo copies also skip `node_modules` and tool caches.

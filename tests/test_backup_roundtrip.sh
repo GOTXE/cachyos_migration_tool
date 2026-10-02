@@ -143,4 +143,75 @@ env HOME="$HOME1" LOGFILE="$TMP/dry.log" BACKUP_SELECTION_FROM_TUI=1 AUTO_CONFIR
     bash "$ROOT/migration.sh" backup --dry-run --target "$DEST4" >/dev/null 2>&1
 assert_eq "$(find "$DEST4" -mindepth 1 | wc -l)" "0" "dry-run no escribe en el destino"
 
-printf 'OK backup roundtrip (backup)\n'
+# =====================================================================
+# Restore v2 sobre un HOME vacío
+# =====================================================================
+restore_into() {
+    local home="$1"
+    shift
+    mkdir -p "$home"
+    env HOME="$home" LOGFILE="$TMP/restore.log" AUTO_CONFIRM_ENV=1 \
+        bash "$ROOT/migration.sh" restore --source "$BACKUP_DIR" --force "$@" 2>&1
+}
+
+: >"$STUB_LOG"
+HOME2="$TMP/home2"
+rm -rf "$EXT"   # el padre original ya no existe: el destino por defecto debe usarse
+out="$(restore_into "$HOME2")" || { printf '%s\n' "$out" >&2; fail "el restore v2 falló"; }
+
+assert_file "$HOME2/.config/Code/User/settings.json"
+assert_no_file "$HOME2/Code"
+assert_file "$HOME2/.bashrc"
+assert_file "$HOME2/Documents/notes.txt"
+assert_file "$HOME2/Documents/"'a\b c.txt'
+assert_file "$HOME2/Documents/GITHUB/proj/src/main.py"
+assert_no_file "$HOME2/Documents/GITHUB/proj/node_modules"
+assert_file "$HOME2/restored-external/${EXT#/}/data1/f.txt"
+assert_mode "$HOME2/.ssh/id_ed25519" 600
+assert_eq "$(cat "$HOME2/Documents/"'a\b c.txt')" "raro" "contenido del fichero con barra invertida"
+assert_eq "$(cat "$STUB_LOG")" "" "el restore no llama a sudo"
+
+# --external-to-original con el directorio padre inexistente: aviso y destino por defecto
+HOME2B="$TMP/home2b"
+out="$(restore_into "$HOME2B" --external-to-original)" || { printf '%s\n' "$out" >&2; fail "restore --external-to-original falló"; }
+assert_file "$HOME2B/restored-external/${EXT#/}/data1/f.txt"
+assert_no_file "$EXT/data1/f.txt"
+assert_contains "$out" "restored-external" "aviso de destino por defecto"
+
+# --external-to-original con el padre existente: ruta original
+mkdir -p "$EXT"
+HOME2C="$TMP/home2c"
+restore_into "$HOME2C" --external-to-original >/dev/null
+assert_file "$EXT/data1/f.txt"
+assert_no_file "$HOME2C/restored-external"
+
+# formato no soportado: error y HOME intacto
+FUTURE="$TMP/backup-futuro"
+cp -r "$BACKUP_DIR" "$FUTURE"
+sed -i 's/^FORMAT_VERSION=2$/FORMAT_VERSION=3/' "$FUTURE/metadata/manifest.env"
+HOME5="$TMP/home5"
+mkdir -p "$HOME5"
+rc=0
+out="$(env HOME="$HOME5" LOGFILE="$TMP/future.log" AUTO_CONFIRM_ENV=1 \
+    bash "$ROOT/migration.sh" restore --source "$FUTURE" --force 2>&1)" || rc=$?
+assert_eq "$([ "$rc" -ne 0 ] && echo fail || echo ok)" "fail" "FORMAT_VERSION=3 debe fallar"
+assert_contains "$out" "Formato de backup no soportado: 3" "mensaje de formato no soportado"
+assert_eq "$(find "$HOME5" -mindepth 1 | wc -l)" "0" "HOME intacto con formato no soportado"
+
+# propietario ajeno: aviso con el comando exacto, sin sudo
+# (no se puede crear un fichero de otro usuario sin root; se prueba con la función)
+(
+    export HOME="$TMP/home-own" LOGFILE="$TMP/own.log"
+    mkdir -p "$HOME/.ssh"
+    # shellcheck disable=SC1091
+    source "$ROOT/src/lib/common.sh"
+    # shellcheck disable=SC1091
+    source "$ROOT/src/modules/restore.sh"
+    find() { printf '%s\n' "$1"; }
+    FIX_OWNERSHIP=false
+    check_restored_ownership >"$TMP/own.out"
+    grep -q 'sudo chown -R' "$TMP/own.out" || { echo "falta el comando sudo chown en el aviso" >&2; exit 1; }
+) || fail "aviso de ownership"
+assert_eq "$(cat "$STUB_LOG")" "" "el aviso de ownership no llama a sudo"
+
+printf 'OK backup roundtrip\n'

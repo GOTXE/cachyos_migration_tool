@@ -16,6 +16,8 @@ BACKUP_TARGET=""
 BACKUP_SOURCE=""
 FORCE_RESTORE=false
 RESTORE_PRESERVE_PERMISSIONS=false
+FIX_OWNERSHIP=false
+EXTERNAL_TO_ORIGINAL=false
 AUTO_CONFIRM=false
 [ "${AUTO_CONFIRM_ENV:-}" = "1" ] && AUTO_CONFIRM=true
 MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
@@ -1017,22 +1019,6 @@ confirm_action() {
                 ;;
         esac
     done
-}
-
-restore_conflicts_exist() {
-    [ -d "$BACKUP_DIR/configs" ] || return 1
-
-    while IFS= read -r -d '' ITEM; do
-        local RELATIVE
-
-        RELATIVE="${ITEM#"$BACKUP_DIR/configs/"}"
-
-        if [ -e "$HOME/$RELATIVE" ]; then
-            return 0
-        fi
-    done < <(find "$BACKUP_DIR/configs" -mindepth 1 -maxdepth 1 -print0)
-
-    return 1
 }
 
 is_apple_laptop() {

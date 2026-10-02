@@ -57,6 +57,8 @@ Includes model-aware support for **Intel MacBook Pro** profiles, with an initial
 ./migration.sh test
 ```
 
+Backups use the portable v2 format (`<host>_DD_MM_AAAA-HH:mm/` with `metadata/manifest.env`). `restore` also reads legacy v1 backups (it repairs nested paths from `logs/backup_selection.txt`), does not ask for `sudo` by default and restores external data under `~/restored-external/<original path>` (use `--external-to-original` to restore to the original path when possible and `--fix-ownership` to fix foreign-owned files in `.ssh`, `.codex` and `.claude` with `sudo chown`).
+
 Logs are written to `${XDG_STATE_HOME:-~/.local/state}/linux-migration-tool/logs/` (override with `LOGFILE`). Optional user configuration is read from `~/.config/linux-migration-tool.conf`; a template is provided in `linux-migration-tool.conf.example`.
 
 The script selects the TUI engine in this order: **Python + curses** (no external dependencies) → **whiptail** → plain text menu. Can be forced with `TUI_BACKEND=python|whiptail|text`.
@@ -69,7 +71,7 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 ./migration.sh backup    [--target PATH] [--dry-run]
 ./migration.sh bootstrap [--dry-run] [--blocks a,b,c | --list-blocks] [--hyprland yes|no] [--apple-laptop yes|no]
 ./migration.sh postcheck
-./migration.sh restore   [--source PATH] [--force] [--preserve-permissions] [--dry-run]
+./migration.sh restore   [--source PATH] [--force] [--preserve-permissions] [--external-to-original] [--fix-ownership] [--dry-run]
 ./migration.sh post-restore-fixups [--dry-run]
 ./migration.sh restic-backup [init [--smoke-test] | run | status | snapshots | install-timer | disable-timer]
 

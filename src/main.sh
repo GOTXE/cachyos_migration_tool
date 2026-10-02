@@ -152,7 +152,7 @@ COMANDOS PRINCIPALES:
   backup                     Realiza copia de seguridad del sistema y datos
                              Opciones: [--target RUTA] [--dry-run]
   restore                    Restaura una copia de seguridad previa
-                             Opciones: [--source RUTA] [--force] [--preserve-permissions] [--dry-run]
+                             Opciones: [--source RUTA] [--force] [--preserve-permissions] [--external-to-original] [--fix-ownership] [--dry-run]
   restic-backup              Gestiona backup permanente Restic por SFTP/SSH
                              Subcomandos: init [--smoke-test] | run | status | snapshots |
                                           install-timer | disable-timer
@@ -235,6 +235,14 @@ parse_restore_args() {
                 ;;
             --preserve-permissions)
                 RESTORE_PRESERVE_PERMISSIONS=true
+                shift
+                ;;
+            --external-to-original)
+                EXTERNAL_TO_ORIGINAL=true
+                shift
+                ;;
+            --fix-ownership)
+                FIX_OWNERSHIP=true
                 shift
                 ;;
             --dry-run)
