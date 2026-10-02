@@ -2327,17 +2327,36 @@ report_broadcom_bundle_status() {
     fi
 }
 
+# Escribe un fichero de configuración sin pisar cambios del usuario: si ya existe con
+# otro contenido, guarda antes una copia <fichero>.bak.<YYYYmmddHHMMSS>.
 write_browser_flags_file() {
     local TARGET_FILE="$1"
     local FLAGS_CONTENT="$2"
     local TARGET_DIR
+    local BACKUP_FILE=""
 
     TARGET_DIR="$(dirname "$TARGET_FILE")"
+
+    if [ -f "$TARGET_FILE" ] && [ "$(cat "$TARGET_FILE")" = "$FLAGS_CONTENT" ]; then
+        log_info "$TARGET_FILE ya tiene el contenido esperado (sin cambios)."
+        return 0
+    fi
+
+    if [ -f "$TARGET_FILE" ]; then
+        BACKUP_FILE="${TARGET_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+    fi
+
     run_cmd mkdir -p "$TARGET_DIR"
 
     if [ "$DRY_MODE" = true ]; then
+        [ -z "$BACKUP_FILE" ] || log "${YELLOW}[DRY-RUN] copiar $TARGET_FILE a $BACKUP_FILE${NC}"
         log "${YELLOW}[DRY-RUN] escribir flags en $TARGET_FILE${NC}"
         return 0
+    fi
+
+    if [ -n "$BACKUP_FILE" ]; then
+        run_cmd cp -p "$TARGET_FILE" "$BACKUP_FILE"
+        log_warn "$TARGET_FILE ya existía con otro contenido; copia previa en $BACKUP_FILE (para revertir: mv \"$BACKUP_FILE\" \"$TARGET_FILE\")."
     fi
 
     printf '%s\n' "$FLAGS_CONTENT" > "$TARGET_FILE"
@@ -2650,11 +2669,15 @@ configure_chromium_hw_acceleration() {
 
 configure_vaapi_intel() {
     local GPU_PROFILE=""
-    local MODEL=""
+    local PROFILE_ID=""
     local PROMPT_LABEL=""
+    local FORCE_I965=false
+    local VAAPI_CONF="$HOME/.config/environment.d/vaapi.conf"
+    local VAINFO_OUTPUT=""
+    local DRIVER_LINE=""
 
     GPU_PROFILE="$(detect_gpu_profile)"
-    MODEL="$(get_macbook_model)"
+    PROFILE_ID="$(get_macbook_profile_id)"
 
     if [[ "$GPU_PROFILE" != intel* ]]; then
         return
@@ -2662,8 +2685,8 @@ configure_vaapi_intel() {
 
     log "${YELLOW}GPU Intel detectada.${NC}"
 
-    case "$MODEL" in
-        MacBookPro12,1)
+    case "$PROFILE_ID" in
+        mbp12_1)
             # MacBook Pro 13" Retina 2015 (Broadwell / Iris 6100)
             log "Configurando corrección VA-API para Intel Broadwell (2015):"
             log " - Instala libva-intel-driver-irql (AUR) para corregir el fallo de frame pool."
@@ -2674,11 +2697,13 @@ configure_vaapi_intel() {
                 return
             fi
 
-            log "${YELLOW}Instalando libva-intel-driver-irql (AUR)...${NC}"
+            log "${YELLOW}Instalando libva-intel-driver-irql (AUR) y libva-utils...${NC}"
             log_package_batch_state "AUR" "aur" libva-intel-driver-irql
             run_cmd yay -S --needed --noconfirm libva-intel-driver-irql
+            run_cmd sudo pacman -S --needed --noconfirm libva-utils
+            FORCE_I965=true
             ;;
-        MacBookPro8,1)
+        mbp8_1)
             # MacBook Pro 13" Early 2011 (Sandy Bridge / HD Graphics 3000)
             log "Configurando corrección VA-API para Intel Sandy Bridge (2011):"
             log " - Instala libva-intel-driver estándar."
@@ -2690,32 +2715,46 @@ configure_vaapi_intel() {
                 return
             fi
 
-            log "${YELLOW}Instalando libva-intel-driver...${NC}"
-            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver
+            log "${YELLOW}Instalando libva-intel-driver y libva-utils...${NC}"
+            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver libva-utils
+            FORCE_I965=true
             ;;
         *)
-            log "${YELLOW}No hay perfil específico para el modelo $MODEL.${NC}"
-            log "Se intentará la configuración genérica para Intel."
+            log "${YELLOW}No hay perfil específico para el modelo $(get_macbook_model).${NC}"
+            log "Se instalan intel-media-driver (iHD) y libva-intel-driver (i965) y libva elige el adecuado; no se fuerza LIBVA_DRIVER_NAME."
             PROMPT_LABEL="Intel genérico"
 
             if ! confirm_action "¿Continuar con la configuración genérica de $PROMPT_LABEL?"; then
                 return
             fi
-            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver
+            run_cmd sudo pacman -S --needed --noconfirm intel-media-driver libva-intel-driver libva-utils
             ;;
     esac
 
-    if [ "$DRY_MODE" = true ]; then
-        log "${YELLOW}[DRY-RUN] crear ~/.config/environment.d/vaapi.conf${NC}"
-        log "${YELLOW}[DRY-RUN] escribir ~/.config/brave-flags.conf${NC}"
-    else
-        run_cmd mkdir -p "$HOME/.config/environment.d"
-        printf 'LIBVA_DRIVER_NAME=i965\n' > "$HOME/.config/environment.d/vaapi.conf"
+    if [ "$FORCE_I965" = true ]; then
+        write_browser_flags_file "$VAAPI_CONF" 'LIBVA_DRIVER_NAME=i965'
         write_browser_flags_file "$HOME/.config/brave-flags.conf" \
 '--ignore-gpu-blocklist
 --enable-gpu-rasterization
 --enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL
 --ozone-platform-hint=x11'
+    elif [ -f "$VAAPI_CONF" ] && [ "$(cat "$VAAPI_CONF")" = "LIBVA_DRIVER_NAME=i965" ]; then
+        # Lo escribía la versión anterior de esta herramienta y rompe VA-API en Intel moderno.
+        local LEGACY_BACKUP
+        LEGACY_BACKUP="${VAAPI_CONF}.bak.$(date +%Y%m%d%H%M%S)"
+        run_cmd mv "$VAAPI_CONF" "$LEGACY_BACKUP"
+        log_warn "Se apartó $VAAPI_CONF (forzaba i965); copia en $LEGACY_BACKUP. Para revertir: mv \"$LEGACY_BACKUP\" \"$VAAPI_CONF\"."
+    fi
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] vainfo${NC}"
+    elif command -v vainfo >/dev/null 2>&1; then
+        if VAINFO_OUTPUT="$(vainfo 2>&1)"; then
+            DRIVER_LINE="$(printf '%s\n' "$VAINFO_OUTPUT" | grep -m1 'Driver version' || true)"
+            log_info "vainfo: ${DRIVER_LINE:-ejecutado correctamente (sin línea 'Driver version')}"
+        else
+            log_warn "vainfo falló; revisa la instalación del driver VA-API tras reiniciar la sesión."
+        fi
     fi
 
     log_warn "Reinicia la sesión para aplicar los cambios de VA-API."

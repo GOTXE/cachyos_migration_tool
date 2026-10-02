@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- VA-API Intel: generic Intel machines now get `intel-media-driver` + `libva-intel-driver` + `libva-utils` without forcing `LIBVA_DRIVER_NAME=i965` or writing `brave-flags.conf`; a legacy i965-only `vaapi.conf` is moved to `vaapi.conf.bak.<timestamp>`. MacBook Pro 12,1 / 8,1 keep their i965 setup. The block ends with a `vainfo` check (warning only).
+- `write_browser_flags_file` no longer overwrites silently: identical content is a no-op, different content is backed up to `<file>.bak.<timestamp>` first.
 - **BREAKING:** `bootstrap`, `tui-bootstrap-run`, `configure-vaapi-brave`, `install-mbp-watch`, `install-talk2ai`, `install-codexbar-tray` and `install-youtube-force-h264` now exit with an error on non-Arch distributions. `backup`, `restore`, `restic-backup`, `postcheck`, `test` and plasmoid commands are not blocked.
 - Restic runner: snapshots are tagged with `--host <HOST_LABEL>`, `forget` is limited to that host and no longer prunes on every run; pruning plus a partial `check` moved to `restic-backup maintenance` with a new weekly `restic-maintenance.timer`. `install-timer`/`disable-timer` manage both timers.
 - Restic runner rotates its logs (`BACKUP_LOG_RETENTION_DAYS`, 14 by default), uses `--one-file-system --exclude-caches`, reuses the shared package inventory and warns to keep the Restic password outside the machine (`init` and `status`).
