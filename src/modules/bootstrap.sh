@@ -208,7 +208,7 @@ install_flatpak() {
 
 update_system_repos() {
     log "${YELLOW}1. Sincronizando repositorios y actualizando sistema...${NC}"
-    run_cmd sudo pacman -Syyu --noconfirm
+    run_cmd sudo pacman -Syu --noconfirm
 }
 
 install_base_devel() {
@@ -1672,7 +1672,13 @@ is_mbp_plasmoid_on_desktop() {
     local TARGET_USER="$1"
     local PLASMA_CFG=""
 
-    PLASMA_CFG="$(eval echo "~$TARGET_USER")/.config/plasma-org.kde.plasma.desktop-appletsrc"
+    local TARGET_HOME=""
+    TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+    if [ -z "$TARGET_HOME" ]; then
+        log "${RED}[ERROR] No se pudo resolver el HOME de $TARGET_USER.${NC}"
+        return 1
+    fi
+    PLASMA_CFG="$TARGET_HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
     [ -f "$PLASMA_CFG" ] && grep -Fq "plugin=$MBP_PLASMOID_ID" "$PLASMA_CFG"
 }
 
