@@ -318,6 +318,17 @@ parse_bootstrap_args() {
     done
 }
 
+# Los comandos que instalan o configuran paquetes con pacman/yay solo valen en Arch/CachyOS.
+require_arch_family() {
+    local DETECTED_ID
+
+    [ "$(os_family)" = "arch" ] && return 0
+
+    DETECTED_ID="$(os_release_value ID)"
+    log "${RED}[ERROR] Este comando solo está soportado en Arch/CachyOS (detectado: ${DETECTED_ID:-desconocido}).${NC}"
+    return 1
+}
+
 main() {
     local REQUESTED_PLASMOID_TARGET=""
     local TEST_MODE=""
@@ -327,6 +338,12 @@ main() {
         main_menu
         return
     fi
+
+    case "$1" in
+        bootstrap|tui-bootstrap-run|configure-vaapi-brave|install-mbp-watch|install-talk2ai|install-codexbar-tray|install-youtube-force-h264)
+            require_arch_family || exit 1
+            ;;
+    esac
 
     case "$1" in
         backup)

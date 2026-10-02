@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **BREAKING:** `bootstrap`, `tui-bootstrap-run`, `configure-vaapi-brave`, `install-mbp-watch`, `install-talk2ai`, `install-codexbar-tray` and `install-youtube-force-h264` now exit with an error on non-Arch distributions. `backup`, `restore`, `restic-backup`, `postcheck`, `test` and plasmoid commands are not blocked.
 - Restic runner: snapshots are tagged with `--host <HOST_LABEL>`, `forget` is limited to that host and no longer prunes on every run; pruning plus a partial `check` moved to `restic-backup maintenance` with a new weekly `restic-maintenance.timer`. `install-timer`/`disable-timer` manage both timers.
 - Restic runner rotates its logs (`BACKUP_LOG_RETENTION_DAYS`, 14 by default), uses `--one-file-system --exclude-caches`, reuses the shared package inventory and warns to keep the Restic password outside the machine (`init` and `status`).
 - `install_restic_package` supports pacman, apt-get, dnf and zypper. Excludes: added `~/Downloads`, removed `**/build`, `**/dist` and `**/target`.
