@@ -1,0 +1,10 @@
+[Unit]
+Description=Restic repository maintenance (prune + partial check)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/restic-backup maintenance
+Nice=15
+IOSchedulingClass=idle

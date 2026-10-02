@@ -15,6 +15,11 @@ Estado:
 - `[x]` Añadir bloque seleccionable para `talk2ai` en el bootstrap y hacer que instale `handy-bin` como dependencia.
 - `[x]` Añadir bloque seleccionable para `codexBar Tray` en el bootstrap y exponerlo en ambas TUI.
 
+## Bootstrap: widget CodexBar Plasma
+
+- `[x]` Añadir bloque `codexbar_plasma` e `install-codexbar-plasma` / `uninstall-codexbar-plasma` (release verificada con SHA-256, sin root).
+- `[ ]` Valorar si el paquete AUR `codexbar-cli` (usado por `install_codexbar_cli`) sigue existiendo; no verificado.
+
 ## Bootstrap: extras opcionales
 
 - `[x]` Añadir bloque seleccionable para `tea` como CLI opcional de Gitea en el bootstrap y exponerlo en ambas TUI.

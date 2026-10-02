@@ -747,3 +747,20 @@ Fallback: FFmpegVideoDecoder.
 intel_gpu_top: Render activo, Video 0%.
 Conclusión: bug/limitación Chromium VA-API en Broadwell/Mesa/CachyOS.
 ~~~
+
+---
+
+## 14. Comportamiento del bloque `vaapi` del bootstrap (Intel)
+
+El bloque `vaapi` (`configure_vaapi_intel`) distingue el equipo por perfil:
+
+| Perfil | Paquetes | `~/.config/environment.d/vaapi.conf` |
+|---|---|---|
+| `mbp12_1` (MacBook Pro 12,1) | `libva-intel-driver-irql` (AUR) + `libva-utils` | `LIBVA_DRIVER_NAME=i965` |
+| `mbp8_1` (MacBook Pro 8,1) | `libva-intel-driver` + `libva-utils` | `LIBVA_DRIVER_NAME=i965` |
+| Cualquier otro equipo con GPU Intel | `intel-media-driver` + `libva-intel-driver` + `libva-utils` | no se crea |
+
+- En Intel genérico no se fuerza `i965`: `intel-media-driver` (iHD) cubre Broadwell y posteriores, y libva elige el driver adecuado; `libva-intel-driver` queda instalado para GPUs anteriores a Broadwell.
+- Si existe un `vaapi.conf` cuyo único contenido es `LIBVA_DRIVER_NAME=i965` (lo escribía la versión anterior de la herramienta), se renombra a `vaapi.conf.bak.<YYYYmmddHHMMSS>`. Cualquier otro contenido no se toca. Para revertir: `mv vaapi.conf.bak.<fecha> vaapi.conf`.
+- Los ficheros de flags de navegador (`brave-flags.conf`, `chrome-flags.conf`) y `vaapi.conf` ya no se pisan: si existen con otro contenido, se copian antes a `<fichero>.bak.<YYYYmmddHHMMSS>` y se avisa de la ruta. Solo los perfiles MBP escriben `brave-flags.conf`.
+- Al terminar, si existe `vainfo` se ejecuta y se registra la línea `Driver version`; un fallo es solo un aviso.

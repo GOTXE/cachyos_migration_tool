@@ -10,6 +10,12 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$APP_DIR/lib/common.sh"
 # shellcheck disable=SC1091
+# shellcheck source=lib/os.sh
+source "$APP_DIR/lib/os.sh"
+# shellcheck disable=SC1091
+# shellcheck source=lib/inventory.sh
+source "$APP_DIR/lib/inventory.sh"
+# shellcheck disable=SC1091
 # shellcheck source=modules/backup.sh
 source "$APP_DIR/modules/backup.sh"
 # shellcheck disable=SC1091
@@ -21,6 +27,12 @@ source "$APP_DIR/modules/bootstrap.sh"
 # shellcheck disable=SC1091
 # shellcheck source=modules/restic_backup.sh
 source "$APP_DIR/modules/restic_backup.sh"
+# shellcheck disable=SC1091
+# shellcheck source=modules/codexbar_plasma.sh
+source "$APP_DIR/modules/codexbar_plasma.sh"
+# shellcheck disable=SC1091
+# shellcheck source=core/blocks.sh
+source "$APP_DIR/core/blocks.sh"
 # shellcheck disable=SC1091
 # shellcheck source=lib/tui.sh
 source "$APP_DIR/lib/tui.sh"
@@ -138,11 +150,12 @@ USO:
 COMANDOS PRINCIPALES:
   (sin comando)              Lanza el menú interactivo (TUI)
   bootstrap                  Configuración inicial del sistema (paquetes, AUR, IA, Apple, navegador, etc.)
-                             Opciones: [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
+                             Opciones: [--dry-run] [--blocks a,b,c] [--list-blocks] [--hyprland yes|no] [--apple-laptop yes|no]
+                             Sin --blocks ejecuta los bloques compatibles marcados por defecto
   backup                     Realiza copia de seguridad del sistema y datos
                              Opciones: [--target RUTA] [--dry-run]
   restore                    Restaura una copia de seguridad previa
-                             Opciones: [--source RUTA] [--force] [--preserve-permissions] [--dry-run]
+                             Opciones: [--source RUTA] [--force] [--preserve-permissions] [--external-to-original] [--fix-ownership] [--dry-run]
   restic-backup              Gestiona backup permanente Restic por SFTP/SSH
                              Subcomandos: init [--smoke-test] | run | status | snapshots |
                                           install-timer | disable-timer
@@ -164,6 +177,9 @@ HERRAMIENTAS Y AJUSTES:
                              Salidas: ~/.local/state/linux-migration-tool/{postinstall-ai-context.txt,postinstall-ai-context.redacted.txt}
   install-talk2ai            Instala o actualiza talk2ai descargandolo desde GitHub
   install-codexbar-tray      Instala codexBar Tray desde un repo local restaurado/detectado
+  install-codexbar-plasma    Instala el widget CodexBar Plasma desde una release verificada (SHA-256)
+                             Opciones: [--version vX.Y.Z|latest] [--with-cli] [--dry-run]
+  uninstall-codexbar-plasma  Desinstala el widget CodexBar Plasma (no toca la CLI codexbar)
   install-youtube-force-h264 Prepara la extensión local YouTube Force H264 para carga manual
                              Nota: normalmente se usa desde el bloque YouTube Force H264 del bootstrap
 
@@ -227,6 +243,14 @@ parse_restore_args() {
                 RESTORE_PRESERVE_PERMISSIONS=true
                 shift
                 ;;
+            --external-to-original)
+                EXTERNAL_TO_ORIGINAL=true
+                shift
+                ;;
+            --fix-ownership)
+                FIX_OWNERSHIP=true
+                shift
+                ;;
             --dry-run)
                 DRY_MODE=true
                 shift
@@ -245,6 +269,18 @@ parse_bootstrap_args() {
         case "$1" in
             --dry-run)
                 DRY_MODE=true
+                shift
+                ;;
+            --blocks)
+                [ $# -ge 2 ] && [ -n "$2" ] || {
+                    log "${RED}Falta valor para --blocks${NC}"
+                    exit 1
+                }
+                BOOTSTRAP_BLOCKS="$2"
+                shift 2
+                ;;
+            --list-blocks)
+                BOOTSTRAP_LIST_ONLY=true
                 shift
                 ;;
             --hyprland)
@@ -288,6 +324,17 @@ parse_bootstrap_args() {
     done
 }
 
+# Los comandos que instalan o configuran paquetes con pacman/yay solo valen en Arch/CachyOS.
+require_arch_family() {
+    local DETECTED_ID
+
+    [ "$(os_family)" = "arch" ] && return 0
+
+    DETECTED_ID="$(os_release_value ID)"
+    log "${RED}[ERROR] Este comando solo está soportado en Arch/CachyOS (detectado: ${DETECTED_ID:-desconocido}).${NC}"
+    return 1
+}
+
 main() {
     local REQUESTED_PLASMOID_TARGET=""
     local TEST_MODE=""
@@ -297,6 +344,12 @@ main() {
         main_menu
         return
     fi
+
+    case "$1" in
+        bootstrap|tui-bootstrap-run|configure-vaapi-brave|install-mbp-watch|install-talk2ai|install-codexbar-tray|install-youtube-force-h264)
+            require_arch_family || exit 1
+            ;;
+    esac
 
     case "$1" in
         backup)
@@ -316,6 +369,10 @@ main() {
         bootstrap)
             shift
             parse_bootstrap_args "$@"
+            if [ "$BOOTSTRAP_LIST_ONLY" = true ]; then
+                list_bootstrap_blocks
+                return 0
+            fi
             bootstrap_cachyos
             ;;
         bootstrap-context)
@@ -398,6 +455,33 @@ main() {
                 esac
             done
             install_codexbar_tray_from_local_repo
+            ;;
+        install-codexbar-plasma)
+            shift
+            CODEXBAR_PLASMA_ARGS=()
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    --with-cli) CODEXBAR_PLASMA_ARGS+=(--with-cli); shift ;;
+                    --version)
+                        [ $# -ge 2 ] || { log "${RED}Falta valor para --version${NC}"; exit 1; }
+                        CODEXBAR_PLASMA_ARGS+=(--version "$2")
+                        shift 2
+                        ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            install_codexbar_plasma "${CODEXBAR_PLASMA_ARGS[@]}"
+            ;;
+        uninstall-codexbar-plasma)
+            shift
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run) DRY_MODE=true; shift ;;
+                    *) log "${RED}Opcion no reconocida: $1${NC}"; usage; exit 1 ;;
+                esac
+            done
+            uninstall_codexbar_plasma
             ;;
         configure-vaapi-brave)
             shift
@@ -557,4 +641,6 @@ main() {
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

@@ -2,18 +2,22 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.11.0"
+VERSION="1.12.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
-LOGFILE="${LOGFILE:-$(pwd)/linux_migration_tool_$(date +%Y-%m-%d_%H-%M-%S).log}"
+LOGFILE="${LOGFILE:-${XDG_STATE_HOME:-$HOME/.local/state}/linux-migration-tool/logs/linux_migration_tool_$(date +%Y-%m-%d_%H-%M-%S).log}"
 DRY_MODE=false
 HYPRLAND_MODE="ask"
 APPLE_LAPTOP_MODE="ask"
+BOOTSTRAP_BLOCKS=""
+BOOTSTRAP_LIST_ONLY=false
 BACKUP_TARGET=""
 BACKUP_SOURCE=""
 FORCE_RESTORE=false
 RESTORE_PRESERVE_PERMISSIONS=false
+FIX_OWNERSHIP=false
+EXTERNAL_TO_ORIGINAL=false
 AUTO_CONFIRM=false
 [ "${AUTO_CONFIRM_ENV:-}" = "1" ] && AUTO_CONFIRM=true
 MBP_PLASMOID_TARGET="${MBP_PLASMOID_TARGET:-primary}"
@@ -145,18 +149,29 @@ BACKUP_FS_TYPE=""
 BACKUP_RSYNC_OPTIONS=()
 BACKUP_ESTIMATED_BYTES=0
 
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-WHITE_BOLD='\033[1;37m'
-NC='\033[0m'
+GREEN=$'\033[0;32m'
+RED=$'\033[0;31m'
+YELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+CYAN=$'\033[0;36m'
+MAGENTA=$'\033[0;35m'
+WHITE_BOLD=$'\033[1;37m'
+NC=$'\033[0m'
+
+ensure_log_dir() {
+    local LOG_DIR
+    LOG_DIR="$(dirname "$LOGFILE")"
+    [ -d "$LOG_DIR" ] || mkdir -p "$LOG_DIR" 2>/dev/null || true
+}
+
+log_to_file() {
+    ensure_log_dir
+    printf '%s\n' "$1" | sed -E 's/\x1b\[[0-9;]*m//g' >> "$LOGFILE" 2>/dev/null || true
+}
 
 log() {
-    echo -e "$1"
-    echo -e "$(echo -e "$1" | sed 's/\x1b\[[0-9;]*m//g')" >> "$LOGFILE" 2>/dev/null || true
+    printf '%s\n' "$1"
+    log_to_file "$1"
 }
 
 log_phase() {
@@ -183,12 +198,12 @@ tty_log() {
     local MESSAGE="$1"
 
     if tty_available; then
-        echo -e "$MESSAGE" > /dev/tty
+        printf '%s\n' "$MESSAGE" > /dev/tty
     else
-        echo -e "$MESSAGE"
+        printf '%s\n' "$MESSAGE"
     fi
 
-    echo -e "$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')" >> "$LOGFILE" 2>/dev/null || true
+    log_to_file "$MESSAGE"
 }
 
 prompt_read() {
@@ -202,10 +217,10 @@ prompt_read() {
     fi
 
     if tty_available; then
-        printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}" > /dev/tty
+        printf '%s' "${MAGENTA}${PROMPT_TEXT}${NC}" > /dev/tty
         read -r INPUT_VALUE < /dev/tty
     else
-        printf "%b" "${MAGENTA}${PROMPT_TEXT}${NC}"
+        printf '%s' "${MAGENTA}${PROMPT_TEXT}${NC}"
         read -r INPUT_VALUE
     fi
     printf -v "$__RESULTVAR" '%s' "$INPUT_VALUE"
@@ -291,6 +306,7 @@ run_cmd_quiet() {
         return 0
     fi
 
+    ensure_log_dir
     "$@" 2>&1 | tee -a "$LOGFILE"
     return "${PIPESTATUS[0]}"
 }
@@ -1005,22 +1021,6 @@ confirm_action() {
     done
 }
 
-restore_conflicts_exist() {
-    [ -d "$BACKUP_DIR/configs" ] || return 1
-
-    while IFS= read -r -d '' ITEM; do
-        local RELATIVE
-
-        RELATIVE="${ITEM#"$BACKUP_DIR/configs/"}"
-
-        if [ -e "$HOME/$RELATIVE" ]; then
-            return 0
-        fi
-    done < <(find "$BACKUP_DIR/configs" -mindepth 1 -maxdepth 1 -print0)
-
-    return 1
-}
-
 is_apple_laptop() {
     local SYS_VENDOR=""
 
@@ -1029,6 +1029,11 @@ is_apple_laptop() {
 
     [[ "$SYS_VENDOR" == "Apple Inc." ]] &&
         [[ "$MACBOOK_MODEL" == MacBook* ]]
+}
+
+# Sistema de ficheros de / (función aparte para poder simularla en los tests).
+detect_root_filesystem() {
+    findmnt -no FSTYPE / 2>/dev/null || true
 }
 
 get_bootstrap_checklist_items() {
@@ -1051,10 +1056,14 @@ get_bootstrap_checklist_items() {
     if command -v detect_gpu_profile >/dev/null 2>&1; then
         GPU_PROFILE="$(detect_gpu_profile 2>/dev/null || true)"
         case "$GPU_PROFILE" in
-            amd|nvidia)
+            amd|amd-only|nvidia|nvidia-only)
                 HWACCEL_VISIBLE=true
                 ;;
-            intel*)
+            intel+amd|intel+nvidia)
+                VAAPI_VISIBLE=true
+                HWACCEL_VISIBLE=true
+                ;;
+            intel|intel-only)
                 VAAPI_VISIBLE=true
                 ;;
         esac
@@ -1091,6 +1100,13 @@ tea|tea CLI para Gitea|OFF
 obsidian|Obsidian (Markdown knowledge base)|OFF
 sshpass|sshpass para contraseñas SSH no interactivas|OFF
 codexbar_tray|codexBar Tray KDE (instala desde repo local restaurado)|OFF
+EOF
+
+    if command -v kpackagetool6 >/dev/null 2>&1; then
+        printf '%s\n' "codexbar_plasma|CodexBar Plasma (widget panel KDE 6, release verificada)|OFF"
+    fi
+
+    cat <<'EOF'
 docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON
@@ -1125,9 +1141,9 @@ EOF
         printf '%s\n' "vaapi|${VAAPI_LABEL}|OFF"
     fi
 
-    cat <<'EOF'
-btrfs|Snapshots BTRFS (Snapper)|OFF
-EOF
+    if [ "$(detect_root_filesystem)" = "btrfs" ]; then
+        printf '%s\n' "btrfs|Snapshots BTRFS (Snapper)|OFF"
+    fi
 }
 
 bootstrap_test_report() {
@@ -1167,6 +1183,14 @@ print_main_menu_intro() {
     log " - ${GREEN}./migration.sh restore --source /ruta/al/backup --dry-run${NC}"
     log " - ${GREEN}./migration.sh bootstrap --dry-run${NC}"
     log ""
+}
+
+validate_disk_selection() {
+    local SELECTION_VALUE="$1"
+    local TOTAL="$2"
+
+    [[ "$SELECTION_VALUE" =~ ^[0-9]+$ ]] || return 1
+    [ "$((10#$SELECTION_VALUE))" -ge 1 ] && [ "$((10#$SELECTION_VALUE))" -le "$TOTAL" ]
 }
 
 select_disk() {
@@ -1230,17 +1254,12 @@ select_disk() {
 
     prompt_read "Selecciona disco destino: " SELECTION
 
-    if ! [[ "$SELECTION" =~ ^[0-9]+$ ]]; then
-        log "${RED}Seleccion invalida.${NC}"
-        exit 1
+    if ! validate_disk_selection "$SELECTION" "${#DISKS[@]}"; then
+        log "${RED}[ERROR] Seleccion invalida.${NC}"
+        return 1
     fi
 
     SELECTED="${DISKS[$((SELECTION-1))]}"
-
-    if [ -z "${SELECTED:-}" ]; then
-        log "${RED}Seleccion invalida.${NC}"
-        exit 1
-    fi
 
     DISK_MOUNT="$(extract_lsblk_field "$SELECTED" "MOUNTPOINT")"
     check_backup_space "$DISK_MOUNT"

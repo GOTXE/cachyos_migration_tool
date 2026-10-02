@@ -57,6 +57,10 @@ Includes model-aware support for **Intel MacBook Pro** profiles, with an initial
 ./migration.sh test
 ```
 
+Backups use the portable v2 format (`<host>_DD_MM_AAAA-HH:mm/` with `metadata/manifest.env`). `restore` also reads legacy v1 backups (it repairs nested paths from `logs/backup_selection.txt`), does not ask for `sudo` by default and restores external data under `~/restored-external/<original path>` (use `--external-to-original` to restore to the original path when possible and `--fix-ownership` to fix foreign-owned files in `.ssh`, `.codex` and `.claude` with `sudo chown`).
+
+Logs are written to `${XDG_STATE_HOME:-~/.local/state}/linux-migration-tool/logs/` (override with `LOGFILE`). Optional user configuration is read from `~/.config/linux-migration-tool.conf`; a template is provided in `linux-migration-tool.conf.example`.
+
 The script selects the TUI engine in this order: **Python + curses** (no external dependencies) → **whiptail** → plain text menu. Can be forced with `TUI_BACKEND=python|whiptail|text`.
 
 ---
@@ -65,9 +69,9 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 
 ```bash
 ./migration.sh backup    [--target PATH] [--dry-run]
-./migration.sh bootstrap [--dry-run] [--hyprland yes|no] [--apple-laptop yes|no]
+./migration.sh bootstrap [--dry-run] [--blocks a,b,c | --list-blocks] [--hyprland yes|no] [--apple-laptop yes|no]
 ./migration.sh postcheck
-./migration.sh restore   [--source PATH] [--force] [--preserve-permissions] [--dry-run]
+./migration.sh restore   [--source PATH] [--force] [--preserve-permissions] [--external-to-original] [--fix-ownership] [--dry-run]
 ./migration.sh post-restore-fixups [--dry-run]
 ./migration.sh restic-backup [init [--smoke-test] | run | status | snapshots | install-timer | disable-timer]
 
@@ -75,6 +79,8 @@ The script selects the TUI engine in this order: **Python + curses** (no externa
 ./migration.sh install-youtube-force-h264  [--dry-run]
 ./migration.sh install-talk2ai            [--dry-run]
 ./migration.sh install-codexbar-tray      [--dry-run]
+./migration.sh install-codexbar-plasma    [--version vX.Y.Z|latest] [--with-cli] [--dry-run]
+./migration.sh uninstall-codexbar-plasma  [--dry-run]
 ./migration.sh configure-vaapi-brave       [--dry-run]
 
 ./migration.sh install-mbp-watch           [--dry-run]
@@ -98,7 +104,7 @@ Restore normalizes permissions by default: new files use `644`, directories use 
 
 ## Bootstrap — selectable blocks
 
-Presented as a hardware-aware dynamic checklist in the TUI. Active by default in the current initial profile: `sync`, `yay`, `flatpak`, `official`, `kde`, `aur`, `zsh`, `node`, and `apple` when applicable.
+Presented as a hardware-aware dynamic checklist in the TUI. The CLI, the whiptail TUI and the Python TUI all run the same blocks through one registry (`src/core/blocks.sh`): `./migration.sh bootstrap --list-blocks` prints the compatible blocks (`id`, `ON|OFF`, label), `--blocks a,b,c` runs exactly those, and without `--blocks` only the compatible blocks marked ON by default run (MBP Watch is no longer installed implicitly). Active by default in the current initial profile: `sync`, `yay`, `flatpak`, `official`, `kde`, `aur`, `zsh`, `node`, and `apple` when applicable.
 
 | Block | What it installs |
 |---|---|
@@ -123,6 +129,7 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 | `obsidian` | Obsidian from the official repository |
 | `sshpass` | `sshpass` for non-interactive password-based SSH |
 | `codexbar_tray` | Installs `codexBar Tray` from a restored/detected local repo |
+| `codexbar_plasma` | KDE 6 panel widget [CodexBar Plasma](https://github.com/Lucenx9/codexbar-plasma) installed from its GitHub release, verified with SHA-256 and `kpackagetool6` (no root; only listed when `kpackagetool6` exists). Then add "CodexBar" from the panel's *Add Widgets*. If you also use `codexBar Tray` you will see two indicators. |
 | `ai_engram` | Installs Engram and configures it for Codex CLI |
 | `iwd` | iwd backend for NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim; does not install Mako |
@@ -140,6 +147,8 @@ Presented as a hardware-aware dynamic checklist in the TUI. Active by default in
 migration.sh                    # entry point
 src/
 ├── main.sh                     # command logic and menu
+├── core/
+│   └── blocks.sh               # single bootstrap block registry
 ├── lib/
 │   ├── common.sh               # shared helpers
 │   ├── tui.py                  # Python/curses TUI (primary)

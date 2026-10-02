@@ -1,0 +1,27 @@
+# shellcheck shell=bash disable=SC2034
+# Configuración opcional de usuario para migration.sh
+# Ruta recomendada:
+#   ~/.config/linux-migration-tool.conf
+#
+# Se usa sintaxis de shell a propósito para poder definir arrays.
+# Todas las líneas están comentadas: descomenta solo lo que necesites.
+
+# Rutas relativas a $HOME que se añaden al backup de configuración.
+# EXTRA_CONFIG_ITEMS+=("Scripts")
+# EXTRA_CONFIG_ITEMS+=(".config/kitty")
+# EXTRA_CONFIG_ITEMS+=(".local/share/applications")
+
+# Directorios extra donde buscar repositorios Git.
+# EXTRA_REPO_SEARCH_DIRS+=("$HOME/dev")
+# EXTRA_REPO_SEARCH_DIRS+=("/mnt/data/repos")
+
+# Directorios de datos de usuario adicionales para el backup.
+# Documentos XDG se incluye por defecto.
+# DATA_DIRS+=("$HOME/Notes")
+# DATA_DIRS+=("$HOME/Imágenes")
+
+# Repo local de codexBar Tray (solo si vive fuera de las rutas de búsqueda habituales).
+# CODEXBAR_TRAY_REPO_DIR="$HOME/path/to/codexbar-tray"
+
+# Monitor donde colocar el plasmoide MBP Watch (primary, screen:N o nombre del conector).
+# MBP_PLASMOID_TARGET="primary"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """TUI Python + curses para Linux Migration Tool. Solo stdlib — sin paquetes extra."""
 
-import curses, os, subprocess, sys, shutil, re, shlex, pwd, select, time, stat
+import curses, os, subprocess, sys, shutil, re, shlex, pwd, select, time, stat, datetime
 
 PROJECT_ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -128,7 +128,11 @@ def _extract_backup_destination(lines):
             if candidate:
                 return candidate
     for line in reversed(clean_lines):
-        if re.search(r"/linux_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$", line):
+        if re.search(
+            r"/(linux_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}"
+            r"|[A-Za-z0-9._-]+_\d{2}_\d{2}_\d{4}-\d{2}[:h]\d{2}(_\d+)?)$",
+            line,
+        ):
             return line
     return None
 
@@ -150,7 +154,7 @@ def _backup_line_attr(line):
 
 def _restore_line_attr(line):
     clean = _strip_ansi(line)
-    if "[ERROR]" in clean or "Backup no encontrado" in clean or "No se encontro metadata/user_ids.conf" in clean:
+    if "[ERROR]" in clean or "Backup no encontrado" in clean or "No se encontro metadata/" in clean:
         return curses.color_pair(CP_SEL) | curses.A_BOLD
     if "AVISO" in clean:
         return curses.color_pair(CP_CHECK) | curses.A_BOLD
@@ -194,7 +198,7 @@ def _humanize_restore_exit(return_code, lines):
         return "Restauración completada correctamente."
     if any("Backup no encontrado" in line for line in clean_lines):
         return "Restauración cancelada porque no se encontró la copia indicada."
-    if any("No se encontro metadata/user_ids.conf" in line for line in clean_lines):
+    if any("No se encontro metadata/" in line for line in clean_lines):
         return "La ruta indicada no parece una copia válida para restaurar."
     return f"Restauración finalizada con un error (código {return_code})."
 
@@ -464,7 +468,7 @@ def _verify_backup_selection(backup_dir, home_dir, config_items, data_dirs):
     os.makedirs(logs_dir, exist_ok=True)
     for item in config_items:
         source_root = os.path.join(home_dir, item)
-        backup_root = os.path.join(backup_dir, "configs", os.path.basename(item.rstrip(os.sep)))
+        backup_root = os.path.join(backup_dir, "configs", item.strip(os.sep))
         label = f"configs/{item}"
         group_result = _verify_group_with_rsync(source_root, backup_root, label)
         verification["checked_groups"] += 1
@@ -480,8 +484,14 @@ def _verify_backup_selection(backup_dir, home_dir, config_items, data_dirs):
             repo_dir for repo_dir in _discover_nested_repo_dirs(data_dir)
             if repo_dir.startswith(data_dir + os.sep)
         ]
-        backup_root = os.path.join(backup_dir, "data", os.path.basename(data_dir.rstrip(os.sep)))
-        label = f"data/{os.path.basename(data_dir.rstrip(os.sep))}"
+        if data_dir == home_dir:
+            data_rel = os.path.join("home")
+        elif data_dir.startswith(home_dir + os.sep):
+            data_rel = os.path.join("home", os.path.relpath(data_dir, home_dir))
+        else:
+            data_rel = os.path.join("external", data_dir.lstrip(os.sep))
+        backup_root = os.path.join(backup_dir, "data", data_rel)
+        label = f"data/{data_rel}"
         rsync_excludes = [f"--exclude={os.path.relpath(repo_dir, data_dir)}" for repo_dir in nested_repo_dirs]
         group_result = _verify_group_with_rsync(data_dir, backup_root, label, extra_rsync_opts=rsync_excludes)
         verification["checked_groups"] += 1
@@ -506,6 +516,12 @@ def _verify_backup_selection(backup_dir, home_dir, config_items, data_dirs):
                     "--exclude=.venv",
                     "--exclude=__pycache__",
                     "--exclude=.cache",
+                    "--exclude=node_modules",
+                    "--exclude=.pnpm-store",
+                    "--exclude=.tox",
+                    "--exclude=.mypy_cache",
+                    "--exclude=.pytest_cache",
+                    "--exclude=.ruff_cache",
                 ],
             )
             verification["checked_groups"] += 1
@@ -1504,7 +1520,52 @@ def _format_mount_label(entry):
 
 def _is_backup_dir(path):
     path = os.path.abspath(path)
-    return os.path.isdir(path) and os.path.isfile(os.path.join(path, "metadata", "user_ids.conf"))
+    return os.path.isdir(path) and (
+        os.path.isfile(os.path.join(path, "metadata", "manifest.env"))
+        or os.path.isfile(os.path.join(path, "metadata", "user_ids.conf"))
+    )
+
+def _read_backup_manifest(path):
+    values = {}
+    try:
+        with open(os.path.join(path, "metadata", "manifest.env"), encoding="utf-8", errors="replace") as handle:
+            for raw in handle:
+                key, sep, value = raw.rstrip("\n").partition("=")
+                if sep and re.fullmatch(r"[A-Z][A-Z0-9_]*", key):
+                    values[key] = value
+    except OSError:
+        pass
+    return values
+
+def _backup_host_label(path):
+    return _read_backup_manifest(path).get("HOST_LABEL", "")
+
+def _backup_sort_key(path):
+    """Más reciente primero; a igual fecha, v2 (manifest) antes que v1."""
+    manifest_path = os.path.join(path, "metadata", "manifest.env")
+    is_v2 = os.path.isfile(manifest_path)
+    stamp = None
+    if is_v2:
+        created = _read_backup_manifest(path).get("CREATED_AT", "")
+        try:
+            stamp = datetime.datetime.strptime(created, "%Y-%m-%dT%H:%M:%S%z").timestamp()
+        except ValueError:
+            stamp = None
+    if stamp is None:
+        reference = manifest_path if is_v2 else os.path.join(path, "metadata", "user_ids.conf")
+        try:
+            stamp = os.path.getmtime(reference)
+        except OSError:
+            stamp = 0.0
+    return (-stamp, 0 if is_v2 else 1, path)
+
+def _sort_backups(paths):
+    return sorted(paths, key=_backup_sort_key)
+
+def _backup_display_label(path):
+    host = _backup_host_label(path)
+    name = os.path.basename(path)
+    return f"{name} (equipo: {host})" if host else name
 
 def _find_backup_dirs_under(root_path, max_depth=4, max_results=24):
     backups = []
@@ -1543,8 +1604,7 @@ def _discover_restore_backups():
             if backup_dir not in seen:
                 seen.add(backup_dir)
                 backups.append(backup_dir)
-    backups.sort(key=lambda path: os.path.basename(path).lower(), reverse=True)
-    return backups
+    return _sort_backups(backups)
 
 def browse_directory(stdscr, start_path, title="Navegar destino"):
     current = os.path.abspath(start_path or "/")
@@ -1719,7 +1779,7 @@ def choose_restore_source(stdscr):
     roots = _discover_backup_roots()
     items = []
     for backup_dir in detected_backups:
-        label = f"Backup detectado: {os.path.basename(backup_dir)}  [{backup_dir}]"
+        label = f"Backup detectado: {_backup_display_label(backup_dir)}  [{backup_dir}]"
         items.append((f"backup:{backup_dir}", label))
     items.append(("manual", "Escribir ruta manualmente"))
     for root in roots:
@@ -1752,7 +1812,7 @@ def choose_restore_source(stdscr):
                     stdscr,
                     "Selecciona el origen del backup",
                     "La ruta no parece una copia válida.\n\n"
-                    "Debe contener:\nmetadata/user_ids.conf\n\n"
+                    "Debe contener:\nmetadata/manifest.env (v2) o metadata/user_ids.conf (v1)\n\n"
                     f"Ruta indicada:\n{source}",
                 )
             continue
@@ -1768,7 +1828,7 @@ def choose_restore_source(stdscr):
             stdscr,
             "Selecciona el origen del backup",
             "La ruta seleccionada no parece una copia válida.\n\n"
-            "Debes elegir la carpeta raíz del backup, la que contiene:\nmetadata/user_ids.conf\n\n"
+            "Debes elegir la carpeta raíz del backup, la que contiene:\nmetadata/manifest.env (v2) o metadata/user_ids.conf (v1)\n\n"
             f"Ruta seleccionada:\n{source}",
         )
 

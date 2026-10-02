@@ -208,7 +208,7 @@ install_flatpak() {
 
 update_system_repos() {
     log "${YELLOW}1. Sincronizando repositorios y actualizando sistema...${NC}"
-    run_cmd sudo pacman -Syyu --noconfirm
+    run_cmd sudo pacman -Syu --noconfirm
 }
 
 install_base_devel() {
@@ -593,8 +593,26 @@ install_filezilla_package() {
 
 install_restic_package() {
     log "${YELLOW}Instalando Restic desde repositorio oficial...${NC}"
-    log_package_batch_state "repo" "repo" restic
-    run_cmd sudo pacman -S --needed --noconfirm restic
+
+    case "$(os_family)" in
+        arch)
+            log_package_batch_state "repo" "repo" restic
+            run_cmd sudo pacman -S --needed --noconfirm restic
+            ;;
+        debian)
+            run_cmd sudo apt-get install -y restic
+            ;;
+        fedora)
+            run_cmd sudo dnf install -y restic
+            ;;
+        suse)
+            run_cmd sudo zypper --non-interactive install restic
+            ;;
+        *)
+            log "${RED}[ERROR] Distribución no reconocida: instala restic con el gestor de paquetes de tu sistema (https://restic.readthedocs.io/en/stable/020_installation.html) y repite el comando.${NC}"
+            return 1
+            ;;
+    esac
 }
 
 install_sshpass_package() {
@@ -664,11 +682,7 @@ install_appimage_support_if_accepted() {
     fi
 }
 
-install_codexbar_tray_dependencies() {
-    log "${YELLOW}Preparando dependencias de codexBar Tray...${NC}"
-    log_package_batch_state "repo" "repo" python-pyqt6
-    run_cmd sudo pacman -S --needed --noconfirm python-pyqt6
-
+install_codexbar_cli() {
     if command -v codexbar >/dev/null 2>&1; then
         log_success "codexbar CLI ya disponible en PATH."
         return 0
@@ -679,6 +693,14 @@ install_codexbar_tray_dependencies() {
     install_yay
     log_package_batch_state "AUR" "aur" codexbar-cli
     run_cmd yay -S --needed --noconfirm codexbar-cli
+}
+
+install_codexbar_tray_dependencies() {
+    log "${YELLOW}Preparando dependencias de codexBar Tray...${NC}"
+    log_package_batch_state "repo" "repo" python-pyqt6
+    run_cmd sudo pacman -S --needed --noconfirm python-pyqt6
+
+    install_codexbar_cli
 }
 
 install_codexbar_tray_from_local_repo() {
@@ -1672,7 +1694,13 @@ is_mbp_plasmoid_on_desktop() {
     local TARGET_USER="$1"
     local PLASMA_CFG=""
 
-    PLASMA_CFG="$(eval echo "~$TARGET_USER")/.config/plasma-org.kde.plasma.desktop-appletsrc"
+    local TARGET_HOME=""
+    TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+    if [ -z "$TARGET_HOME" ]; then
+        log "${RED}[ERROR] No se pudo resolver el HOME de $TARGET_USER.${NC}"
+        return 1
+    fi
+    PLASMA_CFG="$TARGET_HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
     [ -f "$PLASMA_CFG" ] && grep -Fq "plugin=$MBP_PLASMOID_ID" "$PLASMA_CFG"
 }
 
@@ -2303,17 +2331,36 @@ report_broadcom_bundle_status() {
     fi
 }
 
+# Escribe un fichero de configuración sin pisar cambios del usuario: si ya existe con
+# otro contenido, guarda antes una copia <fichero>.bak.<YYYYmmddHHMMSS>.
 write_browser_flags_file() {
     local TARGET_FILE="$1"
     local FLAGS_CONTENT="$2"
     local TARGET_DIR
+    local BACKUP_FILE=""
 
     TARGET_DIR="$(dirname "$TARGET_FILE")"
+
+    if [ -f "$TARGET_FILE" ] && [ "$(cat "$TARGET_FILE")" = "$FLAGS_CONTENT" ]; then
+        log_info "$TARGET_FILE ya tiene el contenido esperado (sin cambios)."
+        return 0
+    fi
+
+    if [ -f "$TARGET_FILE" ]; then
+        BACKUP_FILE="${TARGET_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+    fi
+
     run_cmd mkdir -p "$TARGET_DIR"
 
     if [ "$DRY_MODE" = true ]; then
+        [ -z "$BACKUP_FILE" ] || log "${YELLOW}[DRY-RUN] copiar $TARGET_FILE a $BACKUP_FILE${NC}"
         log "${YELLOW}[DRY-RUN] escribir flags en $TARGET_FILE${NC}"
         return 0
+    fi
+
+    if [ -n "$BACKUP_FILE" ]; then
+        run_cmd cp -p "$TARGET_FILE" "$BACKUP_FILE"
+        log_warn "$TARGET_FILE ya existía con otro contenido; copia previa en $BACKUP_FILE (para revertir: mv \"$BACKUP_FILE\" \"$TARGET_FILE\")."
     fi
 
     printf '%s\n' "$FLAGS_CONTENT" > "$TARGET_FILE"
@@ -2626,11 +2673,15 @@ configure_chromium_hw_acceleration() {
 
 configure_vaapi_intel() {
     local GPU_PROFILE=""
-    local MODEL=""
+    local PROFILE_ID=""
     local PROMPT_LABEL=""
+    local FORCE_I965=false
+    local VAAPI_CONF="$HOME/.config/environment.d/vaapi.conf"
+    local VAINFO_OUTPUT=""
+    local DRIVER_LINE=""
 
     GPU_PROFILE="$(detect_gpu_profile)"
-    MODEL="$(get_macbook_model)"
+    PROFILE_ID="$(get_macbook_profile_id)"
 
     if [[ "$GPU_PROFILE" != intel* ]]; then
         return
@@ -2638,8 +2689,8 @@ configure_vaapi_intel() {
 
     log "${YELLOW}GPU Intel detectada.${NC}"
 
-    case "$MODEL" in
-        MacBookPro12,1)
+    case "$PROFILE_ID" in
+        mbp12_1)
             # MacBook Pro 13" Retina 2015 (Broadwell / Iris 6100)
             log "Configurando corrección VA-API para Intel Broadwell (2015):"
             log " - Instala libva-intel-driver-irql (AUR) para corregir el fallo de frame pool."
@@ -2650,11 +2701,13 @@ configure_vaapi_intel() {
                 return
             fi
 
-            log "${YELLOW}Instalando libva-intel-driver-irql (AUR)...${NC}"
+            log "${YELLOW}Instalando libva-intel-driver-irql (AUR) y libva-utils...${NC}"
             log_package_batch_state "AUR" "aur" libva-intel-driver-irql
             run_cmd yay -S --needed --noconfirm libva-intel-driver-irql
+            run_cmd sudo pacman -S --needed --noconfirm libva-utils
+            FORCE_I965=true
             ;;
-        MacBookPro8,1)
+        mbp8_1)
             # MacBook Pro 13" Early 2011 (Sandy Bridge / HD Graphics 3000)
             log "Configurando corrección VA-API para Intel Sandy Bridge (2011):"
             log " - Instala libva-intel-driver estándar."
@@ -2666,32 +2719,46 @@ configure_vaapi_intel() {
                 return
             fi
 
-            log "${YELLOW}Instalando libva-intel-driver...${NC}"
-            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver
+            log "${YELLOW}Instalando libva-intel-driver y libva-utils...${NC}"
+            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver libva-utils
+            FORCE_I965=true
             ;;
         *)
-            log "${YELLOW}No hay perfil específico para el modelo $MODEL.${NC}"
-            log "Se intentará la configuración genérica para Intel."
+            log "${YELLOW}No hay perfil específico para el modelo $(get_macbook_model).${NC}"
+            log "Se instalan intel-media-driver (iHD) y libva-intel-driver (i965) y libva elige el adecuado; no se fuerza LIBVA_DRIVER_NAME."
             PROMPT_LABEL="Intel genérico"
 
             if ! confirm_action "¿Continuar con la configuración genérica de $PROMPT_LABEL?"; then
                 return
             fi
-            run_cmd sudo pacman -S --needed --noconfirm libva-intel-driver
+            run_cmd sudo pacman -S --needed --noconfirm intel-media-driver libva-intel-driver libva-utils
             ;;
     esac
 
-    if [ "$DRY_MODE" = true ]; then
-        log "${YELLOW}[DRY-RUN] crear ~/.config/environment.d/vaapi.conf${NC}"
-        log "${YELLOW}[DRY-RUN] escribir ~/.config/brave-flags.conf${NC}"
-    else
-        run_cmd mkdir -p "$HOME/.config/environment.d"
-        printf 'LIBVA_DRIVER_NAME=i965\n' > "$HOME/.config/environment.d/vaapi.conf"
+    if [ "$FORCE_I965" = true ]; then
+        write_browser_flags_file "$VAAPI_CONF" 'LIBVA_DRIVER_NAME=i965'
         write_browser_flags_file "$HOME/.config/brave-flags.conf" \
 '--ignore-gpu-blocklist
 --enable-gpu-rasterization
 --enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL
 --ozone-platform-hint=x11'
+    elif [ -f "$VAAPI_CONF" ] && [ "$(cat "$VAAPI_CONF")" = "LIBVA_DRIVER_NAME=i965" ]; then
+        # Lo escribía la versión anterior de esta herramienta y rompe VA-API en Intel moderno.
+        local LEGACY_BACKUP
+        LEGACY_BACKUP="${VAAPI_CONF}.bak.$(date +%Y%m%d%H%M%S)"
+        run_cmd mv "$VAAPI_CONF" "$LEGACY_BACKUP"
+        log_warn "Se apartó $VAAPI_CONF (forzaba i965); copia en $LEGACY_BACKUP. Para revertir: mv \"$LEGACY_BACKUP\" \"$VAAPI_CONF\"."
+    fi
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] vainfo${NC}"
+    elif command -v vainfo >/dev/null 2>&1; then
+        if VAINFO_OUTPUT="$(vainfo 2>&1)"; then
+            DRIVER_LINE="$(printf '%s\n' "$VAINFO_OUTPUT" | grep -m1 'Driver version' || true)"
+            log_info "vainfo: ${DRIVER_LINE:-ejecutado correctamente (sin línea 'Driver version')}"
+        else
+            log_warn "vainfo falló; revisa la instalación del driver VA-API tras reiniciar la sesión."
+        fi
     fi
 
     log_warn "Reinicia la sesión para aplicar los cambios de VA-API."
@@ -2701,19 +2768,69 @@ configure_vaapi_brave_broadwell() {
     configure_vaapi_intel "$@"
 }
 
+# limine | grub | systemd-boot | unknown (sin sudo; BOOT_ROOT_PREFIX permite simular / en los tests).
+detect_bootloader() {
+    local PREFIX="${BOOT_ROOT_PREFIX:-}"
+    local CANDIDATE
+
+    for CANDIDATE in \
+        "$PREFIX/boot/limine.conf" \
+        "$PREFIX/boot/limine/limine.conf" \
+        "$PREFIX/efi/limine.conf" \
+        "$PREFIX/boot/efi/limine.conf" \
+        "$PREFIX/boot/EFI/limine/limine.conf"; do
+        if [ -e "$CANDIDATE" ]; then
+            printf 'limine\n'
+            return 0
+        fi
+    done
+
+    if [ -e "$PREFIX/boot/grub/grub.cfg" ]; then
+        printf 'grub\n'
+        return 0
+    fi
+
+    if [ -e "$PREFIX/boot/loader/loader.conf" ] || [ -e "$PREFIX/efi/loader/loader.conf" ]; then
+        printf 'systemd-boot\n'
+        return 0
+    fi
+
+    printf 'unknown\n'
+}
+
 configure_btrfs_snapshots() {
-    log "${YELLOW}Configurando Snapper...${NC}"
+    local BOOTLOADER=""
+    local BOOT_PACKAGE=""
+
+    BOOTLOADER="$(detect_bootloader)"
+
+    case "$BOOTLOADER" in
+        limine) BOOT_PACKAGE="limine-snapper-sync" ;;
+        grub) BOOT_PACKAGE="grub-btrfs-support" ;;
+        systemd-boot) BOOT_PACKAGE="sdboot-manage" ;;
+        *)
+            log_warn "No se pudo detectar el bootloader (Limine, GRUB o systemd-boot); no se instala nada para evitar paquetes que no encajan con tu arranque."
+            log "Consulta https://wiki.cachyos.org/configuration/btrfs_snapshots y vuelve a ejecutar el bloque."
+            return 1
+            ;;
+    esac
+
+    log "${YELLOW}Configurando Snapper (bootloader detectado: ${BOOTLOADER})...${NC}"
 
     run_cmd sudo pacman -S --needed --noconfirm \
         snapper \
-        grub-btrfs \
-        snap-pac
+        snap-pac \
+        "$BOOT_PACKAGE"
 
     log "${YELLOW}"
     log "IMPORTANTE:"
     log "Configura manualmente subvolumenes BTRFS."
     log "Este script NO modifica particiones."
     log "${NC}"
+
+    if ! { command -v snapper >/dev/null 2>&1 && snapper list-configs 2>/dev/null | grep -Eq '(^|[[:space:]|])root([[:space:]|]|$)'; }; then
+        log_info "Snapper aún no tiene una configuración 'root'. Sigue la guía de CachyOS para crearla: https://wiki.cachyos.org/configuration/btrfs_snapshots"
+    fi
 }
 
 extract_broadcom_bundle_menu() {
@@ -2793,7 +2910,11 @@ configure_facetimehd_camera() {
 }
 
 bootstrap_cachyos() {
-    ensure_sudo_session || exit 1
+    local IDS=()
+    local FILTERED=()
+    local ID
+    local RC=0
+
     log_section "Bootstrap CachyOS"
     show_log_location
     bootstrap_context_report
@@ -2803,46 +2924,52 @@ bootstrap_cachyos() {
         log "${YELLOW}Dry-run actualmente informativo.${NC}"
     fi
 
-    install_packages
-    install_ohmyzsh
-    install_powerlevel10k
-    install_node_stack
-    install_ai_tools
-    install_playwright_if_accepted
-    install_restic_if_accepted
-    install_appimage_support_if_accepted
-    install_filezilla_if_accepted
-    install_markdownpart_if_accepted
-    install_libreoffice_if_accepted
-    install_android_studio_if_accepted
-    install_ipscan_if_accepted
-    install_tea_if_accepted
-    install_talk2ai_if_accepted || true
-    install_codexbar_tray_if_accepted || true
-    install_mbp_watch_diagnostics
-    install_mbp_plasmoid_if_accepted
-    install_youtube_force_h264_package
-    install_apple_laptop_extras
-    configure_facetimehd_camera
-    configure_networkmanager_iwd_backend
-    install_hyprland
-    configure_wifi_regulatory_domain
-    configure_global_menu_support
-    configure_chromium_hw_acceleration
-    configure_vaapi_intel
-    configure_btrfs_snapshots
+    if [ -n "$BOOTSTRAP_BLOCKS" ]; then
+        IFS=',' read -r -a IDS <<< "$BOOTSTRAP_BLOCKS"
+    else
+        mapfile -t IDS < <(block_catalog_default_ids)
+    fi
+
+    case "$HYPRLAND_MODE" in
+        yes) IDS+=(hyprland) ;;
+        no)
+            for ID in "${IDS[@]}"; do
+                [ "$ID" = "hyprland" ] || FILTERED+=("$ID")
+            done
+            IDS=("${FILTERED[@]}")
+            ;;
+    esac
+
+    FILTERED=()
+    case "$APPLE_LAPTOP_MODE" in
+        yes)
+            if block_is_visible apple; then
+                IDS+=(apple)
+            else
+                log_warn "El bloque apple no es compatible con este equipo; se ignora --apple-laptop yes."
+            fi
+            ;;
+        no)
+            for ID in "${IDS[@]}"; do
+                [ "$ID" = "apple" ] || FILTERED+=("$ID")
+            done
+            IDS=("${FILTERED[@]}")
+            ;;
+    esac
+
+    set +e
+    run_bootstrap_blocks "${IDS[@]}"
+    RC=$?
+    set -e
 
     log ""
-    log "${GREEN}=================================${NC}"
-    log "${GREEN}BOOTSTRAP COMPLETADO${NC}"
-    log "${GREEN}=================================${NC}"
-    log ""
-
     log "Recomendado:"
     log "- Reiniciar sistema para asegurar PATH, grupos, servicios y firmware recien aplicados."
     log "- Tras reiniciar, ejecuta: ./migration.sh postcheck"
     show_log_location
     log ""
+
+    return "$RC"
 }
 
 get_ai_context_state_dir() {
@@ -3125,6 +3252,8 @@ post_bootstrap_checks() {
     else
         log_warn "codexBar Tray: inactivo"
     fi
+
+    log_info "$(codexbar_plasma_postcheck_line)"
 
     if command -v codex >/dev/null 2>&1; then
         log_success "Codex CLI detectado en: $(command -v codex)"

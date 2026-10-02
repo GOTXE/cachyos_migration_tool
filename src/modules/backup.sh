@@ -25,8 +25,158 @@ run_backup_rsync() {
     esac
 }
 
+# Etiqueta del equipo para el nombre de la carpeta (ADR-002 D2).
+backup_host_label() {
+    local LABEL="${BACKUP_HOST_LABEL:-}"
+
+    if [ -z "$LABEL" ]; then
+        LABEL="$(uname -n)"
+        LABEL="${LABEL%%.*}"
+    fi
+
+    LABEL="$(printf '%s' "$LABEL" | sed -E 's/[^A-Za-z0-9._-]/-/g')"
+    printf '%s\n' "${LABEL:-host}"
+}
+
+backup_timestamp_label() {
+    if [ -n "${BACKUP_NOW_EPOCH:-}" ]; then
+        date -d "@${BACKUP_NOW_EPOCH}" +%d_%m_%Y-%H:%M
+    else
+        date +%d_%m_%Y-%H:%M
+    fi
+}
+
+# Sistemas de ficheros cuyos nombres no admiten ':'.
+backup_fs_forbids_colon() {
+    case "$1" in
+        exfat|vfat|msdos|ntfs|ntfs3|fuseblk|cifs|smb3) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Uso: build_backup_name <destino>; requiere BACKUP_FS_TYPE.
+build_backup_name() {
+    local DEST="${1%/}"
+    local NAME
+    local CANDIDATE
+    local SUFFIX=2
+
+    NAME="$(backup_host_label)_$(backup_timestamp_label)"
+
+    if backup_fs_forbids_colon "${BACKUP_FS_TYPE:-}"; then
+        NAME="${NAME//:/h}"
+        log_warn "El destino es ${BACKUP_FS_TYPE} y no admite ':' en nombres; se usa 'h' en la hora." >&2
+    fi
+
+    CANDIDATE="$NAME"
+    while [ -e "${DEST}/${CANDIDATE}" ]; do
+        CANDIDATE="${NAME}_${SUFFIX}"
+        SUFFIX=$((SUFFIX + 1))
+    done
+
+    printf '%s\n' "$CANDIDATE"
+}
+
+# Metadata de sistema: user_ids, os-release, inventario, extensiones y unidades de usuario.
+write_backup_system_metadata() {
+    local META_DIR="$BACKUP_DIR/metadata"
+    local OS_FILE="${OS_RELEASE_FILE:-/etc/os-release}"
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] escribir $META_DIR/user_ids.conf${NC}"
+        log "${YELLOW}[DRY-RUN] copiar $OS_FILE a $META_DIR/os-release${NC}"
+        log "${YELLOW}[DRY-RUN] inventario de paquetes en $META_DIR/packages/${NC}"
+        log "${YELLOW}[DRY-RUN] extensiones de VS Code y unidades de usuario en $META_DIR${NC}"
+        return 0
+    fi
+
+    {
+        echo "USER=$(whoami)"
+        echo "UID=$(id -u)"
+        echo "GID=$(id -g)"
+    } > "$META_DIR/user_ids.conf"
+
+    if [ -r "$OS_FILE" ]; then
+        cp "$OS_FILE" "$META_DIR/os-release"
+    fi
+
+    inventory_write "$META_DIR"
+
+    if command -v code >/dev/null 2>&1; then
+        code --list-extensions > "$META_DIR/vscode-extensions.txt" 2>/dev/null ||
+            log_warn "No se pudo exportar la lista de extensiones de VS Code."
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        if ! systemctl --user list-unit-files --state=enabled --no-pager \
+            > "$META_DIR/user-enabled-units.txt" 2>/dev/null; then
+            rm -f "$META_DIR/user-enabled-units.txt"
+            log_warn "No se pudieron listar las unidades systemd de usuario."
+        fi
+    fi
+}
+
+# Codifica una ruta para una lista separada por comas del manifest (DATA_ROOTS):
+# '%' -> %25, ',' -> %2C, salto de línea -> %0A. Inversa: manifest_path_decode.
+manifest_path_encode() {
+    local VALUE="$1"
+
+    VALUE="${VALUE//%/%25}"
+    VALUE="${VALUE//,/%2C}"
+    VALUE="${VALUE//$'\n'/%0A}"
+    printf '%s\n' "$VALUE"
+}
+
+backup_manifest_line() {
+    local VALUE="${2//$'\n'/ }"
+    printf '%s=%s\n' "$1" "$VALUE"
+}
+
+# manifest.env (ADR-002 D4). Se escribe con printf; nunca se hace source de él.
+write_backup_manifest() {
+    local NAME="$1"
+    local ROOTS="$2"
+    local MANIFEST="$BACKUP_DIR/metadata/manifest.env"
+    local CREATED_AT
+    local OS_ID
+    local OS_ID_LIKE
+    local OS_VERSION_ID
+
+    if [ "$DRY_MODE" = true ]; then
+        log "${YELLOW}[DRY-RUN] escribir $MANIFEST${NC}"
+        return 0
+    fi
+
+    if [ -n "${BACKUP_NOW_EPOCH:-}" ]; then
+        CREATED_AT="$(date -d "@${BACKUP_NOW_EPOCH}" +%Y-%m-%dT%H:%M:%S%z)"
+    else
+        CREATED_AT="$(date +%Y-%m-%dT%H:%M:%S%z)"
+    fi
+    OS_ID="$(os_release_value ID)"
+    OS_ID_LIKE="$(os_release_value ID_LIKE)"
+    OS_VERSION_ID="$(os_release_value VERSION_ID)"
+
+    {
+        backup_manifest_line FORMAT_VERSION 2
+        backup_manifest_line BACKUP_NAME "$NAME"
+        backup_manifest_line CREATED_AT "$CREATED_AT"
+        backup_manifest_line HOST_LABEL "$(backup_host_label)"
+        backup_manifest_line TOOL_VERSION "$VERSION"
+        backup_manifest_line OS_ID "$OS_ID"
+        backup_manifest_line OS_ID_LIKE "$OS_ID_LIKE"
+        backup_manifest_line OS_VERSION_ID "$OS_VERSION_ID"
+        backup_manifest_line OS_FAMILY "$(os_family)"
+        backup_manifest_line USER "$(whoami)"
+        backup_manifest_line UID "$(id -u)"
+        backup_manifest_line GID "$(id -g)"
+        backup_manifest_line HOME "$HOME"
+        backup_manifest_line PKG_MANAGERS "${INVENTORY_MANAGERS:-}"
+        backup_manifest_line INVENTORY_WARNINGS "${INVENTORY_WARNINGS:-}"
+        backup_manifest_line DATA_ROOTS "$ROOTS"
+    } > "$MANIFEST"
+}
+
 backup_system() {
-    local DATE
     local BACKUP_NAME
     local CONFIGS=()
     local EXISTING_CONFIGS=()
@@ -43,13 +193,12 @@ backup_system() {
     local TOTAL_DATA_DIRS=0
     local TOTAL_BLOCKS=4
     local BACKUP_WARNING_COUNT=0
+    local DATA_ROOTS=""
+    local PREFLIGHT_COMMANDS=(rsync find du df findmnt stat)
 
-    ensure_sudo_session || exit 1
-    require_command rsync
-    extract_broadcom_bundle_silent
-
-    DATE="$(date +%Y-%m-%d_%H-%M-%S)"
-    BACKUP_NAME="linux_backup_${DATE}"
+    require_bash_44 || exit 1
+    [ -n "$BACKUP_TARGET" ] || PREFLIGHT_COMMANDS+=(lsblk)
+    require_commands "${PREFLIGHT_COMMANDS[@]}" || exit 1
 
     if [ -n "$BACKUP_TARGET" ]; then
         DISK_MOUNT="$BACKUP_TARGET"
@@ -63,7 +212,7 @@ backup_system() {
         BACKUP_ESTIMATED_BYTES="$(estimate_backup_bytes)"
     else
         ask_backup_data_dirs
-        select_disk
+        select_disk || exit 1
     fi
 
     if [ ! -d "$DISK_MOUNT" ]; then
@@ -75,8 +224,9 @@ backup_system() {
         check_backup_space "$DISK_MOUNT"
     fi
 
-    BACKUP_DIR="${DISK_MOUNT%/}/${BACKUP_NAME}"
     configure_backup_rsync_mode "$DISK_MOUNT"
+    BACKUP_NAME="$(build_backup_name "$DISK_MOUNT")"
+    BACKUP_DIR="${DISK_MOUNT%/}/${BACKUP_NAME}"
     BACKUP_WARNING_LOG="$BACKUP_DIR/logs/rsync_warnings.txt"
 
     run_cmd_quiet mkdir -p \
@@ -99,29 +249,8 @@ backup_system() {
         } > "$BACKUP_DIR/metadata/user_ids.conf"
     fi
 
-    log_phase "Exportando paquetes..."
-
-    if command -v dpkg >/dev/null 2>&1; then
-        if [ "$DRY_MODE" = true ]; then
-            log "${YELLOW}[DRY-RUN] dpkg --get-selections > $BACKUP_DIR/metadata/dpkg_packages.txt${NC}"
-        else
-            dpkg --get-selections > "$BACKUP_DIR/metadata/dpkg_packages.txt"
-        fi
-    fi
-
-    if [ "$DRY_MODE" = true ]; then
-        log "${YELLOW}[DRY-RUN] flatpak list > $BACKUP_DIR/metadata/flatpak_packages.txt${NC}"
-    else
-        flatpak list > "$BACKUP_DIR/metadata/flatpak_packages.txt" 2>/dev/null || true
-    fi
-
-    if command -v code >/dev/null 2>&1; then
-        if [ "$DRY_MODE" = true ]; then
-            log "${YELLOW}[DRY-RUN] code --list-extensions > $BACKUP_DIR/metadata/vscode_extensions.txt${NC}"
-        else
-            code --list-extensions > "$BACKUP_DIR/metadata/vscode_extensions.txt"
-        fi
-    fi
+    log_phase "Exportando inventario del sistema..."
+    write_backup_system_metadata
 
     log_block_progress 2 "$TOTAL_BLOCKS" "Configuraciones"
     log_phase "Copiando configuraciones..."
@@ -152,12 +281,18 @@ backup_system() {
 
             if [ "$BACKUP_FS_TYPE" != "" ] && [ "${#BACKUP_RSYNC_OPTIONS[@]}" -gt 0 ] &&
                [[ " ${BACKUP_RSYNC_OPTIONS[*]} " == *" --copy-links "* ]]; then
-                mapfile -t BROKEN_LINK_EXCLUDES < <(build_broken_symlink_excludes "$CONFIG_SOURCE")
+                local EXCLUDE_LINE
+                while IFS= read -r EXCLUDE_LINE; do
+                    [ -n "$EXCLUDE_LINE" ] || continue
+                    # Con -R la raíz de transferencia es $HOME: se ancla cada exclusión al item.
+                    BROKEN_LINK_EXCLUDES+=("--exclude=/${ITEM}/${EXCLUDE_LINE#--exclude=}")
+                done < <(build_broken_symlink_excludes "$CONFIG_SOURCE")
             fi
 
-            run_backup_rsync "$ITEM" rsync "${BACKUP_RSYNC_OPTIONS[@]}" \
+            # -R + "/./" conserva la ruta relativa a $HOME (configs/.config/Code/...).
+            run_backup_rsync "$ITEM" rsync "${BACKUP_RSYNC_OPTIONS[@]}" -R \
                 "${BROKEN_LINK_EXCLUDES[@]}" \
-                "$CONFIG_SOURCE" \
+                "$HOME/./$ITEM" \
                 "$BACKUP_DIR/configs/"
         fi
     done
@@ -202,6 +337,12 @@ backup_system() {
             --exclude='.venv' \
             --exclude='__pycache__' \
             --exclude='.cache' \
+            --exclude='node_modules' \
+            --exclude='.pnpm-store' \
+            --exclude='.tox' \
+            --exclude='.mypy_cache' \
+            --exclude='.pytest_cache' \
+            --exclude='.ruff_cache' \
             "$DIR" \
             "$REPO_TARGET_PARENT/"
     done
@@ -218,7 +359,8 @@ backup_system() {
     TOTAL_DATA_DIRS=${#EXISTING_ARCHIVE_DIRS[@]}
 
     for DATA_DIR in "${EXISTING_ARCHIVE_DIRS[@]}"; do
-        local DATA_NAME
+        local DATA_DEST
+        local DATA_REL
         local REL_REPO_DIR
         local RSYNC_EXCLUDES=()
         local BROKEN_LINK_EXCLUDES=()
@@ -226,7 +368,19 @@ backup_system() {
 
         [ -d "$DATA_DIR" ] || continue
 
-        DATA_NAME="$(basename "$DATA_DIR")"
+        if [ "$DATA_DIR" = "$HOME" ]; then
+            DATA_REL="."
+            DATA_DEST="$BACKUP_DIR/data/home"
+            DATA_ROOTS="${DATA_ROOTS:+${DATA_ROOTS},}home:."
+        elif [[ "$DATA_DIR" == "$HOME/"* ]]; then
+            DATA_REL="${DATA_DIR#"$HOME"/}"
+            DATA_DEST="$BACKUP_DIR/data/home/$DATA_REL"
+            DATA_ROOTS="${DATA_ROOTS:+${DATA_ROOTS},}home:$(manifest_path_encode "$DATA_REL")"
+        else
+            DATA_REL="${DATA_DIR#/}"
+            DATA_DEST="$BACKUP_DIR/data/external/$DATA_REL"
+            DATA_ROOTS="${DATA_ROOTS:+${DATA_ROOTS},}external:$(manifest_path_encode "$DATA_DIR")"
+        fi
         DATA_INDEX=$((DATA_INDEX+1))
         log_item_progress "$DATA_INDEX" "$TOTAL_DATA_DIRS" "$DATA_DIR"
 
@@ -237,7 +391,7 @@ backup_system() {
                 REL_REPO_DIR="${REPO_DIR#"$DATA_DIR"/}"
 
                 if [ -n "$REL_REPO_DIR" ]; then
-                    RSYNC_EXCLUDES+=("--exclude=$REL_REPO_DIR")
+                    RSYNC_EXCLUDES+=("--exclude=/$REL_REPO_DIR")
                 fi
             fi
         done
@@ -246,12 +400,16 @@ backup_system() {
             mapfile -t BROKEN_LINK_EXCLUDES < <(build_broken_symlink_excludes "$DATA_DIR")
         fi
 
+        run_cmd_quiet mkdir -p "$DATA_DEST"
+
         run_backup_rsync "$DATA_DIR" rsync "${BACKUP_RSYNC_OPTIONS[@]}" \
             "${BROKEN_LINK_EXCLUDES[@]}" \
             "${RSYNC_EXCLUDES[@]}" \
             "$DATA_DIR/" \
-            "$BACKUP_DIR/data/$DATA_NAME/"
+            "$DATA_DEST/"
     done
+
+    write_backup_manifest "$BACKUP_NAME" "$DATA_ROOTS"
 
     if [ "$DRY_MODE" != true ]; then
         find "$BACKUP_DIR" -type f | sort > "$BACKUP_DIR/logs/copied_files.txt" 2>/dev/null || true
