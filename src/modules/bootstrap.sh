@@ -2764,19 +2764,69 @@ configure_vaapi_brave_broadwell() {
     configure_vaapi_intel "$@"
 }
 
+# limine | grub | systemd-boot | unknown (sin sudo; BOOT_ROOT_PREFIX permite simular / en los tests).
+detect_bootloader() {
+    local PREFIX="${BOOT_ROOT_PREFIX:-}"
+    local CANDIDATE
+
+    for CANDIDATE in \
+        "$PREFIX/boot/limine.conf" \
+        "$PREFIX/boot/limine/limine.conf" \
+        "$PREFIX/efi/limine.conf" \
+        "$PREFIX/boot/efi/limine.conf" \
+        "$PREFIX/boot/EFI/limine/limine.conf"; do
+        if [ -e "$CANDIDATE" ]; then
+            printf 'limine\n'
+            return 0
+        fi
+    done
+
+    if [ -e "$PREFIX/boot/grub/grub.cfg" ]; then
+        printf 'grub\n'
+        return 0
+    fi
+
+    if [ -e "$PREFIX/boot/loader/loader.conf" ] || [ -e "$PREFIX/efi/loader/loader.conf" ]; then
+        printf 'systemd-boot\n'
+        return 0
+    fi
+
+    printf 'unknown\n'
+}
+
 configure_btrfs_snapshots() {
-    log "${YELLOW}Configurando Snapper...${NC}"
+    local BOOTLOADER=""
+    local BOOT_PACKAGE=""
+
+    BOOTLOADER="$(detect_bootloader)"
+
+    case "$BOOTLOADER" in
+        limine) BOOT_PACKAGE="limine-snapper-sync" ;;
+        grub) BOOT_PACKAGE="grub-btrfs-support" ;;
+        systemd-boot) BOOT_PACKAGE="sdboot-manage" ;;
+        *)
+            log_warn "No se pudo detectar el bootloader (Limine, GRUB o systemd-boot); no se instala nada para evitar paquetes que no encajan con tu arranque."
+            log "Consulta https://wiki.cachyos.org/configuration/btrfs_snapshots y vuelve a ejecutar el bloque."
+            return 1
+            ;;
+    esac
+
+    log "${YELLOW}Configurando Snapper (bootloader detectado: ${BOOTLOADER})...${NC}"
 
     run_cmd sudo pacman -S --needed --noconfirm \
         snapper \
-        grub-btrfs \
-        snap-pac
+        snap-pac \
+        "$BOOT_PACKAGE"
 
     log "${YELLOW}"
     log "IMPORTANTE:"
     log "Configura manualmente subvolumenes BTRFS."
     log "Este script NO modifica particiones."
     log "${NC}"
+
+    if ! { command -v snapper >/dev/null 2>&1 && snapper list-configs 2>/dev/null | grep -Eq '(^|[[:space:]|])root([[:space:]|]|$)'; }; then
+        log_info "Snapper aún no tiene una configuración 'root'. Sigue la guía de CachyOS para crearla: https://wiki.cachyos.org/configuration/btrfs_snapshots"
+    fi
 }
 
 extract_broadcom_bundle_menu() {

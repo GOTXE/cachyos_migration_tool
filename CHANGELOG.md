@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- BTRFS snapshots block: installs `snapper snap-pac` plus the package matching the detected bootloader (`limine-snapper-sync` for Limine, `grub-btrfs-support` for GRUB, `sdboot-manage` for systemd-boot) instead of always installing `grub-btrfs`; with an unknown bootloader it warns and installs nothing. The block is only offered when `/` is btrfs.
 - VA-API Intel: generic Intel machines now get `intel-media-driver` + `libva-intel-driver` + `libva-utils` without forcing `LIBVA_DRIVER_NAME=i965` or writing `brave-flags.conf`; a legacy i965-only `vaapi.conf` is moved to `vaapi.conf.bak.<timestamp>`. MacBook Pro 12,1 / 8,1 keep their i965 setup. The block ends with a `vainfo` check (warning only).
 - `write_browser_flags_file` no longer overwrites silently: identical content is a no-op, different content is backed up to `<file>.bak.<timestamp>` first.
 - **BREAKING:** `bootstrap`, `tui-bootstrap-run`, `configure-vaapi-brave`, `install-mbp-watch`, `install-talk2ai`, `install-codexbar-tray` and `install-youtube-force-h264` now exit with an error on non-Arch distributions. `backup`, `restore`, `restic-backup`, `postcheck`, `test` and plasmoid commands are not blocked.

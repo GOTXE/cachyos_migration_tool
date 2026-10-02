@@ -188,7 +188,7 @@ Estados: `Lista` = lista para implementar · `Refinar` = el agente **no** la imp
 | T1.2 | Validación de rango en `select_disk` | T0.1 | XS | Hecha (rama feature/T1.2-select-disk-range) |
 | T1.3 | Registro único de bloques + CLI `bootstrap --blocks` | T0.1 | L | Hecha (rama feature/T1.3-blocks-registry) |
 | T1.4 | VA-API Intel correcto + flags de navegador sin pisar | T1.3 | M | Hecha (rama feature/T1.4-vaapi-intel) |
-| T1.5 | Snapshots BTRFS según bootloader | T1.3 | S | Lista |
+| T1.5 | Snapshots BTRFS según bootloader | T1.3 | S | Hecha (rama feature/T1.5-btrfs-bootloader) |
 | T2.1 | `os.sh` + inventario de paquetes multi-distro | T0.1 | M | Hecha (rama feature/T2.1-os-inventory) |
 | T2.2 | Nombre de carpeta `<equipo>_DD_MM_AAAA-HH:mm` | T2.1 | S | Hecha (rama feature/T2.2-backup-naming) |
 | T2.3 | Backup v2 (manifest, rutas relativas, preflight portable) | T2.1, T2.2 | L | Hecha (rama feature/T2.3-backup-v2) |

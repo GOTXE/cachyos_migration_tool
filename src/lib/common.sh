@@ -1031,6 +1031,11 @@ is_apple_laptop() {
         [[ "$MACBOOK_MODEL" == MacBook* ]]
 }
 
+# Sistema de ficheros de / (función aparte para poder simularla en los tests).
+detect_root_filesystem() {
+    findmnt -no FSTYPE / 2>/dev/null || true
+}
+
 get_bootstrap_checklist_items() {
     local APPLE_DEFAULT="OFF"
     local FACETIME_DEFAULT="OFF"
@@ -1129,9 +1134,9 @@ EOF
         printf '%s\n' "vaapi|${VAAPI_LABEL}|OFF"
     fi
 
-    cat <<'EOF'
-btrfs|Snapshots BTRFS (Snapper)|OFF
-EOF
+    if [ "$(detect_root_filesystem)" = "btrfs" ]; then
+        printf '%s\n' "btrfs|Snapshots BTRFS (Snapper)|OFF"
+    fi
 }
 
 bootstrap_test_report() {
