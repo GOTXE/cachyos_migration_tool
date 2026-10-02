@@ -191,7 +191,7 @@ Estados: `Lista` = lista para implementar · `Refinar` = el agente **no** la imp
 | T1.5 | Snapshots BTRFS según bootloader | T1.3 | S | Lista |
 | T2.1 | `os.sh` + inventario de paquetes multi-distro | T0.1 | M | Hecha (rama feature/T2.1-os-inventory) |
 | T2.2 | Nombre de carpeta `<equipo>_DD_MM_AAAA-HH:mm` | T2.1 | S | Hecha (rama feature/T2.2-backup-naming) |
-| T2.3 | Backup v2 (manifest, rutas relativas, preflight portable) | T2.1, T2.2 | L | Lista |
+| T2.3 | Backup v2 (manifest, rutas relativas, preflight portable) | T2.1, T2.2 | L | Hecha (rama feature/T2.3-backup-v2) |
 | T2.4 | Restore v2 + compatibilidad v1 + sin sudo por defecto | T2.3 | L | Lista |
 | T2.5 | Descubrimiento y verificación v2 en las TUI | T2.3, T2.4 | M | Lista |
 | T2.6 | CI roundtrip en Arch, Debian y Fedora | T2.4 | M | Lista |
