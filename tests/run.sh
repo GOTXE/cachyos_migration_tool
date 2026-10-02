@@ -17,6 +17,16 @@ for test_file in "$ROOT"/tests/test_*.sh; do
     fi
 done
 
+# 1b. Tests unitarios de la TUI Python.
+if command -v python3 >/dev/null 2>&1; then
+    if ! python3 -m unittest discover -s "$ROOT/tests" -p 'test_*.py'; then
+        printf 'FAIL python unittest\n' >&2
+        exit 1
+    fi
+else
+    printf 'SKIP python unittest (python3 no disponible)\n'
+fi
+
 # 2. Comprobación de sintaxis de todos los scripts.
 mapfile -t SYNTAX_FILES < <(
     {

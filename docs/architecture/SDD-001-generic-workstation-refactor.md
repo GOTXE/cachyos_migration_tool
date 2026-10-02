@@ -193,7 +193,7 @@ Estados: `Lista` = lista para implementar · `Refinar` = el agente **no** la imp
 | T2.2 | Nombre de carpeta `<equipo>_DD_MM_AAAA-HH:mm` | T2.1 | S | Hecha (rama feature/T2.2-backup-naming) |
 | T2.3 | Backup v2 (manifest, rutas relativas, preflight portable) | T2.1, T2.2 | L | Hecha (rama feature/T2.3-backup-v2) |
 | T2.4 | Restore v2 + compatibilidad v1 + sin sudo por defecto | T2.3 | L | Hecha (rama feature/T2.4-restore-v2) |
-| T2.5 | Descubrimiento y verificación v2 en las TUI | T2.3, T2.4 | M | Lista |
+| T2.5 | Descubrimiento y verificación v2 en las TUI | T2.3, T2.4 | M | Hecha (rama feature/T2.5-tui-discovery) |
 | T2.6 | CI roundtrip en Arch, Debian y Fedora | T2.4 | M | Lista |
 | T2.7 | Restic portable + mantenimiento separado | T2.1 | M | Lista |
 | T2.8 | Guarda de distribución para `bootstrap` | T2.1, T1.3 | XS | Lista |
