@@ -207,9 +207,14 @@ restore_system() {
 
     log_block_progress 4 "$TOTAL_BLOCKS" "Permisos"
 
-    run_cmd sudo chown -R "$(whoami)":"$(whoami)" "$HOME/.ssh" || true
-    run_cmd sudo chown -R "$(whoami)":"$(whoami)" "$HOME/.codex" || true
-    run_cmd sudo chown -R "$(whoami)":"$(whoami)" "$HOME/.claude" || true
+    local CURRENT_USER
+    local CURRENT_GROUP
+    CURRENT_USER="$(id -un)"
+    CURRENT_GROUP="$(id -gn)"
+
+    run_cmd sudo chown -R "$CURRENT_USER:$CURRENT_GROUP" "$HOME/.ssh" || true
+    run_cmd sudo chown -R "$CURRENT_USER:$CURRENT_GROUP" "$HOME/.codex" || true
+    run_cmd sudo chown -R "$CURRENT_USER:$CURRENT_GROUP" "$HOME/.claude" || true
 
     if [ -d "$HOME/.ssh" ]; then
         run_cmd chmod 700 "$HOME/.ssh"
