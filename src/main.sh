@@ -10,6 +10,12 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$APP_DIR/lib/common.sh"
 # shellcheck disable=SC1091
+# shellcheck source=lib/os.sh
+source "$APP_DIR/lib/os.sh"
+# shellcheck disable=SC1091
+# shellcheck source=lib/inventory.sh
+source "$APP_DIR/lib/inventory.sh"
+# shellcheck disable=SC1091
 # shellcheck source=modules/backup.sh
 source "$APP_DIR/modules/backup.sh"
 # shellcheck disable=SC1091

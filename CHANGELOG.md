@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added `src/lib/os.sh` (`os_release_value`, `os_family`, `os_pkg_install_cmd`, `require_commands`, `require_bash_44`) for distribution detection and portable preflight checks.
+- Added `src/lib/inventory.sh` (`inventory_write`): multi-distro package inventory (pacman, apt, dpkg, rpm, dnf, zypper, flatpak, snap) that skips missing managers and records failures in `INVENTORY_WARNINGS`.
 - **BREAKING:** `bootstrap` sin `--blocks` ejecuta solo los bloques compatibles marcados por defecto; MBP Watch ya no se instala implícitamente.
 - Added single bootstrap block registry (`src/core/blocks.sh`) shared by the CLI and both TUIs, with `bootstrap --blocks a,b,c` and `--list-blocks`.
 - Fixed the `appimage` block, which was listed but never executed by the TUI.
