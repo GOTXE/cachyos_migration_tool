@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 1.12.0
 
+Generic CachyOS workstation support (ADR-001), portable backup format v2 (ADR-002) and SDD-001 tasks T0.1–T3.1.
+
+- `DATA_ROOTS` in `manifest.env` encodes each path (`%` → `%25`, `,` → `%2C`, newline → `%0A`) so external data paths containing commas are restored to the right place; documented in ADR-002.
+- CI: `actions/checkout@v5` (Node 24) and runners pinned to `ubuntu-24.04`.
 - Review fixes: `test_blocks.sh` and `test_codexbar_plasma.sh` no longer depend on the host distribution or user (CI), the Restic runner's post-backup `forget` uses `--retry-lock 10m` so another machine's lock does not fail a completed backup, and nested-repo exclusions in backed-up data are anchored (`--exclude=/<rel>`) so same-named deeper paths are still copied.
 - Added CodexBar Plasma (`Lucenx9/codexbar-plasma`): `install-codexbar-plasma [--version vX.Y.Z|latest] [--with-cli]`, `uninstall-codexbar-plasma` and a `codexbar_plasma` bootstrap block (listed only when `kpackagetool6` exists). The `.plasmoid` is downloaded over HTTPS, checked against its `.sha256` and its `metadata.json` Id, installed with `kpackagetool6` without root, and plasmashell is never restarted automatically. `postcheck` reports its status; the CLI install was extracted into `install_codexbar_cli`.
 - BTRFS snapshots block: installs `snapper snap-pac` plus the package matching the detected bootloader (`limine-snapper-sync` for Limine, `grub-btrfs-support` for GRUB, `sdboot-manage` for systemd-boot) instead of always installing `grub-btrfs`; with an unknown bootloader it warns and installs nothing. The block is only offered when `/` is btrfs.

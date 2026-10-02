@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2034
 
-VERSION="1.11.0"
+VERSION="1.12.0"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION_CONFIG_FILE="${MIGRATION_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-migration-tool.conf}"
 
