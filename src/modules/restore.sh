@@ -185,7 +185,19 @@ restore_conflicts_exist() {
     return 1
 }
 
+# Inversa de manifest_path_encode (backup.sh): %0A, %2C y, al final, %25.
+manifest_path_decode() {
+    local VALUE="$1"
+
+    VALUE="${VALUE//%0A/$'\n'}"
+    VALUE="${VALUE//%2C/,}"
+    VALUE="${VALUE//%25/%}"
+    printf '%s\n' "$VALUE"
+}
+
 # Raíces externas (external:<ruta absoluta>) de DATA_ROOTS, una por línea.
+# Las rutas vienen codificadas con manifest_path_encode; los manifests escritos
+# antes de la codificación nunca llegaron a publicarse (v2 se publica en 1.12.0 ya codificado).
 backup_external_roots() {
     local ROOTS="${BM_DATA_ROOTS:-}"
     local ENTRY
@@ -193,7 +205,7 @@ backup_external_roots() {
     [ -n "$ROOTS" ] || return 0
     while IFS= read -r ENTRY; do
         case "$ENTRY" in
-            external:/?*) printf '%s\n' "${ENTRY#external:}" ;;
+            external:/?*) manifest_path_decode "${ENTRY#external:}" ;;
         esac
     done < <(printf '%s\n' "${ROOTS//,/$'\n'}")
 }

@@ -31,13 +31,16 @@ printf 'raro\n' >"$HOME1/Documents/"'a\b c.txt'
 printf 'print(1)\n' >"$HOME1/Documents/GITHUB/proj/src/main.py"
 printf 'x\n' >"$HOME1/Documents/GITHUB/proj/node_modules/x"
 printf 'externo\n' >"$EXT/data1/f.txt"
+# ruta externa con coma: DATA_ROOTS debe codificarla (%2C) y el restore decodificarla
+mkdir -p "$EXT/data,2"
+printf 'coma\n' >"$EXT/data,2/g.txt"
 # misma ruta relativa que el repo anidado (GITHUB/proj) pero más profunda: debe copiarse
 mkdir -p "$HOME1/Documents/otro/GITHUB/proj"
 printf 'homonimo\n' >"$HOME1/Documents/otro/GITHUB/proj/keep.txt"
 git -C "$HOME1/Documents/GITHUB/proj" init -q
 
 CONFIG_SEL=$'.config/Code\n.bashrc\n.ssh'
-DATA_SEL="$HOME1/Documents"$'\n'"$EXT/data1"
+DATA_SEL="$HOME1/Documents"$'\n'"$EXT/data1"$'\n'"$EXT/data,2"
 
 DEST="$TMP/dest"
 mkdir -p "$DEST"
@@ -74,7 +77,7 @@ MANIFEST="$(cat "$BACKUP_DIR/metadata/manifest.env")"
 assert_contains "$MANIFEST" "FORMAT_VERSION=2" "manifest: versión"
 assert_contains "$MANIFEST" "HOST_LABEL=testhost" "manifest: host"
 assert_contains "$MANIFEST" "BACKUP_NAME=$(basename "$BACKUP_DIR")" "manifest: nombre"
-assert_contains "$MANIFEST" "DATA_ROOTS=home:Documents,external:$EXT/data1" "manifest: DATA_ROOTS"
+assert_contains "$MANIFEST" "DATA_ROOTS=home:Documents,external:$EXT/data1,external:$EXT/data%2C2" "manifest: DATA_ROOTS (coma codificada)"
 assert_contains "$MANIFEST" "HOME=$HOME1" "manifest: HOME"
 assert_contains "$MANIFEST" "OS_FAMILY=" "manifest: familia"
 assert_contains "$MANIFEST" "TOOL_VERSION=" "manifest: versión de la herramienta"
@@ -171,6 +174,7 @@ assert_file "$HOME2/Documents/"'a\b c.txt'
 assert_file "$HOME2/Documents/GITHUB/proj/src/main.py"
 assert_no_file "$HOME2/Documents/GITHUB/proj/node_modules"
 assert_file "$HOME2/restored-external/${EXT#/}/data1/f.txt"
+assert_file "$HOME2/restored-external/${EXT#/}/data,2/g.txt"
 assert_mode "$HOME2/.ssh/id_ed25519" 600
 assert_eq "$(cat "$HOME2/Documents/"'a\b c.txt')" "raro" "contenido del fichero con barra invertida"
 assert_eq "$(cat "$STUB_LOG")" "" "el restore no llama a sudo"
@@ -187,6 +191,7 @@ mkdir -p "$EXT"
 HOME2C="$TMP/home2c"
 restore_into "$HOME2C" --external-to-original >/dev/null
 assert_file "$EXT/data1/f.txt"
+assert_file "$EXT/data,2/g.txt"
 assert_no_file "$HOME2C/restored-external"
 
 # formato no soportado: error y HOME intacto

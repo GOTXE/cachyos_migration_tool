@@ -14,10 +14,10 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install static analysis tools
         run: sudo apt-get update && sudo apt-get install -y shellcheck
@@ -30,7 +30,7 @@ jobs:
 
   roundtrip:
     name: roundtrip (${{ matrix.container }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ${{ matrix.container }}
     strategy:
       fail-fast: false
@@ -51,7 +51,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create unprivileged user
         run: |

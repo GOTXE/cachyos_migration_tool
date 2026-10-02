@@ -98,7 +98,7 @@ Fichero `CLAVE=valor`, una clave por línea, sin comillas y sin expansión. **Se
 | `USER` / `UID` / `GID` / `HOME` | `gotxe` / `1000` / `1000` / `/home/gotxe` | |
 | `PKG_MANAGERS` | `pacman,flatpak` | los inventariados con éxito, separados por comas |
 | `INVENTORY_WARNINGS` | `dnf-userinstalled` | ids de inventario fallidos, separados por comas |
-| `DATA_ROOTS` | `home:Documents,external:/data` | correspondencia de `data/` con las rutas originales |
+| `DATA_ROOTS` | `home:Documents,external:/data` | correspondencia de `data/` con las rutas originales. Cada ruta va codificada: `%` → `%25`, `,` → `%2C`, salto de línea → `%0A` (ejemplo: `external:/mnt/a%2Cb` para `/mnt/a,b`) |
 
 ### D5 — Inventario de paquetes (`metadata/packages/`)
 

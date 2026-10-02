@@ -116,6 +116,17 @@ write_backup_system_metadata() {
     fi
 }
 
+# Codifica una ruta para una lista separada por comas del manifest (DATA_ROOTS):
+# '%' -> %25, ',' -> %2C, salto de línea -> %0A. Inversa: manifest_path_decode.
+manifest_path_encode() {
+    local VALUE="$1"
+
+    VALUE="${VALUE//%/%25}"
+    VALUE="${VALUE//,/%2C}"
+    VALUE="${VALUE//$'\n'/%0A}"
+    printf '%s\n' "$VALUE"
+}
+
 backup_manifest_line() {
     local VALUE="${2//$'\n'/ }"
     printf '%s=%s\n' "$1" "$VALUE"
@@ -364,11 +375,11 @@ backup_system() {
         elif [[ "$DATA_DIR" == "$HOME/"* ]]; then
             DATA_REL="${DATA_DIR#"$HOME"/}"
             DATA_DEST="$BACKUP_DIR/data/home/$DATA_REL"
-            DATA_ROOTS="${DATA_ROOTS:+${DATA_ROOTS},}home:${DATA_REL}"
+            DATA_ROOTS="${DATA_ROOTS:+${DATA_ROOTS},}home:$(manifest_path_encode "$DATA_REL")"
         else
             DATA_REL="${DATA_DIR#/}"
             DATA_DEST="$BACKUP_DIR/data/external/$DATA_REL"
-            DATA_ROOTS="${DATA_ROOTS:+${DATA_ROOTS},}external:${DATA_DIR}"
+            DATA_ROOTS="${DATA_ROOTS:+${DATA_ROOTS},}external:$(manifest_path_encode "$DATA_DIR")"
         fi
         DATA_INDEX=$((DATA_INDEX+1))
         log_item_progress "$DATA_INDEX" "$TOTAL_DATA_DIRS" "$DATA_DIR"
