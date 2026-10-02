@@ -6,6 +6,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 source "$ROOT/tests/lib/assert.sh"
 
+# Independiente de la distribución del anfitrión (la guarda de T2.8 bloquea bootstrap fuera de Arch).
+export OS_RELEASE_FILE="$ROOT/tests/fixtures/os-release/cachyos"
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 export HOME="$TMP/home"

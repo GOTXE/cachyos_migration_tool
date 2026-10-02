@@ -155,6 +155,7 @@ assert_contains "$BACKUP_CALL" "--tag workstation" "backup con tag workstation"
 assert_contains "$BACKUP_CALL" "--tag automatic" "backup con tag automatic"
 assert_contains "$FORGET_CALL" "--host Mi-PC-01" "forget limitado al host"
 assert_not_contains "$FORGET_CALL" "--prune" "forget sin --prune"
+assert_contains "$FORGET_CALL" "--retry-lock 10m" "forget tras backup con --retry-lock 10m"
 assert_file "$CONFIG_ROOT/system-state/packages/pacman-native-explicit.txt"
 assert_file "$CONFIG_ROOT/system-state/uname.txt"
 

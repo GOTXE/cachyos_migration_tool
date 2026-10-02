@@ -289,6 +289,8 @@ ssh -o BatchMode=yes backup-sftp-remote 'echo remote-ok'
 - `init` y `status` recuerdan guardar la contraseña de Restic fuera del equipo: la copia dentro del propio repositorio no sirve si el equipo muere.
 - Se excluye `~/Downloads` y dejan de excluirse `**/build`, `**/dist` y `**/target` (pueden ser datos de usuario).
 
+> **Nota sobre snapshots anteriores:** los snapshots creados antes de usar `--host "<HOST_LABEL>"` llevan el hostname del sistema. Si ese nombre difiere de `HOST_LABEL`, `forget --host` no los purgará. Revísalos con `restic snapshots` y haz un `forget` puntual con el host antiguo (`restic forget --host <host-antiguo> --keep-... --prune`).
+
 ## Checklist antes de volver al PC
 
 - [ ] SFTP/SSH habilitado en el destino remoto.

@@ -380,7 +380,7 @@ backup_system() {
                 REL_REPO_DIR="${REPO_DIR#"$DATA_DIR"/}"
 
                 if [ -n "$REL_REPO_DIR" ]; then
-                    RSYNC_EXCLUDES+=("--exclude=$REL_REPO_DIR")
+                    RSYNC_EXCLUDES+=("--exclude=/$REL_REPO_DIR")
                 fi
             fi
         done

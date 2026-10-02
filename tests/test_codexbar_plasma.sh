@@ -25,6 +25,8 @@ source "$ROOT/src/modules/codexbar_plasma.sh"
 
 DRY_MODE=false
 AUTO_CONFIRM=true
+# Independiente del usuario que ejecute el test (en CI puede ser root).
+current_uid() { printf '1000\n'; }
 OS_RELEASE_FILE="$ROOT/tests/fixtures/os-release/cachyos"
 
 # --- fixtures del release: .plasmoid (zip) válido, con Id erróneo y checksums ---
@@ -133,7 +135,7 @@ rc=0
 out="$(install_codexbar_plasma 2>&1)" || rc=$?
 assert_eq "$rc" "1" "root devuelve 1"
 assert_contains "$out" "Instala CodexBar Plasma como tu usuario de escritorio, no como root." "mensaje de root"
-unset -f current_uid
+current_uid() { printf '1000\n'; }
 
 # --- CLI: --with-cli en Arch instala la CLI; sin ella solo se avisa ---
 CLI_CALLS=0

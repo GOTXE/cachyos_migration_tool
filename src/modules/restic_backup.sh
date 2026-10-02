@@ -428,7 +428,8 @@ run_backup() {
         --keep-hourly "${RESTIC_KEEP_HOURLY:-24}" \
         --keep-daily "${RESTIC_KEEP_DAILY:-7}" \
         --keep-weekly "${RESTIC_KEEP_WEEKLY:-4}" \
-        --keep-monthly "${RESTIC_KEEP_MONTHLY:-3}"
+        --keep-monthly "${RESTIC_KEEP_MONTHLY:-3}" \
+        --retry-lock 10m
 }
 
 run_maintenance() {

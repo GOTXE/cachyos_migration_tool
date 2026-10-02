@@ -31,6 +31,9 @@ printf 'raro\n' >"$HOME1/Documents/"'a\b c.txt'
 printf 'print(1)\n' >"$HOME1/Documents/GITHUB/proj/src/main.py"
 printf 'x\n' >"$HOME1/Documents/GITHUB/proj/node_modules/x"
 printf 'externo\n' >"$EXT/data1/f.txt"
+# misma ruta relativa que el repo anidado (GITHUB/proj) pero más profunda: debe copiarse
+mkdir -p "$HOME1/Documents/otro/GITHUB/proj"
+printf 'homonimo\n' >"$HOME1/Documents/otro/GITHUB/proj/keep.txt"
 git -C "$HOME1/Documents/GITHUB/proj" init -q
 
 CONFIG_SEL=$'.config/Code\n.bashrc\n.ssh'
@@ -59,6 +62,7 @@ assert_mode "$BACKUP_DIR/configs/.ssh/id_ed25519" 600
 assert_file "$BACKUP_DIR/data/home/Documents/notes.txt"
 assert_file "$BACKUP_DIR/data/home/Documents/"'a\b c.txt'
 assert_no_file "$BACKUP_DIR/data/home/Documents/GITHUB/proj"
+assert_file "$BACKUP_DIR/data/home/Documents/otro/GITHUB/proj/keep.txt"
 assert_file "$BACKUP_DIR/data/external/${EXT#/}/data1/f.txt"
 
 # repos sin node_modules
