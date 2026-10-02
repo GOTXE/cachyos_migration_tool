@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Test infrastructure: `tests/run.sh` auto-discovers `tests/test_*.sh`, runs `bash -n`, `py_compile` and ShellCheck, and `tests/lib/{assert,stubs}.sh` provide shared helpers.
+
 ## 1.11.0
 
 - Restore normalizes new file and directory permissions by default instead of blindly applying backup-wide executable bits.

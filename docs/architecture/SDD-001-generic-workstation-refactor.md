@@ -183,7 +183,7 @@ Estados: `Lista` = lista para implementar · `Refinar` = el agente **no** la imp
 
 | ID | Título | Depende de | Tamaño | Estado |
 |---|---|---|---|---|
-| T0.1 | Infraestructura de tests | — | S | Lista |
+| T0.1 | Infraestructura de tests | — | S | Hecha (rama feature/T0.1-test-infra) |
 | T1.1 | Logging en XDG state y `log` seguro | T0.1 | S | Lista |
 | T1.2 | Validación de rango en `select_disk` | T0.1 | XS | Lista |
 | T1.3 | Registro único de bloques + CLI `bootstrap --blocks` | T0.1 | L | Lista |
