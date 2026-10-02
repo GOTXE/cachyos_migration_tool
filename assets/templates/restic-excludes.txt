@@ -1,6 +1,7 @@
 /home/*/.cache
 /home/*/.local/share/Trash
 /home/*/Descargas
+/home/*/Downloads
 /home/*/.npm/_cacache
 /home/*/.npm/_logs
 /home/*/.cache/yay
@@ -32,9 +33,6 @@
 **/.pytest_cache
 **/.mypy_cache
 **/.ruff_cache
-**/dist
-**/build
-**/target
 **/.next
 **/.turbo
 **/coverage

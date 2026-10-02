@@ -278,6 +278,17 @@ ssh -o BatchMode=yes backup-sftp-lan 'echo lan-ok'
 ssh -o BatchMode=yes backup-sftp-remote 'echo remote-ok'
 ```
 
+## 11. Varios equipos, mantenimiento y logs
+
+- Cada snapshot se etiqueta con `--host "<HOST_LABEL>"` (`BACKUP_HOST_LABEL` o el hostname sin dominio) y el `forget` solo afecta a ese equipo, de modo que varios PCs pueden compartir el mismo repositorio.
+- El runner usa `--one-file-system` y `--exclude-caches`. Cada ejecución hace `backup` + `forget` **sin** `--prune`.
+- El `prune` y un `check --read-data-subset=5%` se ejecutan aparte con `restic-backup maintenance` (timer semanal `restic-maintenance.timer`, domingos 12:00, con `--retry-lock 30m` para convivir con otros equipos). `./migration.sh restic-backup install-timer` instala y activa ambos timers; `disable-timer` los desactiva.
+- Los logs del runner (`~/.local/state/restic-backup/*.log`) se rotan: se borran los de más de `BACKUP_LOG_RETENTION_DAYS` días (14 por defecto). `latest.log` se conserva.
+- El inventario de paquetes del equipo (`~/.config/cachyos-migration-tool/system-state/packages/`) usa el mismo código que el backup clásico y funciona en Arch, Debian/Ubuntu, Fedora/RHEL y openSUSE.
+- `restic` se instala con `pacman`, `apt-get`, `dnf` o `zypper` según la distribución; en una distribución desconocida `init` se detiene con instrucciones.
+- `init` y `status` recuerdan guardar la contraseña de Restic fuera del equipo: la copia dentro del propio repositorio no sirve si el equipo muere.
+- Se excluye `~/Downloads` y dejan de excluirse `**/build`, `**/dist` y `**/target` (pueden ser datos de usuario).
+
 ## Checklist antes de volver al PC
 
 - [ ] SFTP/SSH habilitado en el destino remoto.

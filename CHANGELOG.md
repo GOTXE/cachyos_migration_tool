@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Restic runner: snapshots are tagged with `--host <HOST_LABEL>`, `forget` is limited to that host and no longer prunes on every run; pruning plus a partial `check` moved to `restic-backup maintenance` with a new weekly `restic-maintenance.timer`. `install-timer`/`disable-timer` manage both timers.
+- Restic runner rotates its logs (`BACKUP_LOG_RETENTION_DAYS`, 14 by default), uses `--one-file-system --exclude-caches`, reuses the shared package inventory and warns to keep the Restic password outside the machine (`init` and `status`).
+- `install_restic_package` supports pacman, apt-get, dnf and zypper. Excludes: added `~/Downloads`, removed `**/build`, `**/dist` and `**/target`.
 - CI: new `roundtrip` job runs the backup/restore roundtrip and v1 restore tests as a non-root user on Arch, Debian and Fedora containers.
 - Both TUIs recognise v2 backups (`metadata/manifest.env`) as well as v1 (`metadata/user_ids.conf`), list them by their real creation date (manifest `CREATED_AT`, or `user_ids.conf` mtime for v1) instead of by folder name, and show the host in the restore picker.
 - The Python TUI backup verification uses the v2 layout (`configs/<item>`, `data/home/...`, `data/external/...`), so nested configs are no longer checked against the wrong path; `tests/run.sh` now runs the Python unit tests.

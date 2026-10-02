@@ -195,7 +195,7 @@ Estados: `Lista` = lista para implementar · `Refinar` = el agente **no** la imp
 | T2.4 | Restore v2 + compatibilidad v1 + sin sudo por defecto | T2.3 | L | Hecha (rama feature/T2.4-restore-v2) |
 | T2.5 | Descubrimiento y verificación v2 en las TUI | T2.3, T2.4 | M | Hecha (rama feature/T2.5-tui-discovery) |
 | T2.6 | CI roundtrip en Arch, Debian y Fedora | T2.4 | M | Hecha (rama feature/T2.6-ci-roundtrip) |
-| T2.7 | Restic portable + mantenimiento separado | T2.1 | M | Lista |
+| T2.7 | Restic portable + mantenimiento separado | T2.1 | M | Hecha (rama feature/T2.7-restic-portable) |
 | T2.8 | Guarda de distribución para `bootstrap` | T2.1, T1.3 | XS | Lista |
 | T3.1 | Bloque e instalación verificada de CodexBar Plasma | T1.3 | M | Lista |
 | T4.x | Hardware probe (`src/hardware/`, `probe`) | T1.3 | L | Refinar |

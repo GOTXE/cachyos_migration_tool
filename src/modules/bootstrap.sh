@@ -593,8 +593,26 @@ install_filezilla_package() {
 
 install_restic_package() {
     log "${YELLOW}Instalando Restic desde repositorio oficial...${NC}"
-    log_package_batch_state "repo" "repo" restic
-    run_cmd sudo pacman -S --needed --noconfirm restic
+
+    case "$(os_family)" in
+        arch)
+            log_package_batch_state "repo" "repo" restic
+            run_cmd sudo pacman -S --needed --noconfirm restic
+            ;;
+        debian)
+            run_cmd sudo apt-get install -y restic
+            ;;
+        fedora)
+            run_cmd sudo dnf install -y restic
+            ;;
+        suse)
+            run_cmd sudo zypper --non-interactive install restic
+            ;;
+        *)
+            log "${RED}[ERROR] Distribución no reconocida: instala restic con el gestor de paquetes de tu sistema (https://restic.readthedocs.io/en/stable/020_installation.html) y repite el comando.${NC}"
+            return 1
+            ;;
+    esac
 }
 
 install_sshpass_package() {

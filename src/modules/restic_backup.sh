@@ -10,10 +10,15 @@ RESTIC_BACKUP_EXCLUDES_PATH="${RESTIC_BACKUP_CONFIG_DIR}/restic-excludes.txt"
 RESTIC_BACKUP_USER_SYSTEMD_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 RESTIC_BACKUP_SERVICE_PATH="${RESTIC_BACKUP_USER_SYSTEMD_DIR}/restic-backup.service"
 RESTIC_BACKUP_TIMER_PATH="${RESTIC_BACKUP_USER_SYSTEMD_DIR}/restic-backup.timer"
+RESTIC_MAINTENANCE_SERVICE_PATH="${RESTIC_BACKUP_USER_SYSTEMD_DIR}/restic-maintenance.service"
+RESTIC_MAINTENANCE_TIMER_PATH="${RESTIC_BACKUP_USER_SYSTEMD_DIR}/restic-maintenance.timer"
+RESTIC_BACKUP_INVENTORY_LIB_PATH="$HOME/.local/lib/cachyos-migration-tool/inventory.sh"
 RESTIC_BACKUP_TEMPLATE_ENV="${PROJECT_ROOT}/assets/templates/backup-restic.env.example"
 RESTIC_BACKUP_TEMPLATE_EXCLUDES="${PROJECT_ROOT}/assets/templates/restic-excludes.txt"
 RESTIC_BACKUP_TEMPLATE_SERVICE="${PROJECT_ROOT}/assets/systemd/user/restic-backup.service"
 RESTIC_BACKUP_TEMPLATE_TIMER="${PROJECT_ROOT}/assets/systemd/user/restic-backup.timer"
+RESTIC_MAINTENANCE_TEMPLATE_SERVICE="${PROJECT_ROOT}/assets/systemd/user/restic-maintenance.service"
+RESTIC_MAINTENANCE_TEMPLATE_TIMER="${PROJECT_ROOT}/assets/systemd/user/restic-maintenance.timer"
 
 restic_backup_expand_path() {
     local RAW_PATH="${1:-}"
@@ -109,6 +114,8 @@ restic_backup_install_runtime_script() {
 
     SCRIPT_DIR="$(dirname "$RESTIC_BACKUP_SCRIPT_PATH")"
     run_cmd mkdir -p "$SCRIPT_DIR" "$RESTIC_BACKUP_CONFIG_DIR" "$RESTIC_BACKUP_STATE_DIR" "$RESTIC_BACKUP_SYSTEM_STATE_DIR"
+    # El runner reutiliza el inventario de paquetes del backup clásico (una sola implementación).
+    run_cmd install -Dm644 "${PROJECT_ROOT}/src/lib/inventory.sh" "$RESTIC_BACKUP_INVENTORY_LIB_PATH"
 
     if [ "$DRY_MODE" = true ]; then
         log "${YELLOW}[DRY-RUN] generar ${RESTIC_BACKUP_SCRIPT_PATH}${NC}"
@@ -128,6 +135,7 @@ RUN_STAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 LOG_FILE="${STATE_ROOT}/${RUN_STAMP}.log"
 LATEST_LOG="${STATE_ROOT}/latest.log"
 COMMAND="${1:-run}"
+INVENTORY_LIB="${RESTIC_BACKUP_INVENTORY_LIB:-$HOME/.local/lib/cachyos-migration-tool/inventory.sh}"
 
 mkdir -p "$STATE_ROOT" "$SYSTEM_STATE_DIR"
 ln -sfn "$(basename "$LOG_FILE")" "$LATEST_LOG" 2>/dev/null || true
@@ -171,6 +179,35 @@ load_env() {
     RESTIC_PASSWORD_FILE="$(expand_path "${RESTIC_PASSWORD_FILE:-}")"
     BACKUP_EXCLUDES_FILE="$(expand_path "${BACKUP_EXCLUDES_FILE:-}")"
     BACKUP_SOURCE_HOME="$(expand_path "${BACKUP_SOURCE_HOME:-$HOME}")"
+}
+
+# Duplicado mínimo de backup_host_label (src/modules/backup.sh): el runner es
+# autónomo y no puede cargar el resto de la herramienta.
+backup_host_label() {
+    local LABEL="${BACKUP_HOST_LABEL:-}"
+
+    if [ -z "$LABEL" ]; then
+        LABEL="$(uname -n)"
+        LABEL="${LABEL%%.*}"
+    fi
+
+    LABEL="$(printf '%s' "$LABEL" | sed -E 's/[^A-Za-z0-9._-]/-/g')"
+    printf '%s\n' "${LABEL:-host}"
+}
+
+# Borra logs del runner más antiguos que BACKUP_LOG_RETENTION_DAYS (14 por defecto).
+rotate_logs() {
+    local DAYS="${BACKUP_LOG_RETENTION_DAYS:-14}"
+
+    case "$DAYS" in
+        ''|*[!0-9]*) DAYS=14 ;;
+    esac
+
+    find "$STATE_ROOT" -maxdepth 1 -type f -name '*.log' ! -name 'latest.log' -mtime "+$DAYS" -delete 2>/dev/null || true
+}
+
+password_notice() {
+    log "AVISO: guarda una copia de la contraseña de Restic fuera de este equipo (gestor de contraseñas). Ruta local: $RESTIC_PASSWORD_FILE"
 }
 
 require_value() {
@@ -242,8 +279,14 @@ update_system_state() {
     log "Actualizando manifiestos en $SYSTEM_STATE_DIR"
     mkdir -p "$SYSTEM_STATE_DIR"
 
-    write_manifest "$SYSTEM_STATE_DIR/pacman-explicit.txt" pacman -Qqe
-    write_manifest "$SYSTEM_STATE_DIR/aur-foreign.txt" pacman -Qqm
+    if [ -r "$INVENTORY_LIB" ]; then
+        # shellcheck disable=SC1090
+        . "$INVENTORY_LIB"
+        inventory_write "$SYSTEM_STATE_DIR"
+    else
+        log "WARN: falta $INVENTORY_LIB; se omite el inventario de paquetes"
+    fi
+
     write_manifest "$SYSTEM_STATE_DIR/system-enabled-units.txt" systemctl list-unit-files --state=enabled --no-pager
     write_manifest "$SYSTEM_STATE_DIR/user-enabled-units.txt" systemctl --user list-unit-files --state=enabled --no-pager
     write_manifest "$SYSTEM_STATE_DIR/mounts.txt" findmnt --real
@@ -329,7 +372,9 @@ show_status() {
     log "RESTIC_PASSWORD_FILE=$RESTIC_PASSWORD_FILE"
     log "LAN host=${BACKUP_SFTP_HOST_LAN:-missing}"
     log "REMOTE host=${BACKUP_SFTP_HOST_REMOTE:-missing}"
+    log "HOST_LABEL=$HOST_LABEL"
     log_schedule_status
+    password_notice
 
     if probe_host "${BACKUP_SFTP_HOST_LAN:-}"; then
         log "LAN probe: ok"
@@ -370,16 +415,41 @@ run_backup() {
 
     log "Usando repositorio: $REPOSITORY"
     restic -r "$REPOSITORY" backup "$BACKUP_SOURCE_HOME" \
+        --host "$HOST_LABEL" \
+        --one-file-system \
+        --exclude-caches \
         --exclude-file "$BACKUP_EXCLUDES_FILE" \
         --tag workstation \
         --tag automatic
 
+    # Sin --prune: el prune y el check parcial viven en `maintenance` (timer semanal).
     restic -r "$REPOSITORY" forget \
+        --host "$HOST_LABEL" \
+        --keep-hourly "${RESTIC_KEEP_HOURLY:-24}" \
+        --keep-daily "${RESTIC_KEEP_DAILY:-7}" \
+        --keep-weekly "${RESTIC_KEEP_WEEKLY:-4}" \
+        --keep-monthly "${RESTIC_KEEP_MONTHLY:-3}"
+}
+
+run_maintenance() {
+    local REPOSITORY=""
+
+    REPOSITORY="$(choose_repository)" || die "No responde ni el destino LAN ni el remoto"
+    export RESTIC_PASSWORD_FILE
+
+    log "Mantenimiento del repositorio: $REPOSITORY"
+    restic -r "$REPOSITORY" forget \
+        --host "$HOST_LABEL" \
         --keep-hourly "${RESTIC_KEEP_HOURLY:-24}" \
         --keep-daily "${RESTIC_KEEP_DAILY:-7}" \
         --keep-weekly "${RESTIC_KEEP_WEEKLY:-4}" \
         --keep-monthly "${RESTIC_KEEP_MONTHLY:-3}" \
-        --prune
+        --prune \
+        --retry-lock 30m
+
+    restic -r "$REPOSITORY" check \
+        --read-data-subset=5% \
+        --retry-lock 30m
 }
 
 show_snapshots() {
@@ -392,6 +462,8 @@ show_snapshots() {
 }
 
 load_env
+rotate_logs
+HOST_LABEL="$(backup_host_label)"
 validate_requirements
 
 case "$COMMAND" in
@@ -403,6 +475,9 @@ case "$COMMAND" in
         ;;
     snapshots)
         show_snapshots
+        ;;
+    maintenance)
+        run_maintenance
         ;;
     *)
         die "Subcomando no soportado: $COMMAND"
@@ -417,6 +492,12 @@ restic_backup_install_user_units() {
     run_cmd mkdir -p "$RESTIC_BACKUP_USER_SYSTEMD_DIR"
     run_cmd install -Dm644 "$RESTIC_BACKUP_TEMPLATE_SERVICE" "$RESTIC_BACKUP_SERVICE_PATH"
     run_cmd install -Dm644 "$RESTIC_BACKUP_TEMPLATE_TIMER" "$RESTIC_BACKUP_TIMER_PATH"
+    run_cmd install -Dm644 "$RESTIC_MAINTENANCE_TEMPLATE_SERVICE" "$RESTIC_MAINTENANCE_SERVICE_PATH"
+    run_cmd install -Dm644 "$RESTIC_MAINTENANCE_TEMPLATE_TIMER" "$RESTIC_MAINTENANCE_TIMER_PATH"
+}
+
+restic_backup_password_notice() {
+    log_warn "AVISO: guarda una copia de la contraseña de Restic fuera de este equipo (gestor de contraseñas). Ruta local: ${RESTIC_BACKUP_PASSWORD_PATH}"
 }
 
 restic_backup_validate_init_requirements() {
@@ -552,6 +633,7 @@ restic_backup_init() {
     if restic_backup_env_uses_placeholders; then
         log_warn "Se ha preparado la estructura local, pero backup.env sigue con placeholders."
         log_info "Edita ${RESTIC_BACKUP_ENV_PATH} y vuelve a ejecutar: ./migration.sh restic-backup init"
+        restic_backup_password_notice
         return 0
     fi
 
@@ -583,6 +665,7 @@ restic_backup_init() {
     fi
 
     log_success "Inicialización Restic completada."
+    restic_backup_password_notice
 }
 
 restic_backup_delegate_installed_script() {
@@ -606,14 +689,16 @@ restic_backup_install_timer() {
     fi
     run_cmd systemctl --user daemon-reload
     run_cmd systemctl --user enable --now restic-backup.timer
-    log_success "Timer restic-backup.timer habilitado."
+    run_cmd systemctl --user enable --now restic-maintenance.timer
+    log_success "Timers restic-backup.timer y restic-maintenance.timer habilitados."
 }
 
 restic_backup_disable_timer() {
     run_shell "systemctl --user disable --now restic-backup.timer >/dev/null 2>&1 || true"
-    run_shell "systemctl --user stop restic-backup.service >/dev/null 2>&1 || true"
+    run_shell "systemctl --user disable --now restic-maintenance.timer >/dev/null 2>&1 || true"
+    run_shell "systemctl --user stop restic-backup.service restic-maintenance.service >/dev/null 2>&1 || true"
     run_cmd systemctl --user daemon-reload
-    log_success "Timer restic-backup.timer deshabilitado."
+    log_success "Timers restic-backup.timer y restic-maintenance.timer deshabilitados."
 }
 
 restic_backup_cli() {
@@ -645,6 +730,13 @@ restic_backup_cli() {
                 return 1
             }
             restic_backup_delegate_installed_script snapshots
+            ;;
+        maintenance)
+            [ $# -eq 0 ] || {
+                log "${RED}restic-backup maintenance no acepta opciones extra.${NC}"
+                return 1
+            }
+            restic_backup_delegate_installed_script maintenance
             ;;
         install-timer)
             [ $# -eq 0 ] || {

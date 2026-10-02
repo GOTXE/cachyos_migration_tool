@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Restic maintenance weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 12:00:00
+Persistent=true
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target
