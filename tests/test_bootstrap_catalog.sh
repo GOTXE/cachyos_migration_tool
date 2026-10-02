@@ -83,4 +83,16 @@ assert_contains "$CATALOG_GENERIC" "sshpass|sshpass para contraseñas SSH no int
 assert_contains "$CATALOG_GENERIC" "codexbar_tray|codexBar Tray KDE (instala desde repo local restaurado)|OFF" "catalog generic codexbar tray"
 assert_contains "$CATALOG_GENERIC" "ai_engram|Engram memoria persistente para Codex|OFF" "catalog generic engram"
 
+# CodexBar Plasma solo se ofrece si existe kpackagetool6.
+KPT_TMP="$(mktemp -d)"
+trap 'rm -rf "$KPT_TMP"' EXIT
+mkdir -p "$KPT_TMP/with" "$KPT_TMP/without"
+ln -s "$(command -v cat)" "$KPT_TMP/without/cat"
+printf '#!/bin/sh\n' > "$KPT_TMP/with/kpackagetool6"
+chmod +x "$KPT_TMP/with/kpackagetool6"
+CATALOG_WITH_KPT="$(PATH="$KPT_TMP/with:$PATH" get_bootstrap_checklist_items)"
+CATALOG_WITHOUT_KPT="$(PATH="$KPT_TMP/without" get_bootstrap_checklist_items)"
+assert_contains "$CATALOG_WITH_KPT" "codexbar_plasma|CodexBar Plasma (widget panel KDE 6, release verificada)|OFF" "catalog codexbar plasma con kpackagetool6"
+assert_not_contains "$CATALOG_WITHOUT_KPT" "codexbar_plasma" "catalog codexbar plasma sin kpackagetool6"
+
 printf 'OK bootstrap catalog\n'

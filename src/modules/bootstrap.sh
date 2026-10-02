@@ -682,11 +682,7 @@ install_appimage_support_if_accepted() {
     fi
 }
 
-install_codexbar_tray_dependencies() {
-    log "${YELLOW}Preparando dependencias de codexBar Tray...${NC}"
-    log_package_batch_state "repo" "repo" python-pyqt6
-    run_cmd sudo pacman -S --needed --noconfirm python-pyqt6
-
+install_codexbar_cli() {
     if command -v codexbar >/dev/null 2>&1; then
         log_success "codexbar CLI ya disponible en PATH."
         return 0
@@ -697,6 +693,14 @@ install_codexbar_tray_dependencies() {
     install_yay
     log_package_batch_state "AUR" "aur" codexbar-cli
     run_cmd yay -S --needed --noconfirm codexbar-cli
+}
+
+install_codexbar_tray_dependencies() {
+    log "${YELLOW}Preparando dependencias de codexBar Tray...${NC}"
+    log_package_batch_state "repo" "repo" python-pyqt6
+    run_cmd sudo pacman -S --needed --noconfirm python-pyqt6
+
+    install_codexbar_cli
 }
 
 install_codexbar_tray_from_local_repo() {
@@ -3248,6 +3252,8 @@ post_bootstrap_checks() {
     else
         log_warn "codexBar Tray: inactivo"
     fi
+
+    log_info "$(codexbar_plasma_postcheck_line)"
 
     if command -v codex >/dev/null 2>&1; then
         log_success "Codex CLI detectado en: $(command -v codex)"

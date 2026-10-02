@@ -1100,6 +1100,13 @@ tea|tea CLI para Gitea|OFF
 obsidian|Obsidian (Markdown knowledge base)|OFF
 sshpass|sshpass para contraseñas SSH no interactivas|OFF
 codexbar_tray|codexBar Tray KDE (instala desde repo local restaurado)|OFF
+EOF
+
+    if command -v kpackagetool6 >/dev/null 2>&1; then
+        printf '%s\n' "codexbar_plasma|CodexBar Plasma (widget panel KDE 6, release verificada)|OFF"
+    fi
+
+    cat <<'EOF'
 docker_svc|Configuración servicio Docker|OFF
 zsh|Oh My Zsh + Powerlevel10k|ON
 node|Stack Node / pnpm / bun|ON

@@ -8,7 +8,7 @@
 # El orden de BLOCK_IDS es el orden de ejecución.
 BLOCK_IDS=( sync base_dev yay flatpak official kde aur talk2ai restic appimage \
             filezilla markdownpart libreoffice androidstudio ipscan tea obsidian \
-            sshpass codexbar_tray docker_svc zsh node ai_codex ai_engram ai_claude \
+            sshpass codexbar_tray codexbar_plasma docker_svc zsh node ai_codex ai_engram ai_claude \
             ai_gemini ai_opencode ai_antigravity mbpwatch plasmoid youtube apple \
             facetime iwd hyprland wifi globalmenu hwaccel vaapi btrfs )
 
@@ -20,7 +20,8 @@ declare -gA BLOCK_FN=(
     [markdownpart]=install_markdownpart_package [libreoffice]=install_libreoffice_package
     [androidstudio]=install_android_studio_package [ipscan]=install_ipscan_package
     [tea]=install_tea_package [obsidian]=install_obsidian_package [sshpass]=install_sshpass_package
-    [codexbar_tray]=install_codexbar_tray_from_local_repo [docker_svc]=setup_docker
+    [codexbar_tray]=install_codexbar_tray_from_local_repo [codexbar_plasma]=block_codexbar_plasma
+    [docker_svc]=setup_docker
     [zsh]=block_zsh [node]=install_node_stack [ai_codex]=install_codex_cli
     [ai_engram]=install_engram_for_codex [ai_claude]=install_claude_cli
     [ai_gemini]=install_gemini_cli [ai_opencode]=install_opencode_cli
@@ -32,6 +33,10 @@ declare -gA BLOCK_FN=(
     [hwaccel]=configure_chromium_hw_acceleration [vaapi]=configure_vaapi_intel
     [btrfs]=configure_btrfs_snapshots
 )
+
+block_codexbar_plasma() {
+    install_codexbar_plasma --with-cli
+}
 
 block_zsh() {
     install_ohmyzsh

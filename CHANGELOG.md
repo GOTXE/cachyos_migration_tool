@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added CodexBar Plasma (`Lucenx9/codexbar-plasma`): `install-codexbar-plasma [--version vX.Y.Z|latest] [--with-cli]`, `uninstall-codexbar-plasma` and a `codexbar_plasma` bootstrap block (listed only when `kpackagetool6` exists). The `.plasmoid` is downloaded over HTTPS, checked against its `.sha256` and its `metadata.json` Id, installed with `kpackagetool6` without root, and plasmashell is never restarted automatically. `postcheck` reports its status; the CLI install was extracted into `install_codexbar_cli`.
 - BTRFS snapshots block: installs `snapper snap-pac` plus the package matching the detected bootloader (`limine-snapper-sync` for Limine, `grub-btrfs-support` for GRUB, `sdboot-manage` for systemd-boot) instead of always installing `grub-btrfs`; with an unknown bootloader it warns and installs nothing. The block is only offered when `/` is btrfs.
 - VA-API Intel: generic Intel machines now get `intel-media-driver` + `libva-intel-driver` + `libva-utils` without forcing `LIBVA_DRIVER_NAME=i965` or writing `brave-flags.conf`; a legacy i965-only `vaapi.conf` is moved to `vaapi.conf.bak.<timestamp>`. MacBook Pro 12,1 / 8,1 keep their i965 setup. The block ends with a `vainfo` check (warning only).
 - `write_browser_flags_file` no longer overwrites silently: identical content is a no-op, different content is backed up to `<file>.bak.<timestamp>` first.

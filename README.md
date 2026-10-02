@@ -79,6 +79,8 @@ El script selecciona el motor TUI en este orden: **Python + curses** (sin depend
 ./migration.sh install-youtube-force-h264  [--dry-run]
 ./migration.sh install-talk2ai            [--dry-run]
 ./migration.sh install-codexbar-tray      [--dry-run]
+./migration.sh install-codexbar-plasma    [--version vX.Y.Z|latest] [--with-cli] [--dry-run]
+./migration.sh uninstall-codexbar-plasma  [--dry-run]
 ./migration.sh configure-vaapi-brave       [--dry-run]
 
 ./migration.sh install-mbp-watch           [--dry-run]
@@ -127,6 +129,7 @@ En la TUI se presentan como checklist dinámico según el hardware detectado. La
 | `obsidian` | Obsidian desde repositorio oficial |
 | `sshpass` | `sshpass` para SSH con contraseña no interactiva |
 | `codexbar_tray` | Instala `codexBar Tray` desde un repo local restaurado/detectado |
+| `codexbar_plasma` | Widget de panel KDE 6 [CodexBar Plasma](https://github.com/Lucenx9/codexbar-plasma) instalado desde su release de GitHub, verificada con SHA-256 y con `kpackagetool6` (sin root; solo aparece si existe `kpackagetool6`). Después, añade «CodexBar» desde *Añadir widgets* del panel. Si ya usas `codexBar Tray` tendrás dos indicadores. |
 | `ai_engram` | Instala Engram y lo configura para Codex CLI |
 | `iwd` | iwd backend para NetworkManager |
 | `hyprland` | Hyprland + waybar, rofi, hyprpaper, grim; sin instalar Mako |
